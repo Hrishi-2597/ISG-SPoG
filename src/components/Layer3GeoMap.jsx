@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  ComposableMap, Geographies, Geography, Marker, ZoomableGroup,
+  ComposableMap, Geographies, Geography, Marker,
 } from 'react-simple-maps'
 import { GEO_REGION_DATA, GEO_COUNTRY_DATA } from '../data/mockData'
 
@@ -86,56 +86,52 @@ export default function Layer3GeoMap() {
               projectionConfig={{ scale: 140, center: [10, 20] }}
               style={{ width: '100%', height: '100%' }}
             >
-              <ZoomableGroup zoom={1}>
-                <Geographies geography={GEO_URL}>
-                  {({ geographies }) =>
-                    geographies.map(geo => (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        style={{
-                          default: { fill: '#1a3456', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
-                          hover:   { fill: '#2a5298', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
-                          pressed: { fill: '#2a5298', outline: 'none' },
-                        }}
-                      />
-                    ))
-                  }
-                </Geographies>
-
-                {markers.map(m => (
-                  <Marker
-                    key={m.region || m.country}
-                    coordinates={[m.lng, m.lat]}
-                    onMouseEnter={() => setHovered({ name: m.region || m.country, accuracy: m.accuracy })}
-                    onMouseLeave={() => setHovered(null)}
-                  >
-                    <circle
-                      r={viewMode === 'Region' ? 18 : 10}
-                      fill={accuracyColor(m.accuracy)}
-                      fillOpacity={0.85}
-                      stroke="#fff"
-                      strokeWidth={1}
-                      style={{ cursor: 'pointer' }}
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map(geo => (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      style={{
+                        default: { fill: '#1a3456', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
+                        hover:   { fill: '#2a5298', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
+                        pressed: { fill: '#2a5298', outline: 'none' },
+                      }}
                     />
-                    <text
-                      textAnchor="middle"
-                      y={viewMode === 'Region' ? 4 : 3}
-                      style={{ fontSize: viewMode === 'Region' ? 8 : 6, fill: '#fff', fontWeight: 'bold', pointerEvents: 'none' }}
-                    >
-                      {viewMode === 'Region'
-                        ? `${m.region}\n${m.accuracy}%`
-                        : `${m.accuracy}%`}
+                  ))
+                }
+              </Geographies>
+
+              {markers.map(m => (
+                <Marker
+                  key={m.region || m.country}
+                  coordinates={[m.lng, m.lat]}
+                  onMouseEnter={() => setHovered({ name: m.region || m.country, accuracy: m.accuracy })}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  <circle
+                    r={viewMode === 'Region' ? 18 : 10}
+                    fill={accuracyColor(m.accuracy)}
+                    fillOpacity={0.85}
+                    stroke="#fff"
+                    strokeWidth={1}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <text
+                    textAnchor="middle"
+                    y={viewMode === 'Region' ? 4 : 3}
+                    style={{ fontSize: viewMode === 'Region' ? 8 : 6, fill: '#fff', fontWeight: 'bold', pointerEvents: 'none' }}
+                  >
+                    {m.accuracy}%
+                  </text>
+                  {viewMode === 'Region' && (
+                    <text textAnchor="middle" y={-22}
+                      style={{ fontSize: 8, fill: '#4fc3f7', fontWeight: 600, pointerEvents: 'none' }}>
+                      {m.label}
                     </text>
-                    {viewMode === 'Region' && (
-                      <text textAnchor="middle" y={-22}
-                        style={{ fontSize: 8, fill: '#4fc3f7', fontWeight: 600, pointerEvents: 'none' }}>
-                        {m.label}
-                      </text>
-                    )}
-                  </Marker>
-                ))}
-              </ZoomableGroup>
+                  )}
+                </Marker>
+              ))}
             </ComposableMap>
 
             {/* Static accuracy scale */}
