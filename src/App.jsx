@@ -20,45 +20,93 @@ const DEFAULT_FILTERS = {
   dbOsp:          'DB',
 }
 
+function SectionDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 px-4 pt-4 pb-1">
+      <span className="text-[10px] font-bold tracking-[0.15em] uppercase"
+        style={{ color: '#38bdf8' }}>{label}</span>
+      <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(56,189,248,0.3), transparent)' }} />
+    </div>
+  )
+}
+
 export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white">
-      {/* Page header */}
-      <header className="bg-navy-800 border-b border-navy-600 px-4 py-2 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: '#070f1a', color: '#e6f1ff' }}>
+
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <header style={{
+        background: 'linear-gradient(180deg, #0e1e30 0%, #0c1929 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+      }} className="px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-blue-600 rounded flex items-center justify-center text-xs font-black">S</div>
+          {/* Logo mark */}
+          <div style={{
+            width: 32, height: 32, borderRadius: 7,
+            background: 'linear-gradient(135deg, #1e3f6e 0%, #38bdf8 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 12px rgba(56,189,248,0.3)',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="9" width="3" height="5" rx="1" fill="white" opacity="0.7"/>
+              <rect x="6.5" y="5" width="3" height="9" rx="1" fill="white" opacity="0.85"/>
+              <rect x="11" y="2" width="3" height="12" rx="1" fill="white"/>
+              <path d="M3.5 7 L8 4 L12.5 1.5" stroke="rgba(56,189,248,0.8)" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          </div>
           <div>
-            <h1 className="text-sm font-bold text-white leading-tight">ISG SPoG</h1>
-            <p className="text-[10px] text-blue-300">Enterprise Service Group · ESG Forecasting</p>
+            <h1 style={{ fontSize: 13, fontWeight: 700, color: '#e6f1ff', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+              ISG SPoG
+            </h1>
+            <p style={{ fontSize: 10, color: '#7fa8cc', marginTop: 1 }}>
+              Enterprise Service Group · ESG Forecasting
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-gray-400">
-          <span className="w-2 h-2 bg-green-400 rounded-full inline-block animate-pulse" />
-          Live · FY26 Data
+
+        <div className="flex items-center gap-4">
+          <div style={{ fontSize: 10, color: '#7fa8cc', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%', background: '#34d399',
+              display: 'inline-block', boxShadow: '0 0 6px #34d399',
+            }} className="animate-pulse-soft" />
+            Live · FY26
+          </div>
+          <div style={{
+            fontSize: 10, fontWeight: 600, color: '#38bdf8',
+            background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)',
+            borderRadius: 5, padding: '3px 9px',
+          }}>
+            ISG ESG
+          </div>
         </div>
       </header>
 
-      {/* Filters */}
+      {/* Accent line under header */}
+      <div style={{ height: 1, background: 'linear-gradient(90deg, #38bdf8 0%, rgba(56,189,248,0.1) 40%, transparent 70%)' }} />
+
+      {/* ── Filters ──────────────────────────────────────────────── */}
       <FilterPanel filters={filters} onChange={setFilters} />
 
-      {/* Cards */}
+      {/* ── KPI Cards ────────────────────────────────────────────── */}
+      <SectionDivider label="Key Metrics" />
       <MetricCards filters={filters} />
 
-      {/* Graph Layers */}
-      <div className="px-4 py-3 flex flex-col gap-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[11px] font-bold text-blue-300 uppercase tracking-widest">Graphs</span>
-          <div className="flex-1 h-px bg-navy-700" />
-        </div>
+      {/* ── Graph Layers ─────────────────────────────────────────── */}
+      <SectionDivider label="Analysis Layers" />
+      <div className="px-4 pb-4 flex flex-col gap-3">
         <Layer1PlanOverPlan filters={filters} />
         <Layer2ActualVsPlan filters={filters} />
         <Layer3GeoMap filters={filters} />
       </div>
 
-      <footer className="text-center text-[9px] text-navy-600 py-3 border-t border-navy-800">
-        ISG SPoG · Enterprise Service Group Forecasting Dashboard · © 2026 Aligned Automation Services
+      <footer style={{
+        textAlign: 'center', fontSize: 10, color: '#3d607a',
+        padding: '12px 0', borderTop: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        ISG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
       </footer>
     </div>
   )

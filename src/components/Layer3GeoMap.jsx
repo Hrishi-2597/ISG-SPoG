@@ -1,86 +1,104 @@
 import React, { useState } from 'react'
-import {
-  ComposableMap, Geographies, Geography, Marker,
-} from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { GEO_REGION_DATA, GEO_COUNTRY_DATA } from '../data/mockData'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-function accuracyColor(val) {
-  if (val >= 90) return '#2e7d32'
-  if (val >= 80) return '#1976d2'
-  if (val >= 70) return '#e65100'
-  return '#b71c1c'
+function acColor(v) {
+  if (v >= 90) return '#059669'
+  if (v >= 80) return '#2563eb'
+  if (v >= 70) return '#d97706'
+  return '#dc2626'
+}
+function acGlow(v) {
+  if (v >= 90) return 'rgba(5,150,105,0.6)'
+  if (v >= 80) return 'rgba(37,99,235,0.6)'
+  if (v >= 70) return 'rgba(217,119,6,0.6)'
+  return 'rgba(220,38,38,0.6)'
 }
 
-function Legend() {
-  const items = [
-    { label: '≥ 90% – Excellent', color: '#2e7d32' },
-    { label: '80–90% – Good',     color: '#1976d2' },
-    { label: '70–80% – Fair',     color: '#e65100' },
-    { label: '< 70% – Critical',  color: '#b71c1c' },
-  ]
-  return (
-    <div className="flex gap-3 flex-wrap">
-      {items.map(({ label, color }) => (
-        <span key={label} className="flex items-center gap-1 text-[10px] text-gray-300">
-          <span className="w-3 h-3 rounded-sm inline-block" style={{ background: color }} />
-          {label}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function RegionTooltip({ hovered }) {
-  if (!hovered) return null
-  return (
-    <div className="absolute top-2 right-2 bg-navy-800 border border-navy-500 rounded p-2 text-xs shadow-xl z-10">
-      <p className="font-bold text-blue-300">{hovered.name}</p>
-      <p className="text-white mt-0.5">Accuracy: <span style={{ color: accuracyColor(hovered.accuracy) }}
-        className="font-bold">{hovered.accuracy}%</span></p>
-    </div>
-  )
-}
+const LEGEND = [
+  { label: '≥ 90% Excellent', color: '#059669' },
+  { label: '80–90% Good',     color: '#2563eb' },
+  { label: '70–80% Fair',     color: '#d97706' },
+  { label: '< 70% Critical',  color: '#dc2626' },
+]
 
 export default function Layer3GeoMap() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen]         = useState(true)
   const [viewMode, setViewMode] = useState('Region')
-  const [hovered, setHovered] = useState(null)
+  const [hovered, setHovered]   = useState(null)
   const markers = viewMode === 'Region' ? GEO_REGION_DATA : GEO_COUNTRY_DATA
 
   return (
-    <div className="bg-navy-900 rounded-lg overflow-hidden border border-navy-700">
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex justify-between items-center px-4 py-2 bg-navy-700 hover:bg-navy-600 transition-colors">
-        <div>
-          <span className="text-xs font-bold text-white uppercase tracking-wide">Layer 3</span>
-          <span className="text-xs text-blue-300 ml-2">— Geo Map</span>
+    <div style={{ background: '#0c1929', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+      <div className="layer-header" onClick={() => setOpen(o => !o)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#fb923c',
+            borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em',
+          }}>03</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#e6f1ff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Geo Map
+          </span>
+          <span style={{ fontSize: 10, color: '#3d607a' }}>— global forecast adherence</span>
         </div>
-        <span className="text-blue-300 text-sm">{open ? '▲' : '▼'}</span>
-      </button>
+        <span style={{ fontSize: 11, color: '#fb923c', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
+      </div>
 
       {open && (
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-3">
+        <div style={{ padding: 14 }}>
+          {/* Sub-header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div>
-              <p className="text-sm font-bold text-white">Global Region Performance Overview</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Forecast Adherence % by {viewMode}</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#e6f1ff' }}>Global Region Performance Overview</p>
+              <p style={{ fontSize: 10, color: '#3d607a', marginTop: 2 }}>
+                Forecast adherence % · {viewMode} view
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-blue-300">Country</span>
+            {/* Region / Country toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 10 }}>
+              <span style={{ color: viewMode === 'Country' ? '#38bdf8' : '#3d607a', fontWeight: 500 }}>Country</span>
               <button onClick={() => setViewMode(v => v === 'Region' ? 'Country' : 'Region')}
-                className={`relative inline-flex h-5 w-10 rounded-full transition-colors ${viewMode === 'Country' ? 'bg-blue-500' : 'bg-navy-600'}`}>
-                <span className={`inline-block h-3.5 w-3.5 m-0.75 rounded-full bg-white transition-transform mt-[3px] ml-[3px] ${viewMode === 'Country' ? 'translate-x-5' : 'translate-x-0'}`} />
+                style={{ position: 'relative', display: 'inline-flex', alignItems: 'center',
+                  width: 36, height: 19, borderRadius: 10,
+                  background: viewMode === 'Region' ? '#38bdf8' : '#1a3050',
+                  border: 'none', cursor: 'pointer', transition: 'background 0.2s', padding: 0 }}>
+                <span style={{ position: 'absolute', top: 3, left: viewMode === 'Region' ? 19 : 3,
+                  width: 13, height: 13, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
               </button>
-              <span className="text-xs text-blue-300">Region</span>
+              <span style={{ color: viewMode === 'Region' ? '#38bdf8' : '#3d607a', fontWeight: 500 }}>Region</span>
             </div>
           </div>
 
-          <Legend />
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
+            {LEGEND.map(({ label, color }) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: '#7fa8cc' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: 'inline-block',
+                  boxShadow: `0 0 6px ${color}80` }} />
+                {label}
+              </span>
+            ))}
+          </div>
 
-          <div className="relative bg-[#0d2137] rounded-lg mt-2 overflow-hidden" style={{ height: 380 }}>
-            <RegionTooltip hovered={hovered} />
+          {/* Map container */}
+          <div style={{ position: 'relative', background: '#070f1a', borderRadius: 8, overflow: 'hidden',
+            height: 380, border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: 'inset 0 0 40px rgba(0,0,0,0.4)' }}>
+
+            {/* Hovered tooltip */}
+            {hovered && (
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
+                className="chart-tooltip">
+                <p style={{ fontWeight: 700, color: '#38bdf8', fontSize: 11 }}>{hovered.name}</p>
+                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: acColor(hovered.accuracy) }}>
+                  {hovered.accuracy}%
+                  <span style={{ fontSize: 9, color: '#7fa8cc', fontWeight: 400, marginLeft: 5 }}>accuracy</span>
+                </p>
+              </div>
+            )}
+
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{ scale: 140, center: [10, 20] }}
@@ -89,85 +107,86 @@ export default function Layer3GeoMap() {
               <Geographies geography={GEO_URL}>
                 {({ geographies }) =>
                   geographies.map(geo => (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
+                    <Geography key={geo.rsmKey} geography={geo}
                       style={{
-                        default: { fill: '#1a3456', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
-                        hover:   { fill: '#2a5298', stroke: '#0d2137', strokeWidth: 0.5, outline: 'none' },
-                        pressed: { fill: '#2a5298', outline: 'none' },
+                        default: { fill: '#0e1f35', stroke: '#070f1a', strokeWidth: 0.4, outline: 'none' },
+                        hover:   { fill: '#1a3050', stroke: '#070f1a', strokeWidth: 0.4, outline: 'none' },
+                        pressed: { fill: '#1a3050', outline: 'none' },
                       }}
                     />
                   ))
                 }
               </Geographies>
 
-              {markers.map(m => (
-                <Marker
-                  key={m.region || m.country}
-                  coordinates={[m.lng, m.lat]}
-                  onMouseEnter={() => setHovered({ name: m.region || m.country, accuracy: m.accuracy })}
-                  onMouseLeave={() => setHovered(null)}
-                >
-                  <circle
-                    r={viewMode === 'Region' ? 18 : 10}
-                    fill={accuracyColor(m.accuracy)}
-                    fillOpacity={0.85}
-                    stroke="#fff"
-                    strokeWidth={1}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <text
-                    textAnchor="middle"
-                    y={viewMode === 'Region' ? 4 : 3}
-                    style={{ fontSize: viewMode === 'Region' ? 8 : 6, fill: '#fff', fontWeight: 'bold', pointerEvents: 'none' }}
-                  >
-                    {m.accuracy}%
-                  </text>
-                  {viewMode === 'Region' && (
-                    <text textAnchor="middle" y={-22}
-                      style={{ fontSize: 8, fill: '#4fc3f7', fontWeight: 600, pointerEvents: 'none' }}>
-                      {m.label}
+              {markers.map(m => {
+                const name = m.region || m.country
+                return (
+                  <Marker key={name} coordinates={[m.lng, m.lat]}
+                    onMouseEnter={() => setHovered({ name, accuracy: m.accuracy })}
+                    onMouseLeave={() => setHovered(null)}>
+                    <circle
+                      r={viewMode === 'Region' ? 20 : 11}
+                      fill={acColor(m.accuracy)}
+                      fillOpacity={0.9}
+                      stroke="rgba(255,255,255,0.3)"
+                      strokeWidth={1}
+                      style={{ cursor: 'pointer', filter: `drop-shadow(0 0 6px ${acGlow(m.accuracy)})` }}
+                    />
+                    <text textAnchor="middle" y={viewMode === 'Region' ? 4 : 3.5}
+                      style={{ fontSize: viewMode === 'Region' ? 8 : 6, fill: '#fff', fontWeight: 700, pointerEvents: 'none',
+                        fontFamily: 'Space Grotesk, system-ui' }}>
+                      {m.accuracy}%
                     </text>
-                  )}
-                </Marker>
-              ))}
+                    {viewMode === 'Region' && (
+                      <text textAnchor="middle" y={-25}
+                        style={{ fontSize: 8, fill: '#38bdf8', fontWeight: 600, pointerEvents: 'none',
+                          fontFamily: 'Space Grotesk, system-ui' }}>
+                        {m.label}
+                      </text>
+                    )}
+                  </Marker>
+                )
+              })}
             </ComposableMap>
 
-            {/* Static accuracy scale */}
-            <div className="absolute bottom-2 left-2 text-[9px] text-gray-400 flex items-center gap-1">
+            {/* Scale */}
+            <div style={{ position: 'absolute', bottom: 8, left: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: '#3d607a' }}>
               <span>100%</span>
-              <div className="w-20 h-2 rounded" style={{ background: 'linear-gradient(to left, #b71c1c, #e65100, #1976d2, #2e7d32)' }} />
+              <div style={{ width: 72, height: 5, borderRadius: 3,
+                background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
               <span>0%</span>
-              <span className="ml-1">Accuracy</span>
             </div>
           </div>
 
           {/* Summary table */}
-          <div className="mt-3 overflow-auto">
-            <table className="w-full text-xs">
+          <div style={{ marginTop: 10, overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="text-blue-300 border-b border-navy-600">
-                  <th className="text-left py-1 pr-4">{viewMode}</th>
-                  <th className="text-right py-1 pr-4">Accuracy %</th>
-                  <th className="text-right py-1">Status</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  {[viewMode, 'Accuracy', 'Status'].map((h, i) => (
+                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
+                      fontSize: 9, color: '#3d607a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {markers.map(m => (
-                  <tr key={m.region || m.country} className="border-b border-navy-700/50 hover:bg-navy-700/30">
-                    <td className="py-1 pr-4 text-white">{m.region || m.country}</td>
-                    <td className="py-1 pr-4 text-right font-bold" style={{ color: accuracyColor(m.accuracy) }}>
-                      {m.accuracy}%
-                    </td>
-                    <td className="py-1 text-right">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold"
-                        style={{ background: accuracyColor(m.accuracy) + '33', color: accuracyColor(m.accuracy) }}>
-                        {m.accuracy >= 90 ? 'Excellent' : m.accuracy >= 80 ? 'Good' : m.accuracy >= 70 ? 'Fair' : 'Critical'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {markers.map(m => {
+                  const name = m.region || m.country
+                  const col = acColor(m.accuracy)
+                  const status = m.accuracy >= 90 ? 'Excellent' : m.accuracy >= 80 ? 'Good' : m.accuracy >= 70 ? 'Fair' : 'Critical'
+                  const badgeCls = m.accuracy >= 90 ? 'badge-good' : m.accuracy >= 80 ? 'badge-good' : m.accuracy >= 70 ? 'badge-warn' : 'badge-bad'
+                  return (
+                    <tr key={name} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '6px 10px 6px 0', color: '#e6f1ff', fontWeight: 500 }}>{name}</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{m.accuracy}%</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                        <span className={`badge ${badgeCls}`}>{status}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

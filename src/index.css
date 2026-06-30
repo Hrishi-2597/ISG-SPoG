@@ -2,30 +2,161 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { font-size: 14px; }
+
+  body {
+    margin: 0;
+    background-color: #070f1a;
+    color: #e6f1ff;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tabular numbers everywhere */
+  .num, [data-num], table td, table th {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #0c1929; }
+  ::-webkit-scrollbar-thumb { background: #1a3050; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a5298; }
 }
 
-body {
-  margin: 0;
-  background-color: #0d1b2a;
-  color: #ffffff;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+@layer components {
+
+  /* ── Signature: luminous top-edge card glow ─────────────────────── */
+  .card-panel {
+    position: relative;
+    background: #111f33;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .card-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20%; right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+    opacity: 0.45;
+    transition: left 0.25s ease, right 0.25s ease, opacity 0.25s ease;
+  }
+  .card-panel:hover {
+    border-color: rgba(56,189,248,0.3);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.18);
+  }
+  .card-panel:hover::before {
+    left: 5%; right: 5%;
+    opacity: 0.85;
+  }
+  .card-panel.active {
+    border-color: rgba(56,189,248,0.5);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(56,189,248,0.4), 0 0 24px rgba(56,189,248,0.1);
+  }
+  .card-panel.active::before {
+    left: 0; right: 0;
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(56,189,248,0.6);
+  }
+
+  /* ── Chart/visual panel ─────────────────────────────────────────── */
+  .chart-panel {
+    background: #0a1522;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  /* ── Layer section header ────────────────────────────────────────── */
+  .layer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.06) 0%, transparent 55%);
+    border-left: 2px solid #38bdf8;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+  }
+  .layer-header:hover {
+    background: linear-gradient(90deg, rgba(56,189,248,0.1) 0%, transparent 55%);
+  }
+
+  /* ── Dark select ────────────────────────────────────────────────── */
+  .select-dark {
+    appearance: none;
+    background-color: #0c1929;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px;
+    color: #e6f1ff;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 26px 5px 9px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    outline: none;
+  }
+  .select-dark:hover  { border-color: rgba(56,189,248,0.35); background-color: #111f33; }
+  .select-dark:focus  { border-color: rgba(56,189,248,0.6); box-shadow: 0 0 0 2px rgba(56,189,248,0.12); }
+  .select-dark option { background: #0c1929; color: #e6f1ff; }
+
+  /* ── Pill toggle (FY / Quarter / Week) ─────────────────────────── */
+  .drill-toggle {
+    display: inline-flex;
+    background: #0a1522;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 2px;
+    gap: 1px;
+  }
+  .drill-btn {
+    padding: 3px 10px;
+    border-radius: 16px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease, color 0.15s ease;
+    color: #7fa8cc;
+    background: transparent;
+  }
+  .drill-btn:hover   { color: #e6f1ff; }
+  .drill-btn.active  { background: #38bdf8; color: #070f1a; }
+
+  /* ── Tooltip ─────────────────────────────────────────────────────── */
+  .chart-tooltip {
+    background: rgba(12,25,41,0.96);
+    border: 1px solid rgba(56,189,248,0.25);
+    border-radius: 7px;
+    padding: 8px 11px;
+    font-size: 11px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  /* ── Status badge ─────────────────────────────────────────────────── */
+  .badge { padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .badge-good { background: rgba(52,211,153,0.15); color: #34d399; }
+  .badge-warn { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+  .badge-bad  { background: rgba(248,113,113,0.15); color: #f87171; }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@layer utilities {
+  .recharts-tooltip-wrapper { z-index: 100 !important; }
+  .text-dim   { color: #7fa8cc; }
+  .text-faint { color: #3d607a; }
+  .border-dim { border-color: rgba(255,255,255,0.07); }
 }
-::-webkit-scrollbar-track { background: #112240; }
-::-webkit-scrollbar-thumb { background: #2a5298; border-radius: 3px; }
-
-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 28px !important;
-}
-
-.recharts-tooltip-wrapper { z-index: 100; }
