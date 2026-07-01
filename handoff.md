@@ -90,6 +90,24 @@ The filter bar was restructured away from a flat 12-dropdown grid (which read li
 
 ---
 
+## KPI Card Drill-Downs Rebuilt (as of 2026-07-01)
+
+Each card's pop-up went from a raw table to an actual chart matching what the card measures:
+
+| Card | Drill-down now shows |
+|---|---|
+| Total Queues | Unchanged — the queue list table |
+| Call Volume | Bar chart: Offered vs Handled, by Fiscal Year (raw numbers, no %) |
+| DB / OSP Split | Same Offered-vs-Handled-by-FY chart, but scoped by whichever DB/OSP filter is active (so it always matches the card above it) |
+| Forecast Accuracy | Bar+line chart: Actual vs Forecast volume per region (APJ/EMEA/Global/LATAM/NAMER), with a Forecast Accuracy % line on a second axis |
+| CQN Variance | Bar chart: % of queues within ±10% variance, year on year (FY25/26/27) — **click a year's bar** to open a pop-up listing 4–5 example queues in that band for the current filter scope |
+
+**CQN Variance headline was recalibrated.** It was reading ~74–80% ("within ±10%"), which felt inflated for how strict that band actually is. The qualifying threshold tightened from `accuracy >= 80` to `accuracy >= 89`, landing the headline at ~40–50% at default filters — a real recomputed number, not a hardcoded one. The year-on-year drill-down (`CQN_VARIANCE_BY_FY` in `mockData.js`) is curated static data in the same 40–50% range, since no per-queue-per-year variance dataset exists yet; the queues shown in the year pop-up are real (pulled from the live filtered fact table), just not year-specific yet.
+
+**The year-click pop-up is an actual modal**, the one deliberate exception to the "no modals" rule established in `design_choice.md` — it's a second level of drill-down nested inside the first, and a floating overlay reads better there than trying to cram another chart inline.
+
+---
+
 ## What's NOT Yet Built (from PPT scope)
 
 These are in the original SPOG_views.pptx but not yet implemented:

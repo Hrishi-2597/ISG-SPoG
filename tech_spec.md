@@ -128,12 +128,32 @@ effectiveFiscalYear(filters) — Week > Quarter > Year precedence → a single '
 ### Cards
 ```
 cardData(filters) → {
-  totalQueues, forecastAccuracy, cqnVariance   — from filterQueues({...filters, dbOsp:'All'})
-                                                   (queue portfolio health; DB/OSP-agnostic)
+  totalQueues, forecastAccuracy, cqnVariance   — from filterQueues({...filters, dbOsp:'All'});
+                                                   cqnVariance's "within range" threshold is
+                                                   accuracy >= 89 (tight on purpose — lands the
+                                                   headline around 40-50%, not the ~75-80% a
+                                                   looser threshold would give)
   callVolume, dbOspSplit                        — from filterQueues(filters), scaled off a
                                                    285.4K/268.7K baseline by the filtered/199 ratio
                                                    (DB/OSP genuinely scopes volume here)
 }
+```
+
+### Card drill-down selectors (`MetricCards.jsx`)
+```
+callVolumeByFY(filters) — {period, offered, handled} per FY, narrowed to effectiveFiscalYear(filters);
+  scaled by filterQueues(filters).length/199 off a per-FY baseline (BASE_CALL_VOLUME_BY_FY) that
+  sums to the same 285.4K/268.7K totals as cardData's callVolume. Backs both the Call Volume and
+  DB/OSP Split drill-downs — DB/OSP scopes it exactly like the cards above it.
+FORECAST_ACCURACY_BY_REGION / forecastAccuracyByRegion(filters) — {region, actual, forecast, accuracy}
+  ×5 regions, static, narrowed to filters.region. Backs the Forecast Accuracy drill-down
+  (bar: actual/forecast, line: accuracy% on a second axis).
+CQN_VARIANCE_BY_FY — {fy, pct} ×3, static, curated to the 40-50% range (illustrative — no
+  per-queue-per-year variance dataset exists yet). Backs the CQN Variance drill-down.
+cqnVarianceQueuesByFY(filters, fy, count=5) — filterQueues({...filters, dbOsp:'All'}) filtered to
+  |planVariance| <= 10, then a `count`-sized slice offset by the FY's index (so each year's
+  pop-up shows a different-looking sample of the same real, currently-in-scope queues).
+  Powers the modal opened by clicking a year's bar in the CQN Variance drill-down.
 ```
 
 ### Layer 1 Data (Plan over Plan) — always Fiscal Year granularity

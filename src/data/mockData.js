@@ -338,7 +338,9 @@ export function cardData(filters = {}) {
   const total = ACTIVE_QUEUES.length
   const activeCount = structuralRows.length
   const avgAccuracy = activeCount ? +(structuralRows.reduce((s, q) => s + q.accuracy, 0) / activeCount).toFixed(1) : 0
-  const withinRange = structuralRows.filter(q => q.accuracy >= 80).length
+  // "Within variance" band is deliberately tight (accuracy >= 89) so the headline
+  // sits in the ~40-50% range that reflects how strict the ±10% target actually is.
+  const withinRange = structuralRows.filter(q => q.accuracy >= 89).length
 
   // Call volume, by contrast, is exactly what DB/OSP is meant to scope.
   const volumeRows = filterQueues(filters)
@@ -357,6 +359,65 @@ export function cardData(filters = {}) {
     forecastAccuracy: { value: avgAccuracy, target: 90 },
     cqnVariance: { withinRange, total: activeCount, pct: activeCount ? +((withinRange / activeCount) * 100).toFixed(1) : 0 },
   }
+}
+
+// Offered/handled baseline split by fiscal year — sums to BASE_CALL_VOLUME's totals.
+const BASE_CALL_VOLUME_BY_FY = {
+  FY25: { offered: 82000,  handled: 77500 },
+  FY26: { offered: 96000,  handled: 90200 },
+  FY27: { offered: 107400, handled: 101000 },
+}
+
+// Drives both the Call Volume and DB/OSP Split card drill-downs — DB/OSP scopes this
+// exactly like the card itself does, so the chart always matches what the card shows.
+export function callVolumeByFY(filters = {}) {
+  const rows = filterQueues(filters)
+  const ratio = ACTIVE_QUEUES.length ? rows.length / ACTIVE_QUEUES.length : 0
+  const fy = effectiveFiscalYear(filters)
+  const years = fy === 'All' ? FISCAL_YEARS : [fy]
+  return years.map(year => ({
+    period: year,
+    offered: Math.round(BASE_CALL_VOLUME_BY_FY[year].offered * ratio),
+    handled: Math.round(BASE_CALL_VOLUME_BY_FY[year].handled * ratio),
+  }))
+}
+
+// ── Forecast Accuracy by Region ───────────────────────────────────────────────
+const REGION_FORECAST_BASE = { APJ: 58000, EMEA: 78000, Global: 50000, LATAM: 33000, NAMER: 95000 }
+const REGION_ACCURACY = { APJ: 85, EMEA: 79, Global: 82, LATAM: 68, NAMER: 91 }
+
+export const FORECAST_ACCURACY_BY_REGION = REGIONS.map(region => {
+  const forecast = REGION_FORECAST_BASE[region]
+  const accuracy = REGION_ACCURACY[region]
+  return { region, forecast, actual: Math.round(forecast * accuracy / 100), accuracy }
+})
+
+export function forecastAccuracyByRegion(filters = {}) {
+  const r = filters.region
+  return (!r || r === 'All') ? FORECAST_ACCURACY_BY_REGION : FORECAST_ACCURACY_BY_REGION.filter(d => d.region === r)
+}
+
+// ── CQN Forecast Variance ─────────────────────────────────────────────────────
+// Year-on-year % of queues landing within the ±10% variance band. Curated to sit in the
+// 40-50% range (vs. the ~44% the live queue-accuracy threshold produces at "All" filters) —
+// illustrative until fiscal-year-tagged variance data exists per queue.
+export const CQN_VARIANCE_BY_FY = [
+  { fy: 'FY25', pct: 44 },
+  { fy: 'FY26', pct: 48 },
+  { fy: 'FY27', pct: 41 },
+]
+
+// Clicking a year's column surfaces a handful of real queues (from the current filter
+// scope) whose plan-vs-plan variance genuinely falls within ±10% — a representative
+// sample, not the full list, until per-queue-per-year variance data is available.
+export function cqnVarianceQueuesByFY(filters, fy, count = 5) {
+  const rows = filterQueues({ ...filters, dbOsp: 'All' }).filter(q => Math.abs(q.planVariance) <= 10)
+  if (!rows.length) return []
+  const yearIndex = FISCAL_YEARS.indexOf(fy)
+  const offset = (yearIndex >= 0 ? yearIndex : 0) * count
+  return Array.from({ length: Math.min(count, rows.length) }, (_, i) =>
+    rows[(offset + i) % rows.length]
+  ).map(q => ({ name: q.name, variance: q.planVariance }))
 }
 
 // ── Plan over Plan (Layer 1) ─────────────────────────────────────────────────

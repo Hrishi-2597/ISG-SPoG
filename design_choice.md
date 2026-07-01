@@ -61,6 +61,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ### Drill-down as inline panel (not modal)
 **Decision:** Clicking a KPI card opens a panel directly below the cards row, not a modal overlay.
 **Why:** Modals interrupt workflow. An inline panel lets the user see both the card value and the detail table simultaneously without losing context of other cards.
+**One deliberate exception (2026-07-01):** Clicking a year's bar inside the CQN Variance drill-down opens an actual modal (backdrop + centered card) listing that year's example queues. This is a second level of drill nested inside the first — by the time you're two levels deep, "context of the other cards" isn't the thing you're trying to preserve; a floating overlay reads more clearly than squeezing another chart into an already-open panel.
 
 ### Drill toggle (FY / Quarter / Week) as segmented control (removed 2026-07-01)
 **Decision:** Three-button segmented control per visual instead of a dropdown.
