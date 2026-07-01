@@ -3,7 +3,7 @@ import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
-import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance } from '../data/mockData'
+import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance, filterQueues } from '../data/mockData'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 const C = { actual: '#38bdf8', plan: '#fb923c', line: '#34d399', ahead: '#34d399', behind: '#f87171', grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85' }
@@ -96,6 +96,26 @@ function Visual1({ filters, selectedPlan, onPlanChange }) {
 
 function Visual2({ filters, selectedPlan, onPlanChange }) {
   const data = useMemo(() => stackedAdherenceByFY(filters), [filters])
+  // Same DB/OSP-agnostic queue count the Total Queues card uses — converts each
+  // bucket's % into "how many queues" for the tooltip, since a bare % repeats what
+  // the on-bar label already shows.
+  const totalQueues = useMemo(() => filterQueues({ ...filters, dbOsp: 'All' }).length, [filters])
+  const StackedTip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="chart-tooltip">
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#38bdf8', marginBottom: 5 }}>{label}</p>
+        {payload.map((p, i) => {
+          const count = Math.round(p.value / 100 * totalQueues)
+          return (
+            <p key={i} style={{ fontSize: 11, color: p.color, marginBottom: 2 }}>
+              {p.name}: <span style={{ fontWeight: 600 }}>{count} queue{count === 1 ? '' : 's'}</span>
+            </p>
+          )
+        })}
+      </div>
+    )
+  }
   return (
     <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
@@ -112,7 +132,7 @@ function Visual2({ filters, selectedPlan, onPlanChange }) {
           <XAxis dataKey="fy" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} domain={[0,100]} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
+          <Tooltip content={<StackedTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           {STACK_META.map(({ key, label }, i) => (
             <Bar key={key} dataKey={key} name={label} stackId="a" fill={STACK[key]}
               radius={i === STACK_META.length - 1 ? [3,3,0,0] : undefined}>
