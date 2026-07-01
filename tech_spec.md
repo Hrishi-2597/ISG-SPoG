@@ -61,15 +61,17 @@ App
 ├── Layer1PlanOverPlan(filters) — Collapsible section, always at Fiscal Year granularity
 │   ├── Visual1           — ComposedChart: planOverPlanByFY(filters), plan A/B dropdowns
 │   ├── Visual2           — ComposedChart: planOverPlanByRegion(filters), Region x-axis
-│   └── Visual3           — Horizontal ComposedChart: cqnPlanVariance(filters)
+│   └── Visual3           — Diverging horizontal Bar: cqnPlanVariance(filters), green/red Cell by sign
 ├── Layer2ActualVsPlan(filters) — Collapsible section, always at Fiscal Year granularity
 │   ├── Visual1           — ComposedChart: actualVsPlanByFY(filters) + Adherence% line
-│   ├── Visual2           — Stacked BarChart: stackedAdherenceByFY(filters)
-│   └── Visual3           — Horizontal ComposedChart: cqnActualVariance(filters) with Cell coloring
+│   ├── Visual2           — Stacked BarChart: stackedAdherenceByFY(filters), LabelList per segment
+│   └── Visual3           — Diverging horizontal Bar: cqnActualVariance(filters), green/red Cell by sign
+├── RcaClcaPanel          — Sticky sidebar (position: sticky), full height of the dashboard;
+│                            static illustrative RCA/CLCA bullet content, no filters prop
 └── Layer3GeoMap(filters) — Collapsible section
-    ├── ComposableMap     — react-simple-maps world SVG
-    ├── Markers           — geoRegionData(filters) or geoCountryData(filters), by view mode
-    └── Summary table     — Adherence % with status badges
+    ├── ComposableMap     — react-simple-maps world SVG, choropleth fill (no markers)
+    │                        via regionForCountry/subRegionForCountry lookups
+    └── Summary table     — geoRegionData(filters) or geoSubRegionRows(filters), by view mode
 ```
 
 ---
@@ -145,7 +147,7 @@ cardData(filters) → {
 
 ### Card drill-down selectors (`MetricCards.jsx`)
 ```
-callVolumeByFY(filters) — {period, offered, handled} per FY, narrowed to effectiveFiscalYear(filters);
+callVolumeByFY(filters) — {period, offered, handled} per FY, narrowed to effectiveFiscalYears(filters);
   scaled by filterQueues(filters).length/199 off a per-FY baseline (BASE_CALL_VOLUME_BY_FY) that
   sums to the same 285.4K/268.7K totals as cardData's callVolume. Backs the Call Volume drill-down.
 dbOspVolumeByFY(filters) — {period, db, osp} per FY: same BASE_CALL_VOLUME_BY_FY.offered baseline,
@@ -162,33 +164,51 @@ cqnVarianceQueuesByFY(filters, fy, count=5) — filterQueues({...filters, dbOsp:
   Powers the modal opened by clicking a year's bar in the CQN Variance drill-down.
 ```
 
+### Geo Map choropleth (`Layer3GeoMap.jsx`)
+```
+regionForCountry(name) — exact world-atlas topojson country name → 'NAMER'|'LATAM'|'APJ'|'EMEA'
+  (everything not NAMER/LATAM/APJ and not Antarctica/Fr. S. Antarctic Lands defaults to EMEA —
+  full-map coverage by elimination, illustrative continental split, not authoritative)
+SUB_REGION_ACCURACY — accuracy per each of the 24 real SUB_REGIONS values, static/illustrative
+subRegionForCountry(name) — country → one of the 24 sub-region keys, or null if unmapped
+  ('Global' and 'Multiple SubRegions' are never mapped — they aren't places)
+activeSubRegionKeys(filters) — filters.subRegion if set, else sub-regions whose representative
+  country falls in a selected filters.region, else null (= show all)
+geoRegionData(filters) / geoSubRegionRows(filters) — table rows for the summary table under the map
+```
+`Layer3GeoMap.jsx` fills each `<Geography>` by looking up its accuracy via the functions above
+(no per-country lat/lng markers). In Sub-region view, a country with no specific sub-region tag
+falls back to its parent region's accuracy at 35% opacity — full map coverage, but named
+sub-regions still visually stand out at full opacity against the dimmed background.
+
 ### Layer 1 Data (Plan over Plan) — always Fiscal Year granularity
 ```
 PLAN_VS_PLAN_BY_FY      — period, plan1, plan2, variance (computed getter) — 3 FYs, static
 PLAN_VS_PLAN_BY_REGION  — region, plan1, plan2, variance — 5 regions, static
-planOverPlanByFY(filters)     — PLAN_VS_PLAN_BY_FY narrowed to effectiveFiscalYear(filters)
+planOverPlanByFY(filters)     — PLAN_VS_PLAN_BY_FY narrowed to effectiveFiscalYears(filters)
 planOverPlanByRegion(filters) — PLAN_VS_PLAN_BY_REGION narrowed to filters.region
 cqnPlanVariance(filters, topN=5) — filterQueues({...filters, dbOsp:'All'}) → top-N by |planVariance|,
-                                     or the single selected queue if filters.cqn is set
+                                     or exactly the selected queues if filters.cqn is set.
+                                     Rendered as a diverging bar (green ahead / red behind zero).
 ```
 
 ### Layer 2 Data (Actual vs Plan) — always Fiscal Year granularity
 ```
 ACTUAL_VS_PLAN_BY_FY   — period, actual, plan, adherence (computed getter) — 3 FYs, static
-STACKED_ADHERENCE      — fy, excellent, good, fair, poor (% buckets) — 3 FYs, static
-actualVsPlanByFY(filters)      — ACTUAL_VS_PLAN_BY_FY narrowed to effectiveFiscalYear(filters)
-stackedAdherenceByFY(filters)  — STACKED_ADHERENCE narrowed to effectiveFiscalYear(filters)
-cqnActualVariance(filters, topN=5) — same queue scoping as cqnPlanVariance, ranked by actual-vs-plan shortfall
+STACKED_ADHERENCE      — fy, under10, between10and20, between20and30, above30 (% buckets,
+                          bucketed by |variance| magnitude, not accuracy tier) — 3 FYs, static
+actualVsPlanByFY(filters)      — ACTUAL_VS_PLAN_BY_FY narrowed to effectiveFiscalYears(filters)
+stackedAdherenceByFY(filters)  — STACKED_ADHERENCE narrowed to effectiveFiscalYears(filters)
+cqnActualVariance(filters, topN=5) — same queue scoping as cqnPlanVariance, ranked by |actual-vs-plan
+                                       variance| (also a diverging bar, same green/red convention)
 ```
 
-### Layer 3 Data (Geo)
+### Layer 3 Data (Geo) — see "Geo Map choropleth" above for the country-lookup functions
 ```
-GEO_REGION_DATA   — { region, accuracy, lat, lng, label } ×4 regions (NAMER/EMEA/APJ/LATAM — no 'Global' marker)
-GEO_COUNTRY_DATA  — { country, region, accuracy, lat, lng } ×14 countries
-geoRegionData(filters)  — GEO_REGION_DATA narrowed to filters.region
-geoCountryData(filters) — GEO_COUNTRY_DATA narrowed to filters.region
+GEO_REGION_DATA — { region, accuracy, label } ×4 regions (NAMER/EMEA/APJ/LATAM — no 'Global' row)
+geoRegionData(filters) — GEO_REGION_DATA narrowed to filters.region
 ```
-Selecting Region = "Global" returns an empty array from both (no lat/lng data at that granularity); `Layer3GeoMap.jsx` renders an explanatory empty state rather than a blank map.
+Selecting Region = "Global" (or a Sub-region with no map presence) returns an empty array; `Layer3GeoMap.jsx` renders an explanatory empty state rather than a blank map.
 
 ---
 

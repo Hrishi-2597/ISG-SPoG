@@ -114,6 +114,18 @@ Each card's pop-up went from a raw table to an actual chart matching what the ca
 
 ---
 
+## Chart Redesign, Geo Choropleth, RCA/CLCA Sidebar (2026-07-01)
+
+- **Every chart title is now centered at the top of its panel**, and renamed for clarity: "Fiscal Year Plan Variance", "Regional Plan Variance", "Top Queue Variance — Plan A vs Plan B" (Layer 1); "Fiscal Year Adherence", "Forecast Variance Distribution", "Top Queue Variance — Actual vs Plan" (Layer 2); "Global Adherence Heatmap" (Layer 3); plus renamed KPI drill-down titles.
+- **Both "CQN Highest Variance" charts are now diverging bar charts** — one bar per queue, extending right (green, ahead of plan) or left (red, behind plan) from zero, instead of two adjacent bars the reader had to compare by eye. Queue names truncate to ~20 chars on the axis (full name still in the tooltip) so long names no longer wrap to two lines and blow out the row spacing.
+- **Color roles were tightened**: violet (`#a78bfa`) is now the neutral "trend line" color (Fiscal Year/Regional Plan Variance lines) so it doesn't compete with green/red, which are reserved exclusively for ahead-of-plan/behind-plan semantics on the diverging charts.
+- **Forecast Variance Distribution** (renamed from "Adherence Distribution") re-bucketed from accuracy tiers (≥90/80–90/70–80/<70) to variance-magnitude bands (**<10% / 10–20% / 20–30% / >30%**), with a green→blue→amber→red graduated scale and **data labels printed directly on each stacked segment**.
+- **Geo Map is a choropleth now, not circle markers.** Countries are filled by their region's (or sub-region's) accuracy color. The "Country" toggle became **"Sub-region"**, showing the real 24 `SUB_REGIONS` values. Country→region/sub-region groupings in `mockData.js` (`regionForCountry`, `subRegionForCountry`) are an illustrative continental/business split, not authoritative geography. In Sub-region view, countries without a specific named sub-region fall back to their parent region's shade at 35% opacity, so named sub-regions visually "pop" against a fully-covered background map instead of leaving most of the world blank.
+- **New RCA & CLCA sidebar** — a sticky right-hand column (`RcaClcaPanel.jsx`) running the full height of the dashboard, next to the KPI cards and all three analysis layers. Content is illustrative example findings/actions, clearly labeled as such, until a real RCA workflow is connected.
+- **Fixed while verifying:** `cqnActualVariance`'s underlying per-queue `handled` formula previously guaranteed `handled ≤ offered` for every queue, so the "ahead of plan" (green) case in the Layer 2 diverging chart was structurally impossible — no filter combination could ever trigger it. Widened to a symmetric ±8% range and fixed the sort to rank by `|variance|` (it was ranking by raw ascending variance, always surfacing the worst outliers) so the chart now genuinely shows a mix of green and red, matching its own legend.
+
+---
+
 ## What's NOT Yet Built (from PPT scope)
 
 These are in the original SPOG_views.pptx but not yet implemented:

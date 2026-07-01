@@ -1,13 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell,
+  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance } from '../data/mockData'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
-const C = { actual: '#38bdf8', plan: '#fb923c', line: '#34d399', grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85' }
-const STACK = { excellent: '#059669', good: '#1d4ed8', fair: '#d97706', poor: '#dc2626' }
+const C = { actual: '#38bdf8', plan: '#fb923c', line: '#34d399', ahead: '#34d399', behind: '#f87171', grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85' }
+// Graduated severity scale — green (tight to plan) through red (way off), matching the
+// new "how far off plan" bucketing instead of the old absolute accuracy tiers.
+const STACK = { under10: '#34d399', between10and20: '#38bdf8', between20and30: '#fbbf24', above30: '#f87171' }
+const STACK_LABEL_COLOR = { under10: '#052e1f', between10and20: '#04202f', between20and30: '#3d2c02', above30: '#fef2f2' }
+const STACK_META = [
+  { key: 'under10', label: '< 10%' },
+  { key: 'between10and20', label: '10–20%' },
+  { key: 'between20and30', label: '20–30%' },
+  { key: 'above30', label: '> 30%' },
+]
 
 const Tip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -25,13 +34,12 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, children, controls }) {
+function Visual({ title, subtitle, children, controls }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#e6f1ff', lineHeight: 1.3 }}>{title}</p>
-        {controls}
-      </div>
+      <p style={{ fontSize: 12, fontWeight: 700, color: '#e6f1ff', textAlign: 'center' }}>{title}</p>
+      {subtitle && <p style={{ fontSize: 9.5, color: '#5a8bb0', textAlign: 'center' }}>{subtitle}</p>}
+      {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
     </div>
   )
@@ -48,10 +56,20 @@ function PlanSelect({ value, onChange }) {
   )
 }
 
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n - 1) + '…' : str
+}
+
+function QueueTick({ x, y, payload }) {
+  return (
+    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9} fill={C.tick}>{truncate(payload.value, 20)}</text>
+  )
+}
+
 function Visual1({ filters, selectedPlan, onPlanChange }) {
   const data = useMemo(() => actualVsPlanByFY(filters), [filters])
   return (
-    <Visual title="Actual vs Plan — Adherence % (Fiscal Year)" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
+    <Visual title="Fiscal Year Adherence" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -76,12 +94,12 @@ function Visual1({ filters, selectedPlan, onPlanChange }) {
 function Visual2({ filters, selectedPlan, onPlanChange }) {
   const data = useMemo(() => stackedAdherenceByFY(filters), [filters])
   return (
-    <Visual title="Adherence Distribution by Fiscal Year" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
-        {Object.entries(STACK).map(([k, c]) => (
-          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: '#7fa8cc' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: c, display: 'inline-block' }} />
-            {k === 'excellent' ? '≥90%' : k === 'good' ? '80–90%' : k === 'fair' ? '70–80%' : '<70%'}
+    <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
+        {STACK_META.map(({ key, label }) => (
+          <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: '#7fa8cc' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: STACK[key], display: 'inline-block' }} />
+            {label}
           </span>
         ))}
       </div>
@@ -92,33 +110,38 @@ function Visual2({ filters, selectedPlan, onPlanChange }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} domain={[0,100]} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Bar dataKey="excellent" name="Excellent ≥90%" stackId="a" fill={STACK.excellent} />
-          <Bar dataKey="good"      name="Good 80-90%"    stackId="a" fill={STACK.good} />
-          <Bar dataKey="fair"      name="Fair 70-80%"    stackId="a" fill={STACK.fair} />
-          <Bar dataKey="poor"      name="Poor <70%"      stackId="a" fill={STACK.poor} radius={[3,3,0,0]} />
+          {STACK_META.map(({ key, label }, i) => (
+            <Bar key={key} dataKey={key} name={label} stackId="a" fill={STACK[key]}
+              radius={i === STACK_META.length - 1 ? [3,3,0,0] : undefined}>
+              <LabelList dataKey={key} position="center" formatter={v => `${v}%`}
+                style={{ fontSize: 9.5, fontWeight: 700, fill: STACK_LABEL_COLOR[key] }} />
+            </Bar>
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </Visual>
   )
 }
 
+// Diverging bar: one bar per queue showing the actual-vs-plan variance itself, green
+// extending right (ahead), red extending left (behind) — same treatment as Layer 1's
+// CQN chart, so the two "highest variance" visuals read consistently across layers.
 function Visual3({ filters }) {
   const sorted = useMemo(() => cqnActualVariance(filters), [filters])
+  const maxAbs = useMemo(() => Math.max(10, ...sorted.map(d => Math.abs(d.variance))), [sorted])
   return (
-    <Visual title="CQN Highest Variance">
-      <div style={{ height: 8 }} />
+    <Visual title="Top Queue Variance — Actual vs Plan" subtitle="Green = ahead of plan · Red = behind">
       <ResponsiveContainer width="100%" height={220}>
-        <ComposedChart data={sorted} layout="vertical" margin={{ top: 0, right: 32, left: 0, bottom: 0 }}>
+        <ComposedChart data={sorted} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
-          <XAxis type="number" tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
-            tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis type="category" dataKey="cqn" tick={{ fill: C.tick, fontSize: 9 }} width={130} axisLine={false} tickLine={false} />
+          <XAxis type="number" domain={[-maxAbs, maxAbs]} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
+            tickFormatter={v => `${v}%`} />
+          <YAxis type="category" dataKey="cqn" tick={<QueueTick />} width={130} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="actual" name="Actuals" radius={[0,3,3,0]} maxBarSize={13}>
-            {sorted.map((e, i) => <Cell key={i} fill={e.variance < -5 ? '#f87171' : C.actual} opacity={0.85} />)}
+          <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
+          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={16}>
+            {sorted.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.85} />)}
           </Bar>
-          <Bar dataKey="plan" name="Plan" fill={C.plan} opacity={0.65} radius={[0,3,3,0]} maxBarSize={13} />
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>

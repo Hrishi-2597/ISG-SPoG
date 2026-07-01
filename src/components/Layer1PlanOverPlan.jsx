@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine,
+  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
 import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } from '../data/mockData'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
-const C = { plan1: '#38bdf8', plan2: '#fb923c', variance: '#f87171', grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85' }
+// Blue/orange compare two neutral quantities (Plan A vs Plan B); violet is a neutral
+// analytical trend (the variance line isn't inherently good or bad on its own);
+// green/red are reserved for the diverging chart, where they mean ahead/behind.
+const C = { plan1: '#38bdf8', plan2: '#fb923c', variance: '#a78bfa', ahead: '#34d399', behind: '#f87171', grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85' }
 
 function PlanDropdowns({ planA, planB, onChange }) {
   return (
@@ -39,23 +42,31 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, children, controls }) {
+function Visual({ title, subtitle, children, controls }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#e6f1ff', lineHeight: 1.3 }}>{title}</p>
-        {controls}
-      </div>
+      <p style={{ fontSize: 12, fontWeight: 700, color: '#e6f1ff', textAlign: 'center' }}>{title}</p>
+      {subtitle && <p style={{ fontSize: 9.5, color: '#5a8bb0', textAlign: 'center' }}>{subtitle}</p>}
+      {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
     </div>
+  )
+}
+
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n - 1) + '…' : str
+}
+
+function QueueTick({ x, y, payload }) {
+  return (
+    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9} fill={C.tick}>{truncate(payload.value, 20)}</text>
   )
 }
 
 function Visual1({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => planOverPlanByFY(filters), [filters])
   return (
-    <Visual title="Plan Comparison — Variance % (Fiscal Year)"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
+    <Visual title="Fiscal Year Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -80,8 +91,7 @@ function Visual1({ filters, planA, planB, onPlanChange }) {
 function Visual2({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => planOverPlanByRegion(filters), [filters])
   return (
-    <Visual title="Region-wise Plan Comparison — Variance %"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
+    <Visual title="Regional Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -103,23 +113,27 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
   )
 }
 
+// Diverging bar: one bar per queue showing the variance itself (not two bars the
+// reader has to compare) — green extends right (ahead of Plan A), red extends left
+// (behind). Full plan1/plan2 values and the queue's full name are in the tooltip.
 function Visual3({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => cqnPlanVariance(filters), [filters])
+  const maxAbs = useMemo(() => Math.max(10, ...data.map(d => Math.abs(d.variance))), [data])
   return (
-    <Visual title="CQN Highest Variance"
+    <Visual title="Top Queue Variance — Plan A vs Plan B"
+      subtitle={<>Green = ahead of {planA} · Red = behind</>}
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
-      <div style={{ height: 8 }} />
       <ResponsiveContainer width="100%" height={210}>
-        <ComposedChart data={data} layout="vertical"
-          margin={{ top: 0, right: 28, left: 0, bottom: 0 }}>
+        <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
-          <XAxis type="number" tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
-            tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-          <YAxis type="category" dataKey="cqn" tick={{ fill: C.tick, fontSize: 9 }} width={130} axisLine={false} tickLine={false} />
+          <XAxis type="number" domain={[-maxAbs, maxAbs]} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
+            tickFormatter={v => `${v}%`} />
+          <YAxis type="category" dataKey="cqn" tick={<QueueTick />} width={130} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="plan1" name={planA} fill={C.plan1} opacity={0.8} radius={[0,3,3,0]} maxBarSize={14} />
-          <Bar dataKey="plan2" name={planB} fill={C.plan2} opacity={0.8} radius={[0,3,3,0]} maxBarSize={14} />
+          <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
+          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={16}>
+            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.85} />)}
+          </Bar>
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>

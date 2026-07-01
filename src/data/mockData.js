@@ -285,7 +285,11 @@ function inferRegion(name) {
 // then recomputed from whatever rows remain.
 export const ACTIVE_QUEUES = ACTIVE_QUEUE_NAMES.map((name, i) => {
   const offered = 20000 + i * 320
-  const handled = Math.round(offered * (0.90 + (i % 11) * 0.008))
+  // Spans a symmetric ±8% of offered (not capped at 100%) so a healthy minority of
+  // queues genuinely run ahead of plan — backlog catch-up, cross-trained overflow
+  // handling, etc. — with a magnitude matching the "behind" side, so a top-N-by-|variance|
+  // ranking isn't structurally guaranteed to be one-sided.
+  const handled = Math.round(offered * (0.92 + (i % 17) * 0.01))
   const plan2   = Math.round(offered * (0.93 + (i % 9) * 0.012))
   return {
     name,
@@ -495,11 +499,12 @@ export const ACTUAL_VS_PLAN_BY_FY = FISCAL_YEARS.map(fy => ({
   get adherence() { return +((this.actual / this.plan) * 100).toFixed(1) },
 })).map(d => ({ ...d, actual: Math.round(d.actual) }))
 
-// Stacked bar: adherence buckets per FY
+// Stacked bar: % of the queue population by forecast variance magnitude, per FY.
+// Bucketed by |variance|, not accuracy tier — under10 is best (tightest to plan).
 export const STACKED_ADHERENCE = [
-  { fy: 'FY25', excellent: 43, good: 36, fair: 9,  poor: 13 },
-  { fy: 'FY26', excellent: 25, good: 40, fair: 17, poor: 19 },
-  { fy: 'FY27', excellent: 31, good: 29, fair: 25, poor: 15 },
+  { fy: 'FY25', under10: 38, between10and20: 34, between20and30: 16, above30: 12 },
+  { fy: 'FY26', under10: 30, between10and20: 33, between20and30: 22, above30: 15 },
+  { fy: 'FY27', under10: 42, between10and20: 30, between20and30: 18, above30: 10 },
 ]
 
 export function actualVsPlanByFY(filters = {}) {
@@ -512,45 +517,122 @@ export function stackedAdherenceByFY(filters = {}) {
   return STACKED_ADHERENCE.filter(d => years.includes(d.fy))
 }
 
-// "CQN Highest Variance": biggest actual-vs-plan shortfall first, same queue scoping as above.
+// "CQN Highest Variance": biggest |actual vs plan| gap first (same ranking logic as
+// cqnPlanVariance) — a mix of ahead-of-plan and behind-plan outliers, not just the worst.
 export function cqnActualVariance(filters = {}, topN = 5) {
   const rows = filterQueues({ ...filters, dbOsp: 'All' }).map(q => ({
     cqn: q.name, actual: q.handled, plan: q.offered,
     variance: +((q.handled - q.offered) / q.offered * 100).toFixed(1),
   }))
   const hasQueue = filters.cqn?.length > 0
-  return hasQueue ? rows : [...rows].sort((a, b) => a.variance - b.variance).slice(0, topN)
+  return hasQueue ? rows : [...rows].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance)).slice(0, topN)
 }
 
-// ── Geo Map (Layer 3) ────────────────────────────────────────────────────────
+// ── Geo Map (Layer 3) ─────────────────────────────────────────────────────────
+// Choropleth, not circle markers: every country on the map gets filled by the
+// accuracy of the region or sub-region it belongs to. The country→region and
+// country→sub-region groupings below are an illustrative continental/business
+// split for a mock dashboard — not authoritative geography or real org data.
 export const GEO_REGION_DATA = [
-  { region: 'NAMER', accuracy: 91, lat: 0,    lng: -95,  label: 'NAMER' },
-  { region: 'EMEA',  accuracy: 79, lat: 50,   lng: 10,   label: 'EMEA' },
-  { region: 'APJ',   accuracy: 85, lat: 25,   lng: 100,  label: 'APJ' },
-  { region: 'LATAM', accuracy: 68, lat: -15,  lng: -60,  label: 'LATAM' },
-]
-
-export const GEO_COUNTRY_DATA = [
-  { country: 'USA',         region: 'NAMER', accuracy: 93, lat: 38,   lng: -97 },
-  { country: 'Canada',      region: 'NAMER', accuracy: 88, lat: 57,   lng: -100 },
-  { country: 'Mexico',      region: 'NAMER', accuracy: 82, lat: 24,   lng: -102 },
-  { country: 'Brazil',      region: 'LATAM', accuracy: 71, lat: -10,  lng: -55 },
-  { country: 'UK',          region: 'EMEA',  accuracy: 85, lat: 53,   lng: -2 },
-  { country: 'Germany',     region: 'EMEA',  accuracy: 78, lat: 51,   lng: 10 },
-  { country: 'France',      region: 'EMEA',  accuracy: 80, lat: 46,   lng: 2 },
-  { country: 'India',       region: 'EMEA',  accuracy: 75, lat: 22,   lng: 80 },
-  { country: 'Japan',       region: 'APJ',   accuracy: 90, lat: 36,   lng: 138 },
-  { country: 'Australia',   region: 'APJ',   accuracy: 87, lat: -27,  lng: 133 },
-  { country: 'Singapore',   region: 'APJ',   accuracy: 83, lat: 1.3,  lng: 103.8 },
-  { country: 'China',       region: 'APJ',   accuracy: 79, lat: 35,   lng: 105 },
-  { country: 'Argentina',   region: 'LATAM', accuracy: 65, lat: -34,  lng: -64 },
-  { country: 'Colombia',    region: 'LATAM', accuracy: 70, lat: 4,    lng: -72 },
+  { region: 'NAMER', accuracy: 91, label: 'NAMER' },
+  { region: 'EMEA',  accuracy: 79, label: 'EMEA' },
+  { region: 'APJ',   accuracy: 85, label: 'APJ' },
+  { region: 'LATAM', accuracy: 68, label: 'LATAM' },
 ]
 
 export function geoRegionData(filters = {}) {
   return GEO_REGION_DATA.filter(d => matchesMulti(filters.region, d.region))
 }
 
-export function geoCountryData(filters = {}) {
-  return GEO_COUNTRY_DATA.filter(d => matchesMulti(filters.region, d.region))
+// Country names below match the exact strings used by the world-atlas topojson
+// (countries-110m.json) that Layer3GeoMap renders.
+const NAMER_COUNTRIES = ['United States of America', 'Canada', 'Mexico', 'Greenland']
+const LATAM_COUNTRIES = [
+  'Belize', 'Guatemala', 'Honduras', 'El Salvador', 'Nicaragua', 'Costa Rica', 'Panama',
+  'Cuba', 'Jamaica', 'Haiti', 'Dominican Rep.', 'Bahamas', 'Trinidad and Tobago', 'Puerto Rico',
+  'Colombia', 'Venezuela', 'Guyana', 'Suriname', 'Ecuador', 'Peru', 'Brazil', 'Bolivia',
+  'Paraguay', 'Chile', 'Argentina', 'Uruguay', 'Falkland Is.',
+]
+const APJ_COUNTRIES = [
+  'Kazakhstan', 'Uzbekistan', 'Turkmenistan', 'Kyrgyzstan', 'Tajikistan', 'Afghanistan',
+  'Pakistan', 'India', 'Nepal', 'Bhutan', 'Bangladesh', 'Sri Lanka', 'Myanmar', 'Thailand',
+  'Laos', 'Cambodia', 'Vietnam', 'Malaysia', 'Indonesia', 'Brunei', 'Philippines', 'Timor-Leste',
+  'Papua New Guinea', 'Solomon Is.', 'Vanuatu', 'New Caledonia', 'Fiji', 'China', 'Mongolia',
+  'North Korea', 'South Korea', 'Japan', 'Taiwan', 'Australia', 'New Zealand',
+]
+const UNMAPPED_GEOGRAPHIES = ['Antarctica', 'Fr. S. Antarctic Lands']
+
+// Everything else on the map (Europe, the Middle East, Africa) is EMEA by elimination.
+export function regionForCountry(name) {
+  if (UNMAPPED_GEOGRAPHIES.includes(name)) return null
+  if (NAMER_COUNTRIES.includes(name)) return 'NAMER'
+  if (LATAM_COUNTRIES.includes(name)) return 'LATAM'
+  if (APJ_COUNTRIES.includes(name)) return 'APJ'
+  return 'EMEA'
+}
+
+export const SUB_REGION_ACCURACY = {
+  Australia: 88, Brazil: 71, CER: 76, China: 79, 'Costa Rica': 82, EC: 69, Egypt: 74,
+  EMEA: 79, France: 80, Germany: 78, Global: 83, India: 75, Israel: 85, Japan: 90,
+  Korea: 87, 'Multiple SubRegions': 77, Nordics: 92, Panama: 73, ROLA: 66, SER: 81,
+  'South Asia': 70, UKI: 84, 'United Kingdom': 85, 'United States': 93,
+}
+
+// Sub-regions that are literally one country each get a direct 1:1 mapping.
+const SUB_REGION_LITERAL_COUNTRY = {
+  Australia: 'Australia', Brazil: 'Brazil', China: 'China', 'Costa Rica': 'Costa Rica',
+  Egypt: 'Egypt', France: 'France', Germany: 'Germany', India: 'India', Israel: 'Israel',
+  Japan: 'Japan', Korea: 'South Korea', Panama: 'Panama', 'United Kingdom': 'United Kingdom',
+  'United States': 'United States of America',
+}
+
+// Everything else is a named grouping of countries — CER/SER/Nordics/ROLA/UKI/EC are all
+// real WFM regional shorthand; the country lists here are illustrative, not authoritative.
+// "Global" and "Multiple SubRegions" have no map presence (they're not places) — they
+// still appear in the summary table below the map.
+const SUB_REGION_GROUPS = {
+  CER: ['Poland', 'Czechia', 'Slovakia', 'Hungary', 'Austria', 'Slovenia'],
+  EC: ['Jamaica', 'Trinidad and Tobago', 'Bahamas', 'Puerto Rico'],
+  EMEA: ['Netherlands', 'Belgium', 'Switzerland'],
+  Nordics: ['Sweden', 'Norway', 'Denmark', 'Finland', 'Iceland'],
+  ROLA: ['Argentina', 'Chile', 'Colombia', 'Peru', 'Ecuador', 'Venezuela', 'Bolivia', 'Paraguay', 'Uruguay', 'Guyana', 'Suriname'],
+  SER: ['Italy', 'Spain', 'Portugal', 'Greece'],
+  'South Asia': ['Pakistan', 'Bangladesh', 'Sri Lanka', 'Nepal', 'Bhutan'],
+  UKI: ['Ireland'], // 'United Kingdom' itself is its own literal sub-region above
+}
+
+const COUNTRY_TO_SUB_REGION = {}
+for (const [subRegion, country] of Object.entries(SUB_REGION_LITERAL_COUNTRY)) {
+  COUNTRY_TO_SUB_REGION[country] = subRegion
+}
+for (const [subRegion, countries] of Object.entries(SUB_REGION_GROUPS)) {
+  for (const country of countries) {
+    if (!COUNTRY_TO_SUB_REGION[country]) COUNTRY_TO_SUB_REGION[country] = subRegion
+  }
+}
+
+export function subRegionForCountry(name) {
+  return COUNTRY_TO_SUB_REGION[name] || null
+}
+
+// Which sub-region keys should be highlighted, given the current filters —
+// null means "show all mappable sub-regions" (no filter narrowing them down).
+export function activeSubRegionKeys(filters = {}) {
+  if (filters.subRegion?.length) return filters.subRegion
+  if (filters.region?.length) {
+    return Object.keys(SUB_REGION_ACCURACY).filter(key => {
+      const country = SUB_REGION_LITERAL_COUNTRY[key] || SUB_REGION_GROUPS[key]?.[0]
+      return country && filters.region.includes(regionForCountry(country))
+    })
+  }
+  return null
+}
+
+// Sub-region rows for the summary table under the map — same shape as geoRegionData's
+// rows so the table renderer doesn't need to branch on view mode.
+export function geoSubRegionRows(filters = {}) {
+  const active = activeSubRegionKeys(filters)
+  return Object.keys(SUB_REGION_ACCURACY)
+    .filter(key => !active || active.includes(key))
+    .map(key => ({ region: key, label: key, accuracy: SUB_REGION_ACCURACY[key] }))
 }

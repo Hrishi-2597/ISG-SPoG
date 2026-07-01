@@ -214,6 +214,38 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## Chart Redesign, Geo Choropleth, RCA/CLCA Sidebar (2026-07-01)
+
+### Centered chart titles
+**Decision:** Every chart panel's title moved from a left-aligned row shared with its controls to its own centered row at the top; controls (plan pickers) moved to a second, also-centered row underneath.
+**Why:** Directly requested. A left-aligned title fighting for space with right-aligned dropdowns reads as "the title lost a negotiation with the toolbar" — centering the title on its own line gives it clear top billing and reads as a proper chart heading rather than a form-field label.
+
+### Diverging bar chart instead of two adjacent bars (CQN variance)
+**Decision:** Both "CQN Highest Variance" charts (renamed "Top Queue Variance") now render one bar per queue — the variance itself — extending right (green) or left (red) from a zero baseline, instead of two side-by-side bars (Plan A vs Plan B, or Actual vs Plan) the reader had to compare by eye.
+**Why:** The two-bars-per-queue version made the reader do the subtraction mentally for every row; a diverging bar shows the answer (the gap) directly, and the color does double duty as both a legend and a "good/bad" signal. This is the single biggest visualization upgrade in this pass — everything else here is refinement, this changed what the chart is actually plotting.
+
+### Reserving color semantics: violet for neutral trends, green/red for ahead/behind
+**Decision:** The Fiscal Year / Regional Plan Variance line moved from red (`#f87171`) to violet (`#a78bfa`); green/red are now used exclusively on the diverging bar charts to mean ahead-of-plan/behind-plan.
+**Why:** A trend line showing "variance %" isn't inherently good or bad by itself (that judgment depends on direction and magnitude together) — coloring it red implied "this is bad" regardless of value. Freeing red for its one true job (behind plan) and giving neutral analytical lines their own color makes the color vocabulary consistent across every chart: if it's red, something is behind; nothing else claims that color.
+
+### Forecast Variance Distribution: re-bucketed by magnitude, not accuracy tier, with data labels
+**Decision:** Replaced the ≥90%/80–90%/70–80%/<70% accuracy-tier buckets with <10%/10–20%/20–30%/>30% variance-magnitude buckets, a green→blue→amber→red graduated scale, and a `LabelList` printing each segment's % directly on the bar.
+**Why:** Requested directly, and it's a clearer story either way — "how far off plan is this population" (variance magnitude) is a more actionable framing for a forecasting dashboard than "what tier is this population in" (accuracy tier), and printing the value on the segment means a reader doesn't have to eyeball stacked-bar heights against the Y-axis to know a number.
+
+### Geo Map: choropleth instead of circle markers, Sub-region instead of Country
+**Decision:** Removed all `<Marker>` circles; every country `<Geography>` is now filled by its region's (or sub-region's) accuracy color directly. The Country/Region toggle became Sub-region/Region, backed by the real 24 `SUB_REGIONS` values instead of a hardcoded 14-country list.
+**Why:** Requested directly — "highlight the geography... as green" is a choropleth by definition, and circles sitting on top of an otherwise-flat map don't communicate "this whole area is this color" the way a filled shape does. Sub-region replacing Country also makes the drill-down consistent with the filter bar, which already has a real "Sub-region" filter with real values.
+
+### Illustrative country→region/sub-region mapping, with a dimmed regional fallback in Sub-region view
+**Decision:** `regionForCountry()`/`subRegionForCountry()` in `mockData.js` are a hand-built, clearly-labeled-as-illustrative mapping (e.g., "ROLA" → Argentina/Chile/Colombia/Peru/etc.), not authoritative geography or real org data. In Sub-region view, a country with no specific sub-region tag falls back to its parent region's accuracy at 35% opacity, so the whole map is covered but named sub-regions still visually "pop" at full opacity against the dimmed background.
+**Why:** Several real sub-region values (ROLA, UKI, CER, SER, Nordics, EC) are groups of countries, not single places, and there's no authoritative per-country mapping in the source data — so a full-coverage choropleth necessarily means inventing *some* grouping. Doing it once, explicitly, and labeling it as illustrative is more honest than leaving large parts of the map uncolored (which reads as "no data" when really it's "no specific sub-region tag") or silently treating a guess as real business data.
+
+### RCA/CLCA as a persistent full-height sidebar, not a new section
+**Decision:** `RcaClcaPanel.jsx` sits in a `position: sticky` right-hand column alongside the KPI cards and all three analysis layers, not inside or after any single layer.
+**Why:** "On the right side of the dashboard" reads as the whole page, not one section — a sidebar that only sat next to the Geo Map would orphan it from the cards and the other two layers above. Sticky positioning means it stays visible as the (much taller) left column scrolls, which matters for a panel meant to be read alongside whatever chart is currently in view.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

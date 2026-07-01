@@ -264,18 +264,15 @@ function DrillDownPanel({ type, filters, rows, onClose }) {
       padding: '12px 14px',
       backdropFilter: 'blur(8px)',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 3, height: 14, background: '#38bdf8', borderRadius: 2 }} />
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8' }}>
-            {type === 'queues'   && 'Active Queue List'}
-            {type === 'volume'   && 'Call Volume — Offered vs Handled (Fiscal Year)'}
-            {type === 'dbOsp'    && 'DB / OSP Offered Volume (Fiscal Year)'}
-            {type === 'forecast' && 'Forecast Accuracy by Region'}
-            {type === 'variance' && 'CQN Forecast Variance — Year on Year'}
-          </h3>
-        </div>
-        <button onClick={onClose} style={{ color: '#3d607a', fontSize: 16, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+      <div style={{ position: 'relative', marginBottom: 10 }}>
+        <h3 style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', textAlign: 'center' }}>
+          {type === 'queues'   && 'Active Queue Directory'}
+          {type === 'volume'   && 'Offered vs Handled — Fiscal Year'}
+          {type === 'dbOsp'    && 'DB vs OSP Offered Volume'}
+          {type === 'forecast' && 'Regional Forecast Accuracy'}
+          {type === 'variance' && 'Year-over-Year Forecast Variance'}
+        </h3>
+        <button onClick={onClose} style={{ position: 'absolute', right: 0, top: -1, color: '#3d607a', fontSize: 16, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
       </div>
 
       {type === 'queues' && <QueueTable rows={rows} />}
