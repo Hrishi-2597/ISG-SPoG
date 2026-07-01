@@ -93,14 +93,13 @@ export default function App() {
       {/* ── Filters ──────────────────────────────────────────────── */}
       <FilterPanel filters={filters} onChange={setFilters} />
 
-      {/* ── Main content + RCA/CLCA sidebar ─────────────────────────── */}
+      {/* ── KPI Cards — full width, cards sit alone here ────────────── */}
+      <SectionDivider label="Key Metrics" />
+      <MetricCards filters={filters} />
+
+      {/* ── Analysis Layers + RCA/CLCA sidebar ──────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
         <div className="flex-1 min-w-0">
-          {/* KPI Cards */}
-          <SectionDivider label="Key Metrics" />
-          <MetricCards filters={filters} />
-
-          {/* Graph Layers */}
           <SectionDivider label="Analysis Layers" />
           <div className="px-4 pb-4 flex flex-col gap-3">
             <Layer1PlanOverPlan filters={filters} />

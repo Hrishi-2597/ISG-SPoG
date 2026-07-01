@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell,
+  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } from '../data/mockData'
 
@@ -54,19 +54,23 @@ function Visual({ title, subtitle, children, controls }) {
 }
 
 function truncate(str, n) {
-  return str.length > n ? str.slice(0, n - 1) + '…' : str
+  if (str.length <= n) return str
+  const cut = str.slice(0, n)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > n * 0.55 ? cut.slice(0, lastSpace) : cut) + '…'
 }
 
 function QueueTick({ x, y, payload }) {
   return (
-    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9} fill={C.tick}>{truncate(payload.value, 20)}</text>
+    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9.5} fill="#cfe8fb">{truncate(payload.value, 24)}</text>
   )
 }
+
 
 function Visual1({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => planOverPlanByFY(filters), [filters])
   return (
-    <Visual title="Fiscal Year Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
+    <Visual title="PoP Variation" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -118,21 +122,30 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
 // (behind). Full plan1/plan2 values and the queue's full name are in the tooltip.
 function Visual3({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => cqnPlanVariance(filters), [filters])
-  const maxAbs = useMemo(() => Math.max(10, ...data.map(d => Math.abs(d.variance))), [data])
+  // Round to a clean step so axis ticks land on whole numbers (-10/-5/0/5/10, not
+  // whatever odd value the raw max happens to be), then pad the plotted domain —
+  // not the ticks — so the value label at the end of the longest bar has room.
+  const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])
+  const domainMax = niceMax * 1.3
+  const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
   return (
     <Visual title="Top Queue Variance — Plan A vs Plan B"
       subtitle={<>Green = ahead of {planA} · Red = behind</>}
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
-      <ResponsiveContainer width="100%" height={210}>
-        <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={230}>
+        <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
-          <XAxis type="number" domain={[-maxAbs, maxAbs]} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
+          <XAxis type="number" domain={[-domainMax, domainMax]} ticks={ticks} tick={{ fill: C.tick, fontSize: 9 }} axisLine={false} tickLine={false}
             tickFormatter={v => `${v}%`} />
-          <YAxis type="category" dataKey="cqn" tick={<QueueTick />} width={130} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="cqn" tick={<QueueTick />} width={148} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
-          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={16}>
-            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.85} />)}
+          <Bar dataKey="variance" name="Variance %" radius={[3,3,3,3]} maxBarSize={20}>
+            {data.map((d, i) => <Cell key={i} fill={d.variance >= 0 ? C.ahead : C.behind} opacity={0.9} />)}
+            <LabelList dataKey={d => d.variance >= 0 ? d.variance : undefined} position="right"
+              formatter={v => `+${v}%`} style={{ fontSize: 10.5, fontWeight: 700, fill: C.ahead }} />
+            <LabelList dataKey={d => d.variance < 0 ? d.variance : undefined} position="left"
+              formatter={v => `${v}%`} style={{ fontSize: 10.5, fontWeight: 700, fill: C.behind }} />
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>

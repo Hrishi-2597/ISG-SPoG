@@ -1,5 +1,11 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## Latest polish pass (2026-07-02)
+
+- Diverging "Top Queue Variance" charts (both layers) now print the exact `+X%`/`-X%` value at the end of each bar via two sign-split `LabelList`s using Recharts' built-in `position="left"`/`"right"` — a hand-computed label position drifted into the bar interior and was unreadable. Axis ticks rounded to clean 5% steps; queue-name truncation now breaks on the last word boundary instead of mid-word.
+- Renamed: Layer 1 Visual 1 "Fiscal Year Plan Variance" → **PoP Variation**; Layer 2 Visual 1 "Fiscal Year Adherence" → **Actual vs Plan Variation**.
+- RCA & CLCA sidebar now starts at the "Analysis Layers" divider, not "Key Metrics" — the 5 KPI cards span the full page width on their own.
+
 ## Current State (as of 2026-07-01)
 
 ### What is this?

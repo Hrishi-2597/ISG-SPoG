@@ -223,6 +223,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ### Diverging bar chart instead of two adjacent bars (CQN variance)
 **Decision:** Both "CQN Highest Variance" charts (renamed "Top Queue Variance") now render one bar per queue — the variance itself — extending right (green) or left (red) from a zero baseline, instead of two side-by-side bars (Plan A vs Plan B, or Actual vs Plan) the reader had to compare by eye.
 **Why:** The two-bars-per-queue version made the reader do the subtraction mentally for every row; a diverging bar shows the answer (the gap) directly, and the color does double duty as both a legend and a "good/bad" signal. This is the single biggest visualization upgrade in this pass — everything else here is refinement, this changed what the chart is actually plotting.
+**Follow-up (2026-07-02):** First pass still wasn't reading well — every bar in a given "top-5 by magnitude" pull tends to cluster near the same value (see next entry), so bars looked nearly identical with nothing to visually latch onto. Added a value label at the end of each bar (`+7%`/`-7%`, colored to match) so the exact number is always visible regardless of how similar the bars look, split into two `LabelList`s using Recharts' own `position="left"`/`"right"` (a hand-computed `x`/`width` version drifted the label into the bar interior — Recharts' built-in positioning is more reliable than re-deriving bar geometry). Also rounded the axis domain/ticks to clean 5%-step values instead of whatever odd number the raw max happened to produce, and widened + smartened the queue-name truncation (breaks at the last word boundary instead of mid-word).
 
 ### Reserving color semantics: violet for neutral trends, green/red for ahead/behind
 **Decision:** The Fiscal Year / Regional Plan Variance line moved from red (`#f87171`) to violet (`#a78bfa`); green/red are now used exclusively on the diverging bar charts to mean ahead-of-plan/behind-plan.
@@ -243,6 +244,11 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ### RCA/CLCA as a persistent full-height sidebar, not a new section
 **Decision:** `RcaClcaPanel.jsx` sits in a `position: sticky` right-hand column alongside the KPI cards and all three analysis layers, not inside or after any single layer.
 **Why:** "On the right side of the dashboard" reads as the whole page, not one section — a sidebar that only sat next to the Geo Map would orphan it from the cards and the other two layers above. Sticky positioning means it stays visible as the (much taller) left column scrolls, which matters for a panel meant to be read alongside whatever chart is currently in view.
+**Adjusted (2026-07-02):** Moved to start at the "Analysis Layers" divider instead of "Key Metrics" — the 5 KPI cards now span the full page width on their own row, and the sidebar only runs alongside Layers 1–3. Full-width cards read better than 5 cards squeezed to make room for a sidebar that, at that point, has nothing yet to say about any specific chart the user is looking at.
+
+### Chart titles renamed to match their section's own naming
+**Decision:** Layer 1 Visual 1 ("Fiscal Year Plan Variance") → **PoP Variation**; Layer 2 Visual 1 ("Fiscal Year Adherence") → **Actual vs Plan Variation**.
+**Why:** Requested directly. Both new names echo their parent layer's own title (Layer 1 = "Plan over Plan" → PoP; Layer 2 = "Actual vs Plan" → Actual vs Plan Variation), which reads as more intentional than a generic "Fiscal Year X" pattern repeated across both layers.
 
 ---
 
