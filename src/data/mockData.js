@@ -7,17 +7,44 @@ export const CQN_LIST = [
 
 export const PLAN_NAMES = ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Plan', 'FY27Q1_AA']
 export const FISCAL_YEARS = ['FY25', 'FY26', 'FY27']
-export const FISCAL_QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
+
+// Fiscal Quarter filter options: FY25Q1 ... FY27Q4
+export const FISCAL_QUARTERS = FISCAL_YEARS.flatMap(fy => ['Q1', 'Q2', 'Q3', 'Q4'].map(q => `${fy}${q}`))
+
+// Chart drill data still buckets a year into 13 short weeks (W1..W13) — unrelated to the filter list below.
 export const FISCAL_WEEKS = Array.from({ length: 13 }, (_, i) => `W${i + 1}`)
+
+// Fiscal Week filter options: FY25W01 ... FY27W52
+export const FISCAL_WEEK_LIST = FISCAL_YEARS.flatMap(fy =>
+  Array.from({ length: 52 }, (_, i) => `${fy}W${String(i + 1).padStart(2, '0')}`)
+)
+
 export const CHANNELS = ['Voice', 'Chat', 'Email', 'Social']
-export const REGIONS = ['AMER', 'EMEA', 'APJ', 'LATAM']
+export const REGIONS = ['APJ', 'EMEA', 'Global', 'LATAM', 'NAMER']
 export const COUNTRIES = {
   AMER: ['USA', 'Canada', 'Mexico', 'Brazil'],
   EMEA: ['UK', 'Germany', 'France', 'Netherlands', 'India'],
   APJ:  ['Japan', 'Australia', 'Singapore', 'China'],
   LATAM:['Argentina', 'Chile', 'Colombia'],
 }
-export const BUSINESS_PARTNERS = ['Partner A', 'Partner B', 'Partner C', 'Partner D']
+
+export const SUB_REGIONS = [
+  'Australia', 'Brazil', 'CER', 'China', 'Costa Rica', 'EC', 'Egypt', 'EMEA', 'France',
+  'Germany', 'Global', 'India', 'Israel', 'Japan', 'Korea', 'Multiple SubRegions',
+  'Nordics', 'Panama', 'ROLA', 'SER', 'South Asia', 'UKI', 'United Kingdom', 'United States',
+]
+
+export const L5_MANAGERS = [
+  'Banthia, Nishant', 'Brown, Dexter', 'Carey, Geraldine', 'Christmas, James',
+  'Copeland, Jessica', 'Creixell, Gustavo', "D'Arcy, Mark", 'Denis Lucey', 'Dexter Brown',
+  'Kenneally, Niall', 'Lind, Matt', 'No Assigned L6', 'Punch, Patrick', 'Vega, Cyril',
+  'Yap, Diane',
+]
+
+export const BUSINESS_PARTNERS = [
+  'Bethany Rana', 'Juliano Alves Neres', 'Khim Sun Lau', 'Lucas Serafim', 'Marcy Jelinek',
+  'Miguel Galicia', 'StephenRaj  Kumar',
+]
 
 export const CAPACITY_CODES = [
   'AM02','AM04','AM05','AM08','AN02','AN03','AO06','AO11','AO14','AP10','AP11','AP12',
@@ -308,10 +335,11 @@ export const PLAN_VS_PLAN_BY_WEEK = FISCAL_WEEKS.map((w, i) => ({
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 
+// Order matches REGIONS: APJ, EMEA, Global, LATAM, NAMER
 export const PLAN_VS_PLAN_BY_REGION = REGIONS.map((r, i) => ({
   region: r,
-  plan1: [95000, 78000, 62000, 33000][i],
-  plan2: [89000, 81000, 58000, 31000][i],
+  plan1: [62000, 78000, 50000, 33000, 95000][i],
+  plan2: [58000, 81000, 48000, 31000, 89000][i],
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 

@@ -9,7 +9,7 @@ Single Pane of Glass (SPoG) dashboard for ISG Business — Enterprise Service Gr
 - Tailwind CSS
 
 ## Features
-- 12-filter panel (CQN, Plan Name, Fiscal Year/Quarter/Week, Region, Country, etc.)
+- 12-filter panel (Queue Name, Capacity Code, Plan Name, Fiscal Year/Quarter/Week, Business Partner, Region, Sub-region, L5 Manager, etc.)
 - 5 KPI cards with drill-down tables
 - Layer 1: Plan over Plan comparison with variance %
 - Layer 2: Actual vs Plan with adherence % + stacked adherence breakdown

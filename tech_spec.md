@@ -95,14 +95,20 @@ No external state library. All state is local React `useState`:
 
 ### Constants
 ```
-CQN_LIST             — 11 legacy placeholder codes (ISG-ESG-{REGION}-{N}); only feeds PLAN_VS_PLAN_BY_CQN's slice(0,8) fallback shape, superseded by VARIANCE_SAMPLE
+CQN_LIST             — 11 legacy placeholder codes (ISG-ESG-{REGION}-{N}); no longer referenced anywhere, kept only as historical artifact
 ACTIVE_QUEUE_NAMES   — 199 real active queue names (business-supplied)
 INACTIVE_QUEUE_NAMES — 406 real inactive queue names (business-supplied, no UI yet)
 CAPACITY_CODES       — ~610 real capacity codes (business-supplied)
 PLAN_NAMES           — ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Plan', 'FY27Q1_AA']
 FISCAL_YEARS         — ['FY25', 'FY26', 'FY27']
-REGIONS              — ['AMER', 'EMEA', 'APJ', 'LATAM']
-COUNTRIES            — { AMER: [...], EMEA: [...], APJ: [...], LATAM: [...] }
+FISCAL_QUARTERS      — FY25Q1 ... FY27Q4 (12 values, derived from FISCAL_YEARS) — filter only
+FISCAL_WEEKS         — W1..W13 — chart drill-toggle data only (unrelated to the filter list)
+FISCAL_WEEK_LIST     — FY25W01 ... FY27W52 (156 values, derived from FISCAL_YEARS) — filter only
+REGIONS              — ['APJ', 'EMEA', 'Global', 'LATAM', 'NAMER']
+COUNTRIES            — { AMER: [...], EMEA: [...], APJ: [...], LATAM: [...] } — legacy, unused (superseded by SUB_REGIONS)
+SUB_REGIONS          — 24 real sub-region values (business-supplied) — filter only, replaces the old "Country" filter
+BUSINESS_PARTNERS    — 7 real names (business-supplied) — filter labeled "Business Partner"
+L5_MANAGERS          — 15 real names (business-supplied) — filter labeled "L5 Manager", replaces the old "Business Org" filter
 inferRegion(name)    — regex-based mapping from a real queue name to one of REGIONS or 'Global'
 ```
 

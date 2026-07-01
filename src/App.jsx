@@ -15,8 +15,8 @@ const DEFAULT_FILTERS = {
   channel:        'All',
   businessPartner:'All',
   region:         'All',
-  country:        'All',
-  businessOrg:    'ISG ESG',
+  subRegion:      'All',
+  l5Manager:      'All',
   dbOsp:          'DB',
 }
 

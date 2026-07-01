@@ -1,10 +1,8 @@
 import React from 'react'
 import {
   ACTIVE_QUEUE_NAMES, CAPACITY_CODES, PLAN_NAMES, FISCAL_YEARS, FISCAL_QUARTERS,
-  FISCAL_WEEKS, CHANNELS, REGIONS, BUSINESS_PARTNERS,
+  FISCAL_WEEK_LIST, CHANNELS, REGIONS, SUB_REGIONS, BUSINESS_PARTNERS, L5_MANAGERS,
 } from '../data/mockData'
-
-const COUNTRIES_FLAT = ['All','USA','Canada','Mexico','Brazil','UK','Germany','France','Netherlands','India','Japan','Australia','Singapore','China','Argentina','Chile','Colombia']
 
 function Select({ label, value, options, onChange }) {
   return (
@@ -32,17 +30,17 @@ export default function FilterPanel({ filters, onChange }) {
     { key: 'planName',       label: 'Plan Name',       options: ['All', ...PLAN_NAMES] },
     { key: 'fiscalYear',     label: 'Fiscal Year',     options: ['All', ...FISCAL_YEARS] },
     { key: 'fiscalQuarter',  label: 'Fiscal Quarter',  options: ['All', ...FISCAL_QUARTERS] },
-    { key: 'fiscalWeek',     label: 'Fiscal Week',     options: ['All', ...FISCAL_WEEKS] },
+    { key: 'fiscalWeek',     label: 'Fiscal Week',     options: ['All', ...FISCAL_WEEK_LIST] },
     { key: 'channel',        label: 'Channel',         options: ['All', ...CHANNELS] },
-    { key: 'businessPartner',label: 'Partner',         options: ['All', ...BUSINESS_PARTNERS] },
+    { key: 'businessPartner',label: 'Business Partner',options: ['All', ...BUSINESS_PARTNERS] },
     { key: 'region',         label: 'Region',          options: ['All', ...REGIONS] },
-    { key: 'country',        label: 'Country',         options: COUNTRIES_FLAT },
-    { key: 'businessOrg',   label: 'Business Org',     options: ['ISG ESG', 'ISG CSG', 'ISG PSG', 'All'] },
+    { key: 'subRegion',      label: 'Sub-region',      options: ['All', ...SUB_REGIONS] },
+    { key: 'l5Manager',      label: 'L5 Manager',      options: ['All', ...L5_MANAGERS] },
     { key: 'dbOsp',         label: 'DB / OSP',         options: ['All', 'DB', 'OSP'] },
   ]
 
   const activeCount = Object.entries(filters).filter(([k, v]) =>
-    v !== 'All' && !(k === 'businessOrg' && v === 'ISG ESG') && !(k === 'dbOsp' && v === 'DB')
+    v !== 'All' && !(k === 'dbOsp' && v === 'DB')
   ).length
 
   return (
