@@ -1,5 +1,19 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## HES Forecasting: Card Modals, Renames & Layer 3 Redesign (2026-07-02)
+
+- **Card drill-downs are now popup modals**, not inline panels. `HesMetricCards.jsx`'s `DrillDownModal` wraps every card's chart in the new shared `Modal` (`HesChartKit.jsx`) — centered overlay, closes on backdrop click or ✕. Closing it only clears local `active` state; `filters` is untouched, so the dashboard is exactly as the user left it.
+- **Card renames + YTD messaging:** "ASU Actuals" → **Active Service Units**, "SR Actuals" → **Service Requests**. All three of ASU/SR/CPASU swapped their static "Plan X · Y% adherence" sub-line for a YTD year-over-year message (e.g. `YTD FY27: 24.2K · ▲ 8.3% vs FY26`), computed by a new `yoyPct` field per metric in `hesCardData()` — `null` when there's no prior year in scope (e.g. filtered to a single FY), shown as "no prior year in scope" instead of a misleading 0%. CPASU inverts the color logic (`lowerIsBetter`) since falling CPASU is the good direction.
+- **SR Actuals popup**: DB/OSP chart changed from a stacked bar to grouped columns.
+- **CPASU popup**: changed from a Composed chart (SR/ASU bars + CPASU line) to a line-only chart of CPASU across fiscal years.
+- **ASU Layer → ASU Trend, SR Layer → SR Trend.** Visual 1 renamed "Actuals vs Plan Comparison" (Plan dropdown relabeled "Plan Name"), Visual 2 renamed "Plan vs Plan Comparison", Visual 3 renamed "Plan Impact". Plan Impact's region set changed from `['NAMER','EMEA','APJ']` to `IMPACT_REGIONS = ['AMER','APJ','EMEA','Global']` — reshapes `ASU_REGION_PLANS`/`SR_REGION_PLANS`/`asuLobImpact`/`srLobImpact` too, since all four are built off `IMPACT_REGIONS`.
+- **"ASU Impact on SR Trend" → ASU/UCR Impact on SR Analysis.**
+  - Visual 1 ("ASU Impact on SR Trend with CPASU" → **CPASU Trend**) redesigned: the old Region/Country toggle is gone. Shows all 4 `IMPACT_REGIONS` by default (grouped ASU/SR bars + CPASU line, one group per region); clicking a region drills into that region's own trend at whichever time granularity is most specific in the top filter bar (Week > Quarter > Year), via new `regionTrendGranularity()`/`cpasuTrendByRegion()` selectors.
+  - Visual 2 ("UCR Impact on SR") kept its name; series renamed **SR's** (was "SR (Human)") and **UCR Handled SR's** (was "SR (Bots)"); gained a Plan Name selector in the top-right corner via `Visual`'s new `cornerControls` slot — cosmetic/unwired for now, same as AsuLayer/SrLayer Visual 1's Plan dropdown.
+  - Visual 3 ("UCR Runrate with Target") now always renders all 3 fiscal years (ignores Quarter/Week narrowing) and dropped its always-visible "queues not adhering" list. Clicking a year's bar opens a modal (new `topNonAdherentLobsByYear()` selector) listing that year's top 5 non-adherent **LOBs** (not queues). `ucrNonAdherentQueues()` and its fallback constant were removed as dead code.
+
+**Verification:** `npm run build` succeeds cleanly. This session's environment doesn't have browser-automation tooling available, so the popups/drill-throughs were verified by code review and a grep sweep for stale references, not by clicking through a rendered browser — worth a manual pass before treating this as fully verified.
+
 ## New page: HES Forecasting (2026-07-02, renamed same day)
 
 The dashboard now has **two pages**, switched via a pill toggle in the header (same `.drill-toggle`/`.drill-btn` pattern used elsewhere): **ESG Forecasting** (everything below, unchanged) and **HES Forecasting** (new — originally built and briefly named "ESG Capacity Planning", renamed at the user's request before anything shipped further). `App.jsx` is now a thin shell — header + toggle + footer — that renders `ForecastingPage.jsx` (the old `App.jsx` body, extracted verbatim) or `HesForecastingPage.jsx` depending on which pill is active.
@@ -184,6 +198,8 @@ These are in the original SPOG_views.pptx but not yet implemented:
 3. Queue/capacity/plan **names** are real; volume, accuracy, and variance **numbers** are still mock/static — no API or database connection yet.
 4. Chunk size warning (~697KB bundle) — consider code-splitting recharts and react-simple-maps in future.
 5. `INACTIVE_QUEUE_NAMES` (406 real names) is defined in `mockData.js` but has no drill-down UI yet — only the count is shown on the Total Queues card.
+6. `LOB_QUEUES` (HES Forecasting's real per-queue lists for "High End Storage") has no UI consumer since "UCR Runrate with Target" switched from a queue-level list to a year-click modal of top-5 non-adherent LOBs (2026-07-02) — revisit if a queue-level drill-down is wanted again.
+7. HES Forecasting's CPASU Trend region/time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists yet, same "illustrative structure" convention as the rest of this page's mock numbers.
 
 ---
 

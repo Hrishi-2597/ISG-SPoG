@@ -93,17 +93,24 @@ App
 HesForecastingPage
 ├── HesFilterPanel        — Controlled: filters state lifted to HesForecastingPage
 ├── HesMetricCards(filters) — hesCardData(filters) recomputed on every change
-│   └── DrillDownPanel     — Inline, one of AsuTrendChart/SrDbOspChart/CpasuChart/CurrentUcrChart/UcrImpactedChart
-├── AsuLayer(filters)     — Collapsible, badge "01"
-│   ├── Visual1           — ComposedChart: asuByFY(filters) + Adherence% line, Plan dropdown
-│   ├── Visual2           — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
-│   └── Visual3           — ComposedChart: asuRegionPlans(filters) grouped bars (NAMER/EMEA/APJ);
-│                            clicking a region bar renders asuLobImpact(region) as an inline delta list
-├── SrLayer(filters)      — Collapsible, badge "02"; same 3-visual structure as AsuLayer, SR metric
-├── AsuSrTrendLayer(filters) — Collapsible, badge "03"
-│   ├── Visual1           — ComposedChart: asuSrTrendByFY(filters, country) + CPASU line; Region/Country toggle
-│   ├── Visual2           — BarChart: srBotsByFY(filters), humanSR+botsSR stacked, SR Plan as a separate bar
-│   └── Visual3           — ComposedChart: ucrByFY(filters) bar+dashed target line; ucrNonAdherentQueues(filters) list below
+│   └── DrillDownModal     — Popup (HesChartKit's Modal), one of AsuTrendChart/SrDbOspChart/CpasuChart/
+│                            CurrentUcrChart/UcrImpactedChart; closing it only clears local `active`
+│                            state, filters prop is untouched
+├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01"
+│   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters) + Adherence% line, "Plan Name" dropdown
+│   ├── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
+│   └── Visual3 "Plan Impact"                 — ComposedChart: asuRegionPlans(filters) grouped bars (AMER/APJ/EMEA/Global);
+│                                                clicking a region bar renders asuLobImpact(region) as an inline delta list
+├── SrLayer(filters)      — "SR Trend", collapsible, badge "02"; same 3-visual structure/names as AsuLayer, SR metric
+├── AsuSrTrendLayer(filters) — "ASU/UCR Impact on SR Analysis", collapsible, badge "03"
+│   ├── Visual1 "CPASU Trend" — ComposedChart: cpasuByRegion(filters) grouped bars/line by default (one group per
+│   │                           IMPACT_REGIONS entry); clicking a region switches to cpasuTrendByRegion(filters, region)
+│   │                           at whichever granularity regionTrendGranularity(filters) resolves to (Week > Quarter > Year)
+│   ├── Visual2 "UCR Impact on SR" — BarChart: srBotsByFY(filters), humanSR ("SR's") + botsSR ("UCR Handled SR's") stacked,
+│   │                                SR Plan as a separate bar; PlanSelect in the corner (cornerControls, unwired)
+│   └── Visual3 "UCR Runrate with Target" — ComposedChart: UCR_BY_FY directly (always all 3 FYs, ignores
+│                                            Quarter/Week filters); clicking a year's bar opens a Modal listing
+│                                            topNonAdherentLobsByYear(filters, year) — top 5 LOBs, not queues
 └── HesGeoMap(filters)    — Collapsible, badge "04"; same choropleth mechanism as Layer3GeoMap,
                             colored by geoAdherenceByRegion(filters); no Region/Sub-region toggle
 ```
@@ -124,9 +131,9 @@ No external state library. All state is local React `useState`:
 | `Layer2ActualVsPlan` | `plan` (reset by `filters.planName` via `useEffect`), `open` | String, Boolean |
 | `Layer3GeoMap` | `viewMode` (Region/Country), `hovered`, `open` | String, Object, Boolean |
 | `HesForecastingPage` | `filters` | Object (7 filter keys) |
-| `HesMetricCards` | `active` (drill-down) | String or null |
+| `HesMetricCards` | `active` (which card's modal is open) | String or null |
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open`, `selectedRegion` (Visual3 drill state) | String, Object, Boolean, String or null |
-| `AsuSrTrendLayer` | `open`, `viewMode` (Region/Country), `country` | Boolean, String, String |
+| `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalYear` | Boolean, String or null, String, String or null |
 | `HesGeoMap` | `open`, `hovered` | Boolean, Object |
 
 `filters` flows down as a prop to `MetricCards`, all three layers, and every Visual sub-component. Each chart/card recomputes its data via `useMemo(() => selectorFn(filters), [filters])`, calling into the selector functions exported from `mockData.js` (see Data Model). No FY/Quarter/Week drill-toggle state exists anymore — those were removed; the top filter bar's Fiscal Year/Quarter/Week filters are the only time control, and charts render at Fiscal Year granularity only.
@@ -255,17 +262,19 @@ Selecting Region = "Global" (or a Sub-region with no map presence) returns an em
 
 ## Data Model (`src/data/hesData.js`)
 
-Same conventions as `mockData.js`: static exports are datasets, lowercase functions are the live selectors components call. Imports `FISCAL_YEARS`, `FISCAL_QUARTERS`, `FISCAL_WEEK_LIST`, `BUSINESS_PARTNERS`, `REGIONS`, `ACTIVE_QUEUE_NAMES`, `regionForCountry`, and `matchesMulti` from `mockData.js` rather than duplicating them.
+Same conventions as `mockData.js`: static exports are datasets, lowercase functions are the live selectors components call. Imports `FISCAL_YEARS`, `FISCAL_QUARTERS`, `FISCAL_WEEK_LIST`, `BUSINESS_PARTNERS`, `REGIONS`, `regionForCountry`, and `matchesMulti` from `mockData.js` rather than duplicating them.
 
 ### Constants
 ```
 LOB_LIST              — 33 real LOB names (business-supplied verbatim)
 GLOBAL_GROUPING_LIST  — ['Consumer', 'Commercial', 'Enterprise'] — inferred, not yet user-confirmed
 FISCAL_MONTH_LIST     — FY25M01 ... FY27M12 (36 values, derived from FISCAL_YEARS) — filter only
-IMPACT_REGIONS        — ['NAMER', 'EMEA', 'APJ'] — deliberately only 3 (deck-specified for the
-                         Plan Impact Analysis visuals), distinct from the 5-region REGIONS
+IMPACT_REGIONS        — ['AMER', 'APJ', 'EMEA', 'Global'] — the 4-region set for Plan Impact
+                         (AsuLayer/SrLayer Visual3) and for CPASU Trend's region breakdown
+                         (AsuSrTrendLayer Visual1), distinct from the 5-region REGIONS
 LOB_QUEUES            — { 'High End Storage': { active: [...71 real names], inactive: [...~150 real names] } }
-                         (business-supplied verbatim); other LOBs have no entry yet
+                         (business-supplied verbatim); other LOBs have no entry yet. No UI consumer
+                         as of 2026-07-02 (see Known Limitations) — kept for a future queue-level drill-down.
 ```
 
 ### LOB fact table
@@ -290,21 +299,25 @@ cpasuByFY(filters) — cpasu = sr.actual / asu.actual per period, rounded to 2 d
 
 ### UCR
 ```
-UCR_BY_FY — {period, target, current, adherence (getter)} × 3 FYs, static (BASE_UCR_TARGET 82/85/88)
-ucrByFY(filters) — narrowed to hesEffectiveFiscalYears
+UCR_BY_FY — {period, target, current, adherence (getter)} × 3 FYs, static (BASE_UCR_TARGET 82/85/88).
+  AsuSrTrendLayer Visual3 renders this array directly (not through ucrByFY) so it always shows all 3
+  FYs regardless of Quarter/Week filter narrowing.
+ucrByFY(filters) — narrowed to hesEffectiveFiscalYears; still used by the Current UCR card's drill-down
 ucrImpactedSrByFY(filters) — {period, actualSR, srDeflected} — srDeflected ≈ 8-11% of actualSR, illustrative
-srBotsByFY(filters) — {period, humanSR, botsSR (~35% of actual), plan}
-srDbOspByFY(filters) — {period, db (~70% of actual), osp}
-ucrNonAdherentQueues(filters, count=5) — {name, runrate, target} × count. If filters.lob selects a LOB
-  present in LOB_QUEUES (currently only 'High End Storage'), pulls real names from its `.active` list;
-  otherwise falls back to the first 40 ACTIVE_QUEUE_NAMES from mockData.js. Backs the "UCR Runrate with
-  Target" non-adherent-queue list in AsuSrTrendLayer Visual3.
+srBotsByFY(filters) — {period, humanSR, botsSR (~35% of actual), plan} — rendered as "SR's" / "UCR Handled
+  SR's" in AsuSrTrendLayer Visual2 (display names only; data keys unchanged)
+srDbOspByFY(filters) — {period, db (~70% of actual), osp} — backs the Service Requests card's drill-down,
+  rendered as grouped columns (not stacked)
+topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × count, sorted ascending by
+  runrate (worst first). Backs the "UCR Runrate with Target" year-click modal (AsuSrTrendLayer Visual3).
+  Replaced the old ucrNonAdherentQueues() (queue-level, removed 2026-07-02) now that the drill-down is
+  LOB-level.
 ```
 
-### Region / LOB impact ("Plan Impact Analysis" drill-down)
+### Region / LOB impact ("Plan Impact" drill-down)
 ```
-ASU_REGION_PLANS, SR_REGION_PLANS — {region, planA, planB} × 3 IMPACT_REGIONS, static
-asuRegionPlans(filters) / srRegionPlans(filters) — currently ignore filters (deck shows a fixed 3-region view)
+ASU_REGION_PLANS, SR_REGION_PLANS — {region, planA, planB} × 4 IMPACT_REGIONS, static
+asuRegionPlans(filters) / srRegionPlans(filters) — currently ignore filters (deck shows a fixed region view)
 buildLobImpact(base) — per region, computes a delta for all 33 LOBs via
   residue = (i*17 + ri*41) % 131; delta = round(base * 0.10 * (residue-65)/65)
   17 is coprime with the prime modulus 131, so i → i*17 mod 131 is injective over i=0..32 — every
@@ -314,12 +327,19 @@ asuLobImpact(region, count=6) / srLobImpact(region, count=6) — top-N by ascend
   the region bar in AsuLayer/SrLayer Visual3
 ```
 
-### ASU/SR trend by country
+### CPASU Trend: region breakdown + time-granularity drill (AsuSrTrendLayer Visual1)
 ```
-TREND_COUNTRIES — 7 real country names; COUNTRY_SCALE — per-country scale factor, illustrative
-asuSrTrendCountries() — returns TREND_COUNTRIES for the Region/Country toggle's dropdown
-asuSrTrendByFY(filters, country=null) — Region mode: full aggregate (asuByFY/srByFY + cpasu);
-  Country mode: same series scaled by COUNTRY_SCALE[country]
+REGION_SHARE — { AMER: 0.38, EMEA: 0.27, APJ: 0.22, Global: 0.13 } — illustrative share-of-total
+  split of the latest FY's aggregate ASU/SR across the 4 IMPACT_REGIONS
+cpasuByRegion(filters) — {region, asu, sr, cpasu} × 4, the default (region) view: splits the latest
+  in-scope FY's cpasuByFY() snapshot by REGION_SHARE
+regionTrendGranularity(filters) — Week > Quarter > Year precedence over the top filter bar's time
+  filters → {granularity, periods}; periods are real distinct values (e.g. the selected fiscal weeks),
+  not collapsed to years like hesEffectiveFiscalYears
+cpasuTrendByRegion(filters, region) — {period, asu, sr, cpasu} × periods.length, the drill-down view once
+  a region is clicked: divides each period's year's ASU/SR baseline by periodsPerYear(granularity)
+  (52 for Week, 4 for Quarter, 1 for Year), scaled by REGION_SHARE, lobScopeRatio, and a small
+  deterministic per-period/region wobble — fully synthetic, no real per-region/quarter/week dataset exists
 ```
 
 ### Geo Map (LOB adherence)
@@ -332,7 +352,9 @@ geoAdherenceByRegion(filters) — averages adherence across filterLobs(filters) 
 ### Cards
 ```
 hesCardData(filters) → { asuActuals, srActuals, cpasu, currentUcr, ucrImpactedSr }, each the
-  latest-FY snapshot (asu[asu.length-1] etc.) off the selector functions above
+  latest-FY snapshot (asu[asu.length-1] etc.) off the selector functions above. asuActuals/srActuals/
+  cpasu additionally carry { period, prevPeriod, yoyPct } — yoyPct is the % change vs the prior in-scope
+  FY (null if there isn't one), backing each card's "YTD <period>: ... vs <prevPeriod>" sub-message.
 ```
 
 ---
@@ -377,6 +399,8 @@ Steps:
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
 5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (406 real names) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
-7. `LOB_QUEUES` (HES Forecasting) only has real active/inactive queue data for one LOB ("High End Storage") — every other LOB falls back to a generic queue-name sample in the UCR non-adherent-queue list
+7. `LOB_QUEUES` (HES Forecasting) has real active/inactive queue data for one LOB ("High End Storage") but, as of 2026-07-02, no UI consumer at all — "UCR Runrate with Target" moved from a queue-level list to a LOB-level top-5 modal
 8. `GLOBAL_GROUPING_LIST` (HES Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
-9. HES Forecasting's Geo Map has no Region/Sub-region toggle (unlike ESG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed 3-region (NAMER/EMEA/APJ) view
+9. HES Forecasting's Geo Map has no Region/Sub-region toggle (unlike ESG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view
+10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
+11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown

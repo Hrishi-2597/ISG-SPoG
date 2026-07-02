@@ -284,6 +284,42 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## HES Forecasting: Card Modals, Renames, Layer 3 Redesign (2026-07-02)
+
+### Card drill-downs: modal popups, not inline panels (HES Forecasting only)
+**Decision:** `HesMetricCards.jsx`'s 5 card drill-downs moved from an inline panel below the cards row to a centered modal (new `Modal` in `HesChartKit.jsx`), closable via backdrop click or ✕.
+**Why:** Requested directly — "display the detailed view as a popup modal instead of navigating to a new page... allow users to close it and return to the dashboard without losing their current filter selections." This deliberately diverges from the Forecasting page's "no modals except the CQN Variance year-click" rule (see "Drill-down as inline panel" above) — that rule described an established pattern for *that* page; this request is explicit and scoped to HES Forecasting's cards, so it doesn't retroactively apply elsewhere. Filters live one level up in `HesForecastingPage`, so opening/closing the modal never touches them — closing always returns to the dashboard exactly as filtered.
+
+### YTD message replaces "Plan X · Y% adherence" on ASU/SR/CPASU cards
+**Decision:** `hesCardData()` now computes a year-over-year % delta (`yoyPct`) for ASU, SR, and CPASU — latest in-scope FY vs the one before it. The card sub-line reads `YTD <FY>: <value> · ▲/▼ X% vs <prior FY>`, with a colored status pip.
+**Why:** Requested directly ("add a YTD message... show increase/decrease as per your wish"). CPASU inverts the color logic (`lowerIsBetter`) since a falling CPASU is the desirable direction, consistent with the card's existing "lower is more efficient" framing — ASU/SR keep growth-is-good coloring. When filters narrow to a single FY there's no prior year to compare, so the message falls back to "no prior year in scope" rather than a misleading 0%.
+
+### SR Actuals popup: grouped columns instead of stacked bar
+**Decision:** Removed `stackId` from the DB/OSP bars in the SR Actuals drill-down chart.
+**Why:** Requested directly.
+
+### CPASU popup: line-only instead of Composed (bars + line)
+**Decision:** Dropped the SR/ASU bars from the CPASU card's popup, leaving a single `LineChart` of CPASU across fiscal years.
+**Why:** Requested directly ("show a line chart... showing only the CPASU over years").
+
+### Plan Impact: 4-region set (AMER/APJ/EMEA/Global) replaces the deck's 3-region set
+**Decision:** `IMPACT_REGIONS` changed from `['NAMER','EMEA','APJ']` to `['AMER','APJ','EMEA','Global']`.
+**Why:** Requested directly for both ASU Layer's and SR Layer's Plan Impact visuals. Reused the same constant for CPASU Trend's region breakdown (below) instead of introducing a second region list — one 4-region set for every region-scoped HES visual is more coherent than two overlapping ones.
+
+### CPASU Trend: regions-by-default, click-to-drill into time granularity
+**Decision:** Replaced the Region/Country toggle on "ASU Impact on SR Trend with CPASU" (renamed **CPASU Trend**) with a region-default view — grouped ASU/SR bars + CPASU line, one group per `IMPACT_REGIONS` entry. Clicking a region's bar drills into that region's own trend, rendered at whichever of Week/Quarter/Year is most specific in the top filter bar (`regionTrendGranularity()`), with a "← All Regions" pill to back out.
+**Why:** Requested directly — "show the regions as default and when we click any particular region it should show up the year or quarter or week when selected from the filters at the top." No real per-region/per-quarter/per-week dataset exists, so `cpasuTrendByRegion()` synthesizes it deterministically from the same FY baselines used everywhere else on this page (documented as illustrative in `tech_spec.md`) — dividing each FY's baseline across the periods within it, rather than inventing an unrelated dataset or silently ignoring the requested drill.
+
+### UCR Impact on SR: renamed series, added a (cosmetic) Plan selector in the corner
+**Decision:** "SR (Human)" → **SR's**, "SR (Bots)" → **UCR Handled SR's**. Added a `PlanSelect` in the visual's top-right corner via a new `cornerControls` slot on `Visual` (`HesChartKit.jsx`), positioned absolutely instead of the usual centered-below-title `controls` row.
+**Why:** Both requested directly, including the specific "top right corner" placement — a deliberate one-off exception to the page's usual centered-controls convention (see "Centered chart titles" above) because the request was explicit about the corner rather than a stylistic default. The selector doesn't yet feed into `srBotsByFY()`'s output, matching the existing precedent of AsuLayer/SrLayer Visual1's Plan dropdown, which is also not yet wired to the underlying numbers.
+
+### UCR Runrate with Target: fixed at fiscal-year granularity, top-5-LOB modal replaces the queue list
+**Decision:** The chart now always plots `UCR_BY_FY` directly (all 3 fiscal years), ignoring Quarter/Week filter narrowing. The previously always-visible "queues not adhering to target" list is gone; clicking a year's bar opens a modal listing that year's top 5 non-adherent **LOBs** (not queues), via new selector `topNonAdherentLobsByYear()`.
+**Why:** Requested directly ("keep it at fiscal year default", "top 5 LOB's not adhering... give a pop-up (design on your convenience)"). Modal-on-bar-click for a "top N" list directly mirrors the CQN Variance year-click modal already established on the Forecasting page — reusing a proven pattern rather than inventing a new one from scratch. Switching from queues to LOBs left `LOB_QUEUES`'s real per-queue data (High End Storage) without a UI consumer for now — see `handoff.md` and `tech_spec.md`'s Known Limitations.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

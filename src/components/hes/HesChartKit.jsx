@@ -8,14 +8,57 @@ export const C = {
   grid: 'rgba(255,255,255,0.05)', tick: '#4a6a85',
 }
 
-export function Visual({ title, subtitle, children, controls }) {
+export function Visual({ title, subtitle, children, controls, cornerControls }) {
   return (
-    <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2">
+    <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
+      {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
       <p style={{ fontSize: 12, fontWeight: 700, color: '#e6f1ff', textAlign: 'center' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 9.5, color: '#5a8bb0', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
     </div>
+  )
+}
+
+// Popup modal: backdrop click or the ✕ closes it. Filters live one level up (in
+// HesForecastingPage), so opening/closing this never touches filter state — the
+// dashboard underneath is exactly as the user left it.
+export function Modal({ title, onClose, children, width = 640 }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(4,10,18,0.72)', backdropFilter: 'blur(3px)', padding: 20,
+      }}
+    >
+      <div
+        className="animate-fade-in"
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#0c1929', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 12,
+          padding: '16px 18px 14px', width: '100%', maxWidth: width, maxHeight: '85vh', overflowY: 'auto',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 0 30px rgba(56,189,248,0.08)',
+        }}
+      >
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#38bdf8', textAlign: 'center' }}>{title}</h3>
+          <button onClick={onClose} aria-label="Close" style={{ position: 'absolute', right: 0, top: -3, color: '#5a8bb0', fontSize: 18, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function PillButton({ children, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      fontSize: 10, fontWeight: 600, color: '#38bdf8', background: 'rgba(56,189,248,0.08)',
+      border: '1px solid rgba(56,189,248,0.25)', borderRadius: 14, padding: '3px 11px', cursor: 'pointer',
+    }}>
+      {children}
+    </button>
   )
 }
 

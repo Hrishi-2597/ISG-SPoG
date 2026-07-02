@@ -6,7 +6,7 @@ import {
 import {
   hesCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, ucrImpactedSrByFY,
 } from '../../data/hesData'
-import { C, Tip } from './HesChartKit'
+import { C, Tip, Modal } from './HesChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
 
@@ -69,6 +69,8 @@ function AsuTrendChart({ filters }) {
   )
 }
 
+// Grouped columns, not stacked — DB and OSP render as two side-by-side bars per
+// fiscal year instead of one stacked bar, per the requested chart-type change.
 function SrDbOspChart({ filters }) {
   const data = useMemo(() => srDbOspByFY(filters), [filters])
   return (
@@ -80,30 +82,29 @@ function SrDbOspChart({ filters }) {
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="db" name="DB" stackId="sr" fill={C.metric1} opacity={0.85} maxBarSize={54} />
-          <Bar dataKey="osp" name="OSP" stackId="sr" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
+          <Bar dataKey="db" name="DB" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar dataKey="osp" name="OSP" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
+// Line-only, CPASU alone — the bars (SR/ASU) that used to share this chart were
+// dropped per the requested "just CPASU over years" redesign.
 function CpasuChart({ filters }) {
   const data = useMemo(() => cpasuByFY(filters), [filters])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
-        <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="sr" name="SR" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Bar yAxisId="l" dataKey="asu" name="ASU" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Line yAxisId="r" type="monotone" dataKey="cpasu" name="CPASU" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-        </ComposedChart>
+          <Line type="monotone" dataKey="cpasu" name="CPASU" stroke={C.trend} strokeWidth={2.5} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   )
@@ -149,29 +150,39 @@ function UcrImpactedChart({ filters }) {
   )
 }
 
-function DrillDownPanel({ type, filters, onClose }) {
+const MODAL_TITLES = {
+  asu:      'Active Service Units — Trend',
+  sr:       'Service Requests — DB vs OSP',
+  cpasu:    'CPASU Trend',
+  ucr:      'Current UCR vs Target',
+  impacted: 'Actual SR + SR Deflected',
+}
+
+// Opening/closing a card's popup only touches this component's own `active`
+// state — the `filters` prop keeps flowing from HesForecastingPage unchanged,
+// so closing the modal always returns to the dashboard exactly as filtered.
+function DrillDownModal({ type, filters, onClose }) {
   return (
-    <div className="animate-fade-in" style={{
-      marginTop: 10, background: 'rgba(12,25,41,0.95)', border: '1px solid rgba(56,189,248,0.2)',
-      borderRadius: 8, padding: '12px 14px', backdropFilter: 'blur(8px)',
-    }}>
-      <div style={{ position: 'relative', marginBottom: 10 }}>
-        <h3 style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', textAlign: 'center' }}>
-          {type === 'asu'      && 'ASU Actuals Trend'}
-          {type === 'sr'       && 'SR Actuals — DB vs OSP'}
-          {type === 'cpasu'    && 'SR & ASU with CPASU'}
-          {type === 'ucr'      && 'Current UCR vs Target'}
-          {type === 'impacted' && 'Actual SR + SR Deflected'}
-        </h3>
-        <button onClick={onClose} style={{ position: 'absolute', right: 0, top: -1, color: '#3d607a', fontSize: 16, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-      </div>
+    <Modal title={MODAL_TITLES[type]} onClose={onClose}>
       {type === 'asu' && <AsuTrendChart filters={filters} />}
       {type === 'sr' && <SrDbOspChart filters={filters} />}
       {type === 'cpasu' && <CpasuChart filters={filters} />}
       {type === 'ucr' && <CurrentUcrChart filters={filters} />}
       {type === 'impacted' && <UcrImpactedChart filters={filters} />}
-    </div>
+    </Modal>
   )
+}
+
+// Builds the "YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>" sub-message shared
+// by the ASU/SR/CPASU cards, replacing the old static "Plan ..." line. `lowerIsBetter`
+// flips which direction counts as "good" (green) — CPASU is better when it falls.
+function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
+  if (metric.yoyPct === null || metric.yoyPct === undefined) {
+    return { text: `YTD ${metric.period}: ${formattedValue} · no prior year in scope`, trend: undefined }
+  }
+  const up = metric.yoyPct >= 0
+  const good = lowerIsBetter ? !up : up
+  return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
 }
 
 export default function HesMetricCards({ filters }) {
@@ -179,22 +190,24 @@ export default function HesMetricCards({ filters }) {
   const d = useMemo(() => hesCardData(filters), [filters])
   const toggle = key => setActive(prev => prev === key ? null : key)
 
+  const asuYtd = ytdSub(d.asuActuals, fmt(d.asuActuals.value))
+  const srYtd = ytdSub(d.srActuals, fmt(d.srActuals.value))
+  const cpasuYtd = ytdSub(d.cpasu, d.cpasu.value.toFixed(2), { lowerIsBetter: true })
+
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="📶" label="ASU Actuals" sublabel="Trend over time"
+        <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
-          sub={`Plan ${fmt(d.asuActuals.plan)} · ${d.asuActuals.adherence}% adherence`}
-          trend={d.asuActuals.adherence >= 95}
+          sub={asuYtd.text} trend={asuYtd.trend}
           onClick={() => toggle('asu')} active={active === 'asu'} />
-        <Card icon="🎫" label="SR Actuals" sublabel="DB / OSP handled"
+        <Card icon="🎫" label="Service Requests" sublabel="DB / OSP handled"
           value={fmt(d.srActuals.value)}
-          sub={`Plan ${fmt(d.srActuals.plan)} · ${d.srActuals.adherence}% adherence`}
-          trend={d.srActuals.adherence >= 95}
+          sub={srYtd.text} trend={srYtd.trend}
           onClick={() => toggle('sr')} active={active === 'sr'} />
         <Card icon="➗" label="CPASU" sublabel="SR ÷ ASU"
           value={d.cpasu.value.toFixed(2)}
-          sub="Cases per ASU — lower is more efficient"
+          sub={cpasuYtd.text} trend={cpasuYtd.trend}
           onClick={() => toggle('cpasu')} active={active === 'cpasu'} />
         <Card icon="🎯" label="Current UCR" sublabel="vs Target"
           value={`${d.currentUcr.value}%`}
@@ -207,7 +220,7 @@ export default function HesMetricCards({ filters }) {
           onClick={() => toggle('impacted')} active={active === 'impacted'} />
       </div>
 
-      {active && <DrillDownPanel type={active} filters={filters} onClose={() => setActive(null)} />}
+      {active && <DrillDownModal type={active} filters={filters} onClose={() => setActive(null)} />}
     </div>
   )
 }

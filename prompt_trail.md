@@ -116,3 +116,27 @@ Chronological log of every user prompt and the corresponding actions taken.
 **Also noted:** User asked to push after every update — will do going forward.
 
 <!-- NEW PROMPTS APPENDED BELOW THIS LINE -->
+
+## Prompt 8 — 2026-07-02
+**Input:** `add this repository https://github.com/Hrishi-2597/ISG-SPoG.git and follow the important documents`
+
+**Action:**
+- Cloned the repo fresh to `C:\Users\hrishikesh.yadav\ISG-SPoG` (new machine/session, no prior local checkout)
+- Read `README.md`, `handoff.md`, `tech_spec.md`, `design_choice.md`, `prompt_trail.md` in full
+- Confirmed git remote/branches (`main`, `gh-pages`) and toolchain (Node v24, npm v11)
+- Saved the "update these 4 docs + push after every change" convention to persistent memory so it's followed automatically in future sessions on this machine
+
+---
+
+## Prompt 9 — 2026-07-02
+**Input:** Large multi-part request for the HES Forecasting page: (1) card drill-downs → popup modals that preserve filters on close; (2) rename ASU/SR Actuals cards, add YTD messages with increase/decrease, change SR popup to a column chart, change CPASU popup to a CPASU-only line chart; (3) rename ASU Layer/SR Layer → ASU Trend/SR Trend and their 3 visuals ("Actuals vs Plan Comparison" with a "Plan Name" dropdown, "Plan vs Plan Comparison", "Plan Impact" with 4 regions AMER/APJ/EMEA/Global); (4) rename "ASU Impact on SR Trend" → "ASU/UCR Impact on SR Analysis", redesign its CPASU Trend visual to show regions by default and drill into a clicked region's trend at the top filter bar's time granularity, rename SR(Human)/SR(Bots) series and add a corner Plan selector on "UCR Impact on SR", and change "UCR Runrate with Target" to a fixed-FY chart with a year-click modal listing the top 5 non-adherent LOBs
+
+**Action:**
+- `HesChartKit.jsx`: added a shared `Modal` popup component, a `cornerControls` slot on `Visual`, and a `PillButton` helper
+- `hesData.js`: added `yoyPct` to `hesCardData()`'s ASU/SR/CPASU metrics; changed `IMPACT_REGIONS` to `['AMER','APJ','EMEA','Global']`; added `cpasuByRegion`/`regionTrendGranularity`/`cpasuTrendByRegion` for the CPASU Trend redesign; added `topNonAdherentLobsByYear`; removed the now-dead `ucrNonAdherentQueues` (queue-level) and its fallback constant, along with the unused `asuSrTrendByFY`/`asuSrTrendCountries` Region/Country-toggle functions
+- `HesMetricCards.jsx`: card drill-downs now open in the new `Modal`; renamed "ASU Actuals"→"Active Service Units" and "SR Actuals"→"Service Requests"; all three of ASU/SR/CPASU show a YTD year-over-year message instead of "Plan X"; SR's DB/OSP popup changed to grouped columns; CPASU's popup changed to a CPASU-only line chart
+- `AsuLayer.jsx` / `SrLayer.jsx`: renamed layer headers to "ASU Trend"/"SR Trend" and all 3 visual titles; Plan dropdown relabeled "Plan Name"
+- `AsuSrTrendLayer.jsx`: renamed layer header to "ASU/UCR Impact on SR Analysis"; Visual1 ("CPASU Trend") rebuilt with region-default + click-to-drill-into-time-granularity; Visual2 series renamed to "SR's"/"UCR Handled SR's" plus a corner Plan selector; Visual3 now always shows all 3 FYs and opens a modal with the top 5 non-adherent LOBs on year click
+- Ran `npm install` (dependencies weren't present in this fresh clone), `npm run build` (clean), and grepped the whole `src/` tree for stale old titles/removed function names — none found
+- Started the Vite dev server and confirmed it serves HTTP 200; this session's environment has no browser-automation tool available, so the popups/drill-throughs were verified by a clean production build and code/grep review rather than a live click-through — flagged to the user as a follow-up to verify manually
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`

@@ -5,7 +5,7 @@
 // and metrics, and keeping it decoupled avoids any risk to the ESG Forecasting page.
 import {
   FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS, REGIONS,
-  ACTIVE_QUEUE_NAMES, regionForCountry, matchesMulti,
+  regionForCountry, matchesMulti,
 } from './mockData'
 
 // Real Dell ISG product/technology lines (business-supplied).
@@ -177,6 +177,22 @@ export function srDbOspByFY(filters = {}) {
   })
 }
 
+// ── Top LOBs not adhering to UCR target, by fiscal year ───────────────────────
+// Backs the "UCR Runrate with Target" year-click modal (Layer 03, Visual 3).
+export function topNonAdherentLobsByYear(filters = {}, fy, count = 5) {
+  const target = UCR_BY_FY.find(d => d.period === fy)?.target ?? 85
+  const yearIndex = FISCAL_YEARS.indexOf(fy)
+  const pool = filterLobs(filters).length ? filterLobs(filters) : LOB_FACTS
+  return pool
+    .map((l, i) => ({
+      lob: l.lob,
+      runrate: +(target - (2 + ((i * 5 + yearIndex * 11) % 15) / 2)).toFixed(1),
+      target,
+    }))
+    .sort((a, b) => a.runrate - b.runrate)
+    .slice(0, count)
+}
+
 // ── Real per-LOB queue lists (business-supplied) ──────────────────────────────
 // Only "High End Storage" has real data so far; other LOBs fall back to a generic
 // cross-LOB sample (Forecasting's queue list) until their real lists arrive.
@@ -245,31 +261,17 @@ export const LOB_QUEUES = {
   },
 }
 
-// ── Queues not adhering to UCR target ─────────────────────────────────────────
-// Prefers a LOB's real queue list (currently only High End Storage) when that LOB
-// is the one selected; otherwise falls back to a generic cross-LOB sample from the
-// Forecasting queue list, tagged with a below-target runrate for this drill-down.
-const NON_ADHERENT_FALLBACK = ACTIVE_QUEUE_NAMES.slice(0, 40)
-export function ucrNonAdherentQueues(filters = {}, count = 5) {
-  const years = hesEffectiveFiscalYears(filters)
-  const fy = years[years.length - 1] || 'FY27'
-  const target = UCR_BY_FY.find(d => d.period === fy)?.target ?? 85
-  const offset = FISCAL_YEARS.indexOf(fy) * count
-
-  const selectedLobWithData = filters.lob?.find(l => LOB_QUEUES[l])
-  const pool = selectedLobWithData ? LOB_QUEUES[selectedLobWithData].active : NON_ADHERENT_FALLBACK
-
-  return Array.from({ length: count }, (_, i) => {
-    const name = pool[(offset + i * 7) % pool.length]
-    const runrate = +(target - (4 + ((offset + i) % 9))).toFixed(1)
-    return { name, runrate, target }
-  })
-}
+// NOTE: the per-queue non-adherent list that used to live here (keyed off
+// LOB_QUEUES['High End Storage']) was replaced by topNonAdherentLobsByYear above
+// when "UCR Runrate with Target" switched from an always-visible queue list to a
+// year-click modal of top-5 non-adherent LOBs. LOB_QUEUES itself is left in place
+// (real business-supplied data) — see handoff.md for its current UI status.
 
 // ── Plan Impact Analysis: region-level Plan A/B + LOB contribution ────────────
-// Deck specifies exactly these 3 regions for this visual (not the full 5-region set
-// used elsewhere) — kept as its own constant rather than reusing REGIONS.
-export const IMPACT_REGIONS = ['NAMER', 'EMEA', 'APJ']
+// Requested 4-region set for Plan Impact (and reused by CPASU Trend's region
+// breakdown below) — distinct from the full 5-region REGIONS used elsewhere on
+// this page's Geo Map.
+export const IMPACT_REGIONS = ['AMER', 'APJ', 'EMEA', 'Global']
 
 function buildRegionPlans(base) {
   return IMPACT_REGIONS.map((region, i) => ({
@@ -311,22 +313,48 @@ export function srLobImpact(region, count = 6) {
   return (SR_LOB_IMPACT_BY_REGION[region] || []).slice(0, count)
 }
 
-// ── ASU impact on SR Trend (Layer 3, Visual 1) — Region/Country toggle ────────
-// "Country" mode scopes the same FY trend to one representative country via a scale
-// factor, rather than maintaining a full parallel per-country dataset.
-const TREND_COUNTRIES = ['United States', 'United Kingdom', 'Germany', 'India', 'Japan', 'Australia', 'Brazil']
-const COUNTRY_SCALE = Object.fromEntries(TREND_COUNTRIES.map((c, i) => [c, 0.08 + (i % 4) * 0.05]))
-export function asuSrTrendCountries() {
-  return TREND_COUNTRIES
+// ── CPASU Trend (Layer 3, Visual 1) — regions shown by default, click a region ─
+// to drill into its own trend at whatever time granularity is most specific in
+// the top filter bar (Week > Quarter > Year), same precedence idea as
+// hesEffectiveFiscalYears but exposed as real distinct periods, not collapsed years.
+const REGION_SHARE = { AMER: 0.38, EMEA: 0.27, APJ: 0.22, Global: 0.13 }
+
+export function cpasuByRegion(filters = {}) {
+  const cpasu = cpasuByFY(filters)
+  const latest = cpasu[cpasu.length - 1] || { asu: 0, sr: 0, cpasu: 0 }
+  return IMPACT_REGIONS.map(region => {
+    const share = REGION_SHARE[region] ?? 1 / IMPACT_REGIONS.length
+    const asu = Math.round(latest.asu * share)
+    const sr = Math.round(latest.sr * share)
+    return { region, asu, sr, cpasu: asu ? +(sr / asu).toFixed(2) : 0 }
+  })
 }
-export function asuSrTrendByFY(filters = {}, country = null) {
-  const scale = country ? (COUNTRY_SCALE[country] ?? 0.15) : 1
-  return cpasuByFY(filters).map(d => ({
-    period: d.period,
-    asu: Math.round(d.asu * scale),
-    sr: Math.round(d.sr * scale),
-    cpasu: d.cpasu,
-  }))
+
+export function regionTrendGranularity(filters = {}) {
+  if (filters.fiscalWeek?.length) return { granularity: 'Week', periods: [...filters.fiscalWeek].sort() }
+  if (filters.fiscalQuarter?.length) return { granularity: 'Quarter', periods: [...filters.fiscalQuarter].sort() }
+  return { granularity: 'Year', periods: hesEffectiveFiscalYears(filters) }
+}
+
+function periodsPerYear(granularity) {
+  return granularity === 'Week' ? 52 : granularity === 'Quarter' ? 4 : 1
+}
+
+export function cpasuTrendByRegion(filters = {}, region) {
+  const { granularity, periods } = regionTrendGranularity(filters)
+  const share = REGION_SHARE[region] ?? 1 / IMPACT_REGIONS.length
+  const ratio = lobScopeRatio(filters)
+  const divisor = periodsPerYear(granularity)
+  const ri = IMPACT_REGIONS.indexOf(region)
+  return periods.map((period, i) => {
+    const year = period.slice(0, 4)
+    const baseAsu = (BASE_ASU[year] ?? BASE_ASU.FY27) / divisor
+    const baseSr = (BASE_SR[year] ?? BASE_SR.FY27) / divisor
+    const wobble = 0.92 + ((i * 13 + ri * 7) % 17) / 100
+    const asu = Math.round(baseAsu * share * ratio * wobble)
+    const sr = Math.round(baseSr * share * ratio * wobble)
+    return { period, asu, sr, cpasu: asu ? +(sr / asu).toFixed(2) : 0 }
+  })
 }
 
 // ── Geo Map: LOB adherence by region (choropleth, reuses Forecasting's country lookup) ─
@@ -343,8 +371,17 @@ export function geoAdherenceByRegion(filters = {}) {
 }
 export { regionForCountry }
 
+// Year-over-year % change between the latest in-scope FY and the one before it;
+// null when there's no prior year in scope (e.g. filters narrowed to a single FY),
+// so callers can fall back to an "n/a" message instead of a misleading 0%.
+function yoyPct(curr, prev) {
+  if (prev === undefined || prev === null || !prev) return null
+  return +(((curr - prev) / prev) * 100).toFixed(1)
+}
+
 // ── Card headlines ─────────────────────────────────────────────────────────
-// Latest in-scope fiscal year's snapshot for each of the 5 KPI cards.
+// Latest in-scope fiscal year's snapshot for each of the 5 KPI cards, plus a
+// YTD-vs-prior-year delta for the 3 cards that show a YTD message (ASU/SR/CPASU).
 export function hesCardData(filters = {}) {
   const asu = asuByFY(filters)
   const sr = srByFY(filters)
@@ -352,14 +389,26 @@ export function hesCardData(filters = {}) {
   const impacted = ucrImpactedSrByFY(filters)
   const cpasu = cpasuByFY(filters)
   const latestAsu = asu[asu.length - 1]
+  const prevAsu = asu[asu.length - 2]
   const latestSr = sr[sr.length - 1]
+  const prevSr = sr[sr.length - 2]
   const latestUcr = ucr[ucr.length - 1]
   const latestImpacted = impacted[impacted.length - 1]
   const latestCpasu = cpasu[cpasu.length - 1]
+  const prevCpasu = cpasu[cpasu.length - 2]
   return {
-    asuActuals: { value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0 },
-    srActuals: { value: latestSr?.actual ?? 0, plan: latestSr?.plan ?? 0, adherence: latestSr?.adherence ?? 0 },
-    cpasu: { value: latestCpasu?.cpasu ?? 0 },
+    asuActuals: {
+      value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0,
+      period: latestAsu?.period, prevPeriod: prevAsu?.period, yoyPct: yoyPct(latestAsu?.actual, prevAsu?.actual),
+    },
+    srActuals: {
+      value: latestSr?.actual ?? 0, plan: latestSr?.plan ?? 0, adherence: latestSr?.adherence ?? 0,
+      period: latestSr?.period, prevPeriod: prevSr?.period, yoyPct: yoyPct(latestSr?.actual, prevSr?.actual),
+    },
+    cpasu: {
+      value: latestCpasu?.cpasu ?? 0,
+      period: latestCpasu?.period, prevPeriod: prevCpasu?.period, yoyPct: yoyPct(latestCpasu?.cpasu, prevCpasu?.cpasu),
+    },
     currentUcr: { value: latestUcr?.current ?? 0, target: latestUcr?.target ?? 0, adherence: latestUcr?.adherence ?? 0 },
     ucrImpactedSr: { value: latestImpacted?.srDeflected ?? 0, total: latestImpacted?.actualSR ?? 0 },
   }

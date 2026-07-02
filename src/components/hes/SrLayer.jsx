@@ -12,7 +12,7 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 function Visual1({ filters, selectedPlan, onPlanChange }) {
   const data = useMemo(() => srByFY(filters), [filters])
   return (
-    <Visual title="SR Actual vs Plan with Adherence" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -37,7 +37,7 @@ function Visual1({ filters, selectedPlan, onPlanChange }) {
 function Visual2({ filters, planA, planB, onPlanChange }) {
   const data = useMemo(() => srPlanVsPlanByFY(filters), [filters])
   return (
-    <Visual title="SR Plan on Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -65,7 +65,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   const lobImpact = useMemo(() => selectedRegion ? srLobImpact(selectedRegion) : [], [selectedRegion])
 
   return (
-    <Visual title="SR Plan Impact Analysis" subtitle="Click a region to see which LOBs contributed"
+    <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
@@ -114,7 +114,7 @@ export default function SrLayer({ filters }) {
       <div className="layer-header" onClick={() => setOpen(o => !o)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#34d399', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>02</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#e6f1ff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SR Layer</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#e6f1ff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SR Trend</span>
           <span style={{ fontSize: 10, color: '#3d607a' }}>— service request tracking</span>
         </div>
         <span style={{ fontSize: 11, color: '#34d399', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
