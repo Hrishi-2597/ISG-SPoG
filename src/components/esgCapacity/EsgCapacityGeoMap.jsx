@@ -1,0 +1,162 @@
+import React, { useMemo, useState } from 'react'
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
+import { geoCapacityByRegion, geoCapacityByCountry, regionForCountry, WORLD_ATLAS_TO_COUNTRY } from '../../data/esgCapacityData'
+import { BinaryToggle } from '../ChartKit'
+
+const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+const DEFAULT_FILL = '#0e1f35'
+
+function vColor(v) {
+  if (v >= 90) return '#059669'
+  if (v >= 80) return '#2563eb'
+  if (v >= 70) return '#d97706'
+  return '#dc2626'
+}
+
+const LEGEND = [
+  { label: '≥ 90% Excellent', color: '#059669' },
+  { label: '80–90% Good',     color: '#2563eb' },
+  { label: '70–80% Fair',     color: '#d97706' },
+  { label: '< 70% Critical',  color: '#dc2626' },
+]
+
+// Same choropleth mechanism as Layer3GeoMap/HesGeoMap, but with two independent
+// toggles per the mockup: which metric colors the map (Headcount fulfillment vs
+// SL%), and whether the highlighted areas are whole regions or the curated
+// 14-country list. Non-highlighted countries fall back to their parent region's
+// shade at 35% opacity in Country view, same "full coverage, named areas pop"
+// convention Layer3GeoMap established.
+export default function EsgCapacityGeoMap({ filters }) {
+  const [open, setOpen] = useState(true)
+  const [metric, setMetric] = useState('Headcount')
+  const [viewMode, setViewMode] = useState('Region')
+  const [hovered, setHovered] = useState(null)
+
+  const metricKey = metric === 'Headcount' ? 'fulfillmentPct' : 'slPct'
+  const regionRows = useMemo(() => geoCapacityByRegion(filters), [filters])
+  const countryRows = useMemo(() => geoCapacityByCountry(filters, metricKey), [filters, metricKey])
+  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r[metricKey]])), [regionRows, metricKey])
+  const countryValue = useMemo(() => Object.fromEntries(countryRows.map(r => [r.worldAtlasName, r.value])), [countryRows])
+
+  return (
+    <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
+      <div className="layer-header" onClick={() => setOpen(o => !o)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#a78bfa', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>04</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Geo Map</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— global region performance overview</span>
+        </div>
+        <span style={{ fontSize: 11, color: '#a78bfa', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
+      </div>
+
+      {open && (
+        <div style={{ padding: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+            <BinaryToggle leftLabel="Headcount" rightLabel="SL%" value={metric} onChange={setMetric} />
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1 }}>Global Region Performance Overview</p>
+            <BinaryToggle leftLabel="Region" rightLabel="Country" value={viewMode} onChange={setViewMode} />
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10 }}>
+            {metric === 'Headcount' ? 'Headcount fulfillment %' : 'Service Level %'} · {viewMode} view
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
+            {LEGEND.map(({ label, color }) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-dim)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: 'inline-block', boxShadow: `0 0 6px ${color}80` }} />
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ position: 'relative', background: '#070f1a', borderRadius: 8, overflow: 'hidden',
+            height: 380, border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 0 40px rgba(0,0,0,0.4)' }}>
+
+            {hovered && (
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }} className="chart-tooltip">
+                <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
+                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: vColor(hovered.value) }}>
+                  {hovered.value}%
+                  <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>{metric === 'Headcount' ? 'fulfillment' : 'SL'}</span>
+                </p>
+              </div>
+            )}
+
+            <ComposableMap projection="geoMercator" projectionConfig={{ scale: 140, center: [10, 20] }} style={{ width: '100%', height: '100%' }}>
+              <Geographies geography={GEO_URL}>
+                {({ geographies }) =>
+                  geographies.map(geo => {
+                    const name = geo.properties.name
+                    const region = regionForCountry(name)
+                    let value, displayName, isFallback = false
+                    if (viewMode === 'Region') {
+                      value = region != null ? regionValue[region] : undefined
+                      displayName = region
+                    } else {
+                      const curatedCountry = WORLD_ATLAS_TO_COUNTRY[name]
+                      if (curatedCountry != null && countryValue[name] != null) {
+                        value = countryValue[name]
+                        displayName = curatedCountry
+                      } else if (region != null) {
+                        value = regionValue[region]
+                        displayName = region
+                        isFallback = true
+                      }
+                    }
+                    const fill = value != null ? vColor(value) : DEFAULT_FILL
+                    return (
+                      <Geography key={geo.rsmKey} geography={geo}
+                        onMouseEnter={() => value != null && setHovered({ name: displayName, value })}
+                        onMouseLeave={() => setHovered(null)}
+                        style={{
+                          default: { fill, fillOpacity: isFallback ? 0.35 : 1, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none', transition: 'fill 0.2s', cursor: value != null ? 'pointer' : 'default' },
+                          hover:   { fill, fillOpacity: isFallback ? 0.55 : 0.8, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none' },
+                          pressed: { fill, outline: 'none' },
+                        }}
+                      />
+                    )
+                  })
+                }
+              </Geographies>
+            </ComposableMap>
+
+            <div style={{ position: 'absolute', bottom: 8, left: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'var(--text-muted)' }}>
+              <span>100%</span>
+              <div style={{ width: 72, height: 5, borderRadius: 3, background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
+              <span>0%</span>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 10, overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  {[viewMode, metric === 'Headcount' ? 'Fulfillment' : 'SL%', 'Status'].map((h, i) => (
+                    <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
+                      fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, value: r[metricKey] })) : countryRows.map(r => ({ key: r.country, value: r.value }))).map(r => {
+                  const col = vColor(r.value)
+                  const status = r.value >= 90 ? 'Excellent' : r.value >= 80 ? 'Good' : r.value >= 70 ? 'Fair' : 'Critical'
+                  const badgeCls = r.value >= 80 ? 'badge-good' : r.value >= 70 ? 'badge-warn' : 'badge-bad'
+                  return (
+                    <tr key={r.key} style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: 500 }}>{r.key}</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.value}%</td>
+                      <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

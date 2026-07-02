@@ -427,6 +427,62 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## Landing Page + ESG/HES Capacity Plan Pages (2026-07-03)
+
+### Landing tiles + per-business sub-toggle, not a 4-way top-level toggle
+**Decision:** Instead of extending the existing header pill to 4 options (ESG Forecasting/ESG Capacity/HES Forecasting/HES Capacity), the app now opens on a dedicated "ISG SPoG" landing screen with two tiles (ESG/HES); picking one opens that business section, which has its own 2-way Forecasting/Capacity Plan toggle scoped to it.
+**Why:** Requested directly and explicitly explained by the user before any screenshots were sent — "front page where there will be two business... clicking on ESG tile it should open the ESG page with toggle between ESG Forecasting and ESG Capacity Plan." A flat 4-way pill would bury the business-level distinction (ESG vs HES) inside a single row of similarly-styled buttons; a landing page makes "pick your business first" a real, separate decision, and the header toggle only ever needs to express one binary choice (which sub-page) once a business is chosen.
+
+### Home button next to the logo, not a tab or breadcrumb
+**Decision:** A single icon button (house glyph) sits immediately left of the logo, only rendered when a business section is open; clicking it returns to `view: 'landing'`.
+**Why:** Asked directly ("A home button would be fine") after being offered as an option for "how do I get back to the tiles." Placing it at the logo (the conventional "go home" spot in web apps) needed no new UI real estate and reads as an obvious affordance without a label.
+
+### Each business remembers its own last-viewed sub-page independently
+**Decision:** `esgSubPage` and `hesSubPage` are two separate `useState` values in `App.jsx`, not one shared `subPage` reset whenever `view` changes.
+**Why:** Not explicitly requested, but the alternative (a single shared sub-page that resets to Forecasting every time you go home and pick a business again) would silently discard the user's position if they're bouncing between ESG and HES Capacity Plan mid-session — a small persistence a user would expect from an app framed around "hopping between businesses," and cheap to provide since it's just a second `useState`.
+
+### Two data-only clarifying-question round trips before building
+**Decision:** Asked the same clarifying question about ESG Capacity Layer 3's two near-identical visual descriptions ("Actual vs Target Utilization" vs "Queues with Aux culprit") via `AskUserQuestion` twice, at the user's explicit request ("wait" → "ask again" → "ask the same question again you asked me earlier"), rather than assuming the first answer stood or silently re-asking with different wording.
+**Why:** The user explicitly asked to see the exact same question repeated, not a rephrased one — re-issuing it verbatim (same options, same framing) respected that literally rather than guessing they wanted something reworded. Confirmed answer both times: Visual 1 is a time-axis trend chart with an Aux-code tooltip; Visual 2 is a per-queue ranking chart, mirroring the existing "Top Queues by Variance" convention already established on ESG Forecasting.
+
+### `ChartKit.jsx` promoted out of `HesChartKit.jsx`, not duplicated a third time
+**Decision:** Moved `Visual`/`Tip`/`PlanDropdowns`/`PlanSelect`/`CategoryTick`/`truncate`/`PillButton` from `hes/HesChartKit.jsx` into a new top-level `src/components/ChartKit.jsx`; `HesChartKit.jsx` became a two-line re-export shim (`export { Modal } from '../Modal'; export * from '../ChartKit'`) so no existing HES import had to change. Added `BinaryToggle` (generic two-state pill switch) to the same new file.
+**Why:** Both Capacity pages need the exact same chart-panel/tooltip/plan-picker primitives HES Forecasting already had — copying them a third time (ESG Forecasting already has its own near-duplicate) would mean three implementations of the same `Visual` wrapper to keep in sync forever. Promoting once, with a compatibility shim for the existing import path, cost nothing existing and let every subsequent Region/Country toggle (there are six across the two new pages) share one `BinaryToggle` instead of a bespoke switch per file.
+
+### Shared `PlanOverPlanLayer`, parameterized by a `dataFn` prop
+**Decision:** Built ESG Capacity's "Plan over Plan Comparison" layer once as `src/components/capacity/PlanOverPlanLayer.jsx`, taking `dataFn(filters, granularity)` as a prop; HES Capacity Plan reuses the identical component, just passing its own `planOverPlanFteByFY` selector.
+**Why:** Both mockups specify the literal same layer — one full-width chart, Plan A/B dropdowns, a variance % line — differing only in which numbers back it. Building an ESG-specific copy first and then noticing HES needed the identical thing (caught before HES Capacity was started) made the "parameterize by data source" refactor an easy call rather than a late one.
+
+### HES Capacity reuses `hes/HesFilterPanel.jsx` directly, unmodified
+**Decision:** `HesCapacityPage.jsx` imports `HesFilterPanel` from `../hes/HesFilterPanel` as-is, rather than building a new `HesCapacityFilterPanel.jsx`.
+**Why:** The mockup's filter list for HES Capacity Plan (LOB, Fiscal Year/Quarter/Month/Week, Business Partner, Global Grouping) is field-for-field identical to HES Forecasting's, and `HesFilterPanel` is already a stateless controlled component with no page-specific hardcoding (filters/onChange/granularity/onGranularityChange props only) — building a byte-identical second copy would be pure duplication for zero behavioral difference. ESG Capacity Plan, by contrast, has a genuinely different filter set (Combined Queue Name/Capacity Code/Plan Name/Business Org/Country, no LOB) from ESG Forecasting, so it got its own `EsgCapacityFilterPanel.jsx`.
+
+### ESG Capacity Utilization Layer: two visuals with near-identical descriptions, disambiguated by axis
+**Decision:** "Actual vs Target Utilization" (Visual 1) is a time-axis (Fiscal Year/Quarter/Week) trend with a custom tooltip surfacing which Aux code drove any shortfall; "Queues with Aux Culprit" (Visual 2) is a queue-axis horizontal-bar ranking of which specific queues have the worst Aux-driven utilization gap, worst-first.
+**Why:** The mockup's text for both visuals read almost identically, which is why this was the one thing asked about before building (see the clarifying-question entry above). Resolving it by axis — one chart answers "how are we trending over time," the other answers "which queues are the problem" — reuses the exact "diverging/ranking queue chart" pattern already established for Top Queues by Variance on ESG Forecasting, rather than inventing a third chart shape for a page that's supposed to feel like the same product.
+
+### Aux-culprit fields attached after granularity expansion, not passed through it
+**Decision:** `utilizationByFY()` computes `auxCulprit`/`auxImpactPct` per output row by array index, after calling `expandRateToGranularity()` on the numeric `actual`/`target` fields, rather than trying to pass the categorical Aux-code field through the expansion helper itself.
+**Why:** `expandRateToGranularity`/`expandToGranularity` are built for numeric fields (percentages or volumes) — a categorical string field like an Aux-code name has no meaningful "expansion" operation. Attaching it post-hoc, keyed by the resulting array's index (which is correct regardless of whether the array has 3/12/36/156 rows for Year/Quarter/Month/Week), avoided modifying the shared expansion helpers to special-case a non-numeric field that only this one chart needs.
+
+### Two sort-direction bugs caught by Node smoke tests, not code review
+**Decision:** `utilizationByQueue()` was fixed from sorting ascending by `|utilGap|` (which surfaced the *best*-adhering queues) to descending (worst first); `leavesByQueue()` was fixed from sorting ascending by raw delta only (which missed large positive-delta outliers, biasing toward queues with fewer-than-planned leaves) to selecting the top-N by `|delta|` descending first, then re-sorting that shortlist ascending for display.
+**Why:** Both bugs were invisible from reading the code — the sort call looked reasonable in isolation. Writing a Node smoke-test script that actually printed the resulting rows for a representative filter set (before any UI was built on top of the data module) surfaced both immediately: the "worst queues" list was showing near-perfect adherence, and the "outage" list was all negative deltas. This is the same "verify with real output, not just a clean build" discipline used for every granularity-toggle change earlier in this project.
+
+### `HES_GEO_SLO_BY_REGION` values tuned to hit the mockup's literal "2 regions at risk" text
+**Decision:** The 4 illustrative region SLO values were chosen (97/88/96/79) so that exactly 2 sit below the FY27 SLO target (95), rather than picking arbitrary-looking numbers that happened to produce 1 or 3.
+**Why:** The mockup's card sub-message is a specific, literal number ("2 regions at risk") — since this is illustrative mock data anyway (no real per-region SLO dataset exists), there was no reason not to tune it to match the one concrete detail the mockup specified, rather than let an arbitrary formula produce a number that visibly contradicts the mockup's own text.
+
+### HES Capacity's Sankey: illustrative CQN tiers as sources, real LOB names as targets
+**Decision:** `workloadSankey()` uses 3 fixed illustrative source-node labels (`CQN-Standard`/`CQN-Critical`/`CQN-Enterprise`) flowing into 4 real LOB names (`Networking`/`Storage`/`Server`/`PowerScale`, all genuine entries from `LOB_LIST`).
+**Why:** HES Capacity Plan's filter set has no per-queue (CQN) dimension of its own — LOB is the only real categorical axis this page's filters expose. Rather than fabricate fake per-queue names to match the mockup's "CQN to LOB" framing literally, the source tiers are clearly-illustrative priority-band labels while the target nodes use real business names, following the same "real names + illustrative structure" principle as every other mock dataset in this app.
+
+### HES Capacity Geo Map renumbered from the mockup's "Layer 5" to badge 04
+**Decision:** The mockup's screenshots show Layer 1 → Layer 2 → Layer 3 → Layer 5 for this page's geo map, with no Layer 4 shown anywhere. The shipped UI labels it **04**.
+**Why:** A visible gap in sequential badge numbering (01, 02, 03, 05) would read as a bug or a missing section to anyone looking at the page, not as a faithful reproduction of the source deck's own typo/gap. Every other layer-badged section in this app (both Forecasting pages, ESG Capacity) uses strictly sequential 01-04 numbering; matching that convention here is more consistent than preserving an apparent numbering mistake from the mockup.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

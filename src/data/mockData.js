@@ -1,4 +1,32 @@
 export const PLAN_NAMES = ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Plan', 'FY27Q1_AA']
+
+// Capacity Plan pages re-plan on a monthly cadence rather than the Forecasting
+// pages' quarterly AOP naming, so they get their own Plan Name list. 'Actual' is a
+// real selectable value here (both Capacity filter bars default to it) — Plan A/B
+// pickers filter it out the same way Forecasting's plan dropdowns already do.
+export const CAPACITY_PLAN_NAMES = ['Actual', 'Dec Plan', 'Jan Plan', 'April Plan']
+
+// Business Org filter (ESG Capacity only) — illustrative sibling org units alongside
+// the one this page is scoped to by default.
+export const BUSINESS_ORGS = ['ISG ESG', 'ISG HES', 'ISG Core']
+
+// Country filter (ESG Capacity only) — a curated, real-country list distinct from the
+// exhaustive world-atlas country groupings the geo choropleths use; COUNTRY_REGION is
+// a simple lookup for whichever capacity selectors need to narrow by region via a
+// selected country, decoupled from the choropleth's own regionForCountry() (that one's
+// tuned to world-atlas's exact naming, this one doesn't need to be).
+export const COUNTRIES = [
+  'United States', 'Canada', 'Brazil', 'Mexico', 'Argentina',
+  'United Kingdom', 'Germany', 'France', 'South Africa',
+  'India', 'China', 'Japan', 'Australia', 'Singapore',
+]
+export const COUNTRY_REGION = {
+  'United States': 'NAMER', 'Canada': 'NAMER',
+  'Brazil': 'LATAM', 'Mexico': 'LATAM', 'Argentina': 'LATAM',
+  'United Kingdom': 'EMEA', 'Germany': 'EMEA', 'France': 'EMEA', 'South Africa': 'EMEA',
+  'India': 'APJ', 'China': 'APJ', 'Japan': 'APJ', 'Australia': 'APJ', 'Singapore': 'APJ',
+}
+
 export const FISCAL_YEARS = ['FY25', 'FY26', 'FY27']
 
 // Fiscal Quarter filter options: FY25Q1 ... FY27Q4

@@ -1,23 +1,52 @@
 import React, { useEffect, useState } from 'react'
+import LandingPage from './components/LandingPage'
 import ForecastingPage from './components/ForecastingPage'
+import EsgCapacityPage from './components/esgCapacity/EsgCapacityPage'
 import HesForecastingPage from './components/hes/HesForecastingPage'
-
-const PAGES = [
-  { key: 'forecasting', label: 'ESG Forecasting' },
-  { key: 'hes', label: 'HES Forecasting' },
-]
+import HesCapacityPage from './components/hesCapacity/HesCapacityPage'
 
 const THEME_KEY = 'isg-spog-theme'
 
-function PageToggle({ page, setPage }) {
+// Each business section (ESG/HES) has its own internal Forecasting/Capacity Plan
+// toggle — this is the sub-page shown inside that section, not a top-level route.
+const SUB_PAGES = {
+  esg: [
+    { key: 'forecasting', label: 'ESG Forecasting' },
+    { key: 'capacity', label: 'ESG Capacity Plan' },
+  ],
+  hes: [
+    { key: 'forecasting', label: 'HES Forecasting' },
+    { key: 'capacity', label: 'HES Capacity Plan' },
+  ],
+}
+
+function PageToggle({ options, page, setPage }) {
   return (
     <div className="drill-toggle">
-      {PAGES.map(p => (
+      {options.map(p => (
         <button key={p.key} onClick={() => setPage(p.key)} className={`drill-btn${page === p.key ? ' active' : ''}`}>
           {p.label}
         </button>
       ))}
     </div>
+  )
+}
+
+// Home button placed next to the header logo, next to a business section, to get
+// back to the ISG SPoG landing tiles — the only way back up once a business is
+// selected, since the header no longer carries a top-level page toggle.
+function HomeButton({ onClick }) {
+  return (
+    <button onClick={onClick} aria-label="Back to ISG SPoG home" title="Back to ISG SPoG home" style={{
+      width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border-default)',
+      background: 'var(--bg-inset)', color: 'var(--text-dim)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+    }}>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M2 7.5 8 2l6 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3.5 6.5V13a1 1 0 0 0 1 1H6.5v-3.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1V14h2a1 1 0 0 0 1-1V6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   )
 }
 
@@ -52,8 +81,19 @@ function ThemeToggle({ theme, onToggle }) {
   )
 }
 
+const BUSINESS_META = {
+  esg: { fullName: 'Enterprise Service Group', badge: 'ISG ESG' },
+  hes: { fullName: 'High End Storage', badge: 'ISG HES' },
+}
+
 export default function App() {
-  const [page, setPage] = useState('forecasting')
+  // Top-level: 'landing' or a business key ('esg'/'hes'). Each business remembers
+  // its own last-viewed sub-page (Forecasting/Capacity Plan) independently, so
+  // hopping back to the landing tiles and returning doesn't reset it.
+  const [view, setView] = useState('landing')
+  const [esgSubPage, setEsgSubPage] = useState('forecasting')
+  const [hesSubPage, setHesSubPage] = useState('forecasting')
+
   // Reading + applying the saved theme inside the initializer (not a useEffect)
   // sets the data-theme attribute before first paint, avoiding a dark->light flash.
   const [theme, setTheme] = useState(() => {
@@ -67,7 +107,11 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
-  const pageLabel = PAGES.find(p => p.key === page)?.label
+  const isBusiness = view === 'esg' || view === 'hes'
+  const subPage = view === 'esg' ? esgSubPage : hesSubPage
+  const setSubPage = view === 'esg' ? setEsgSubPage : setHesSubPage
+  const meta = isBusiness ? BUSINESS_META[view] : null
+  const subPageLabel = isBusiness ? SUB_PAGES[view].find(p => p.key === subPage)?.label : null
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-page)', color: 'var(--text-primary)', transition: 'background-color 0.2s ease, color 0.2s ease' }}>
@@ -78,6 +122,7 @@ export default function App() {
         borderBottom: '1px solid var(--border-default)',
       }} className="px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          {isBusiness && <HomeButton onClick={() => setView('landing')} />}
           {/* Logo mark */}
           <div style={{
             width: 32, height: 32, borderRadius: 7,
@@ -97,13 +142,13 @@ export default function App() {
               ISG SPoG
             </h1>
             <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
-              Enterprise Service Group · {pageLabel}
+              {isBusiness ? `${meta.fullName} · ${subPageLabel}` : 'Enterprise Service Group · High End Storage'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <PageToggle page={page} setPage={setPage} />
+          {isBusiness && <PageToggle options={SUB_PAGES[view]} page={subPage} setPage={setSubPage} />}
           <ThemeToggle theme={theme} onToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />
           <div style={{ fontSize: 10, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{
@@ -112,20 +157,24 @@ export default function App() {
             }} className="animate-pulse-soft" />
             Live · FY26
           </div>
-          <div style={{
-            fontSize: 10, fontWeight: 600, color: 'var(--accent)',
-            background: 'var(--accent-dim)', border: '1px solid rgba(56,189,248,0.2)',
-            borderRadius: 5, padding: '3px 9px',
-          }}>
-            ISG ESG
-          </div>
+          {isBusiness && (
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: 'var(--accent)',
+              background: 'var(--accent-dim)', border: '1px solid rgba(56,189,248,0.2)',
+              borderRadius: 5, padding: '3px 9px',
+            }}>
+              {meta.badge}
+            </div>
+          )}
         </div>
       </header>
 
       {/* Accent line under header */}
       <div style={{ height: 1, background: 'linear-gradient(90deg, var(--accent) 0%, rgba(56,189,248,0.1) 40%, transparent 70%)' }} />
 
-      {page === 'forecasting' ? <ForecastingPage /> : <HesForecastingPage />}
+      {view === 'landing' && <LandingPage onSelect={setView} />}
+      {view === 'esg' && (esgSubPage === 'forecasting' ? <ForecastingPage /> : <EsgCapacityPage />)}
+      {view === 'hes' && (hesSubPage === 'forecasting' ? <HesForecastingPage /> : <HesCapacityPage />)}
 
       <footer style={{
         textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',

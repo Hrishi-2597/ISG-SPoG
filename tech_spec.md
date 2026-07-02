@@ -1,7 +1,7 @@
 # Technical Specification — ISG SPoG ESG Forecasting Dashboard
 
 ## Overview
-A React application that renders an analytics dashboard for Dell's ISG Enterprise Service Group (ESG), with **two pages** switched via a header toggle: **ESG Forecasting** (call volume plans, actuals vs plan adherence, geographic accuracy distribution) and **HES Forecasting** (ASU/SR/UCR service-unit tracking, built from slides 5–6 of `SPOG_views.pptx`; briefly named "ESG Capacity Planning" before the 2026-07-02 rename). All data is currently mocked — no backend — but every filter on both pages is fully live: each recomputes cards and charts from a shared, filterable fact table (see Data Model below).
+A React application that renders an analytics dashboard for Dell's ISG Business, entered through an **"ISG SPoG" landing page** with two tiles — **ESG** and **HES**. Each business section has its own internal Forecasting/Capacity Plan toggle in the header, so there are effectively **4 pages**: **ESG Forecasting** (call volume plans, actuals vs plan adherence, geographic accuracy distribution), **ESG Capacity Plan** (staffing, utilization, attrition, SL%), **HES Forecasting** (ASU/SR/UCR service-unit tracking, built from slides 5–6 of `SPOG_views.pptx`; briefly named "ESG Capacity Planning" before a 2026-07-02 rename), and **HES Capacity Plan** (FTE, attrition, workload distribution incl. a Sankey diagram, SLO). A home button next to the header logo returns to the landing tiles from either business section. All data is currently mocked — no backend — but every filter on every page is fully live: each recomputes cards and charts from a shared, filterable fact table (see Data Model below).
 
 ---
 
@@ -34,20 +34,41 @@ SPoG/
 │   ├── index.css               # Tailwind imports + theme CSS variables (:root / [data-theme='light']) +
 │   │                              global scrollbar/select/card/tooltip/etc. component classes
 │   ├── components/
+│   │   ├── LandingPage.jsx     # "ISG SPoG" title + ESG/HES tiles — the app's entry point (2026-07-03)
 │   │   ├── ForecastingPage.jsx # ESG Forecasting page body (filters + cards + 3 layers + RCA/CLCA sidebar)
-│   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by both pages
-│   │   ├── Modal.jsx           # Shared popup modal — used by both pages' Key Metrics card drill-downs
-│   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by both filter bars
+│   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by every page
+│   │   ├── Modal.jsx           # Shared popup modal — used by every page's Key Metrics card drill-downs
+│   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by every filter bar
+│   │   ├── ChartKit.jsx        # Shared chart primitives (Visual, Tip, PlanDropdowns, PlanSelect, CategoryTick,
+│   │   │                         truncate, BinaryToggle) — promoted from hes/HesChartKit.jsx (2026-07-03) so both
+│   │   │                         Capacity pages and both Forecasting pages share one implementation
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
 │   │   ├── Layer2ActualVsPlan.jsx  # Actual vs Plan: 3 chart visuals + stacked bar
 │   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers + summary table
+│   │   ├── capacity/
+│   │   │   └── PlanOverPlanLayer.jsx # Shared "Plan over Plan Headcount Comparison" layer — takes a
+│   │   │                               dataFn(filters, granularity) prop so ESG/HES Capacity Plan both reuse it
+│   │   ├── esgCapacity/         # ESG Capacity Plan page (all new, 2026-07-03)
+│   │   │   ├── EsgCapacityPage.jsx        # Page body: filters + cards + 4 layers (no RCA/CLCA sidebar)
+│   │   │   ├── EsgCapacityFilterPanel.jsx # Scope/Time/People/Geography clusters + DB/OSP pill + GranularityToggle
+│   │   │   ├── EsgCapacityMetricCards.jsx # 5 KPI cards (Staffing/Utilization/SL%/Total FTE/Attrition), Modal drill-downs
+│   │   │   ├── HeadcountLayer.jsx         # Layer 01 "Headcount and SL%" — staffing summary, attrition, actual-vs-plan+SL%+defaulters
+│   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization" — actual-vs-target trend w/ Aux tooltip, per-queue Aux ranking, leaves ranking
+│   │   │   └── EsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Country view)
+│   │   └── hesCapacity/         # HES Capacity Plan page (all new, 2026-07-03)
+│   │       ├── HesCapacityPage.jsx           # Page body: filters (reuses hes/HesFilterPanel.jsx directly) + cards + 4 layers
+│   │       ├── HesCapacityMetricCards.jsx    # 5 KPI cards (Total FTE/Attrition/Cases per FTE/Avg Case Time/Global SLO)
+│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 — staffing summary, attrition, actual-vs-plan utilization
+│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 — Sankey (CQN tiers→LOB), workload act-vs-plan, ACT trend
+│   │       └── HesCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — SLO by region
 │   │   └── hes/                # HES Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── HesForecastingPage.jsx  # Page body: filters + cards + 4 layers + RCA/CLCA sidebar
-│   │       ├── HesFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle
-│   │       ├── HesChartKit.jsx         # Shared chart primitives (Visual wrapper, Tip, PlanDropdowns, truncate, etc.);
-│   │       │                            re-exports Modal from ../Modal.jsx
+│   │       ├── HesFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
+│   │       │                            reused directly (unmodified) by hesCapacity/HesCapacityPage.jsx — identical field set
+│   │       ├── HesChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
+│   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── HesMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
 │   │       ├── HesRcaClcaPanel.jsx     # Sticky RCA/CLCA sidebar, HES-specific illustrative content
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan, Plan Impact (region→LOB drill)
@@ -56,8 +77,11 @@ SPoG/
 │   │       └── HesGeoMap.jsx           # Layer 04 — choropleth by LOB adherence per region
 │   └── data/
 │       ├── mockData.js         # ESG Forecasting page's static mock data (CQNs, plans, KPIs, geo) — also exports matchesMulti, REGIONS,
-│       │                         regionForCountry, and other primitives hesData.js reuses
-│       └── hesData.js          # HES Forecasting page's data model (LOB list, ASU/SR/UCR series, LOB_QUEUES, region-impact deltas)
+│       │                         regionForCountry, CAPACITY_PLAN_NAMES, BUSINESS_ORGS, COUNTRIES/COUNTRY_REGION
+│       │                         (2026-07-03), and other primitives hesData.js/esgCapacityData.js/hesCapacityData.js reuse
+│       ├── hesData.js          # HES Forecasting page's data model (LOB list, ASU/SR/UCR series, LOB_QUEUES, region-impact deltas)
+│       ├── esgCapacityData.js  # ESG Capacity Plan's data model (queue-level HC/utilization/SL/leaves fact table)
+│       └── hesCapacityData.js  # HES Capacity Plan's data model (reuses hesData.js's LOB_FACTS/filterLobs directly)
 ├── index.html                  # Vite entry HTML
 ├── vite.config.js              # base: '/ISG-SPoG/' for GitHub Pages paths
 ├── tailwind.config.js          # Custom navy color palette
@@ -123,6 +147,71 @@ HesForecastingPage
 HesRcaClcaPanel — sticky sidebar (position: sticky) alongside the 4 layers above, starting at the
                   "Analysis Layers" divider — same layout as ForecastingPage's RcaClcaPanel, own
                   illustrative content written for this page's ASU/SR/CPASU/UCR metrics
+```
+
+### App (2026-07-03 restructure): landing tiles + per-business sub-toggle
+
+```
+App
+├── view state: 'landing' | 'esg' | 'hes' — top-level; no router, same reasoning as the original page toggle
+├── esgSubPage / hesSubPage state: 'forecasting' | 'capacity' each, independent — switching business and back
+│                                   doesn't reset the other business's last-viewed sub-page
+├── <header>
+│   ├── HomeButton (only rendered when view is 'esg'|'hes') — onClick sets view back to 'landing'
+│   └── PageToggle (only rendered when view is 'esg'|'hes') — options = SUB_PAGES[view], drives esgSubPage/hesSubPage
+├── LandingPage(onSelect=setView)          — rendered when view === 'landing'
+├── ForecastingPage / EsgCapacityPage      — rendered when view === 'esg', by esgSubPage
+└── HesForecastingPage / HesCapacityPage   — rendered when view === 'hes', by hesSubPage
+```
+
+### EsgCapacityPage
+
+```
+EsgCapacityPage
+├── EsgCapacityFilterPanel  — Controlled: filters state lifted to EsgCapacityPage; combinedQueueName/
+│                              capacityCode/planName/fiscalYear/fiscalQuarter/fiscalWeek/channel/
+│                              businessPartner/businessOrg/region/country/dbOsp + GranularityToggle
+├── EsgCapacityMetricCards(filters, granularity) — capacityCardData(filters); 5 cards, each a Modal drill-down
+│   └── DrillDownModal — StaffingTrendChart / UtilizationTrendChart / SlTrendChart (line-only) / AttritionTrendChart
+├── HeadcountLayer(filters, granularity)   — badge "01"
+│   ├── Visual1 "Actual vs Planned HC Staffing Summary" — ComposedChart: hcStaffingByFY(filters, granularity), PlanSelect
+│   ├── Visual2 "Attrition"                              — ComposedChart: attritionByFY(filters, granularity, lens), Region/Country BinaryToggle
+│   └── Visual3 "Actual vs Plan Trend with SL%"           — ComposedChart: slTrendByFY(filters, granularity) +
+│                                                             defaulterQueues(filters) list below (ascending, actual-over-plan)
+├── PlanOverPlanLayer(filters, granularity, dataFn=planOverPlanHCByFY) — shared component, badge "02"
+├── UtilizationLayer(filters, granularity) — badge "03"
+│   ├── Visual1 "Actual vs Target Utilization"  — time-axis BarChart: utilizationByFY(filters, granularity),
+│   │                                              tooltip shows Aux-code culprit when actual < target
+│   ├── Visual2 "Queues with Aux Culprit"       — queue-axis horizontal bars: utilizationByQueue(filters), worst-gap-first
+│   └── Visual3 "Outage — Actual vs Target Leaves" — queue-axis horizontal bars: leavesByQueue(filters), ascending
+└── EsgCapacityGeoMap(filters)              — badge "04"; dual BinaryToggle (Headcount/SL% metric × Region/Country view)
+
+No RCA/CLCA sidebar — not specified in this page's mockups.
+```
+
+### HesCapacityPage
+
+```
+HesCapacityPage
+├── HesFilterPanel(filters, onChange, granularity, onGranularityChange) — reused directly from hes/HesFilterPanel.jsx,
+│                                                                          unmodified (identical field set: LOB/FY-Qtr-
+│                                                                          Month-Week/Business Partner/Global Grouping)
+├── HesCapacityMetricCards(filters, granularity) — hesCapacityCardData(filters); 5 cards, each a Modal drill-down
+│   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
+│                         AvgCaseTimeTrendChart (line) / GlobalSloByRegionChart (bar)
+├── HeadcountAttritionLayer(filters, granularity) — badge "01"
+│   ├── Visual1 "Actual vs Plan Summary"      — ComposedChart: fteByFY(filters, granularity)
+│   ├── Visual2 "Attrition"                    — ComposedChart: hesAttritionByFY(filters, granularity, lens), Region/Country toggle
+│   └── Visual3 "Actual vs Plan Utilization"   — ComposedChart: hesUtilByFY(filters, granularity, lens), Region/Country toggle
+├── PlanOverPlanLayer(filters, granularity, dataFn=planOverPlanFteByFY) — shared component, badge "02"
+├── WorkloadDistributionLayer(filters, granularity) — badge "03"
+│   ├── Visual1 "Workload Flow — CQN to LOB"  — recharts Sankey: workloadSankey(filters), custom labeled SankeyNode
+│   ├── Visual2 "Workload Act vs Plan"        — BarChart: workloadByFY(filters, granularity)
+│   └── Visual3 "ACT Trend — Actual vs Plan"  — LineChart: actHrsByFY(filters, granularity) (rate-preserving expansion)
+└── HesCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
+                                                 single-metric SLO-by-region choropleth, no metric/view toggle
+
+No RCA/CLCA sidebar — not specified in this page's mockups.
 ```
 
 ---
@@ -207,7 +296,7 @@ No external state library. All state is local React `useState`:
 
 | Component | State | Type |
 |---|---|---|
-| `App` | `page` ('forecasting'\|'hes'); `theme` ('dark'\|'light', persisted to localStorage) | String, String |
+| `App` | `view` ('landing'\|'esg'\|'hes'); `esgSubPage`/`hesSubPage` ('forecasting'\|'capacity', independent, default 'forecasting'); `theme` ('dark'\|'light', persisted to localStorage) | String, String, String, String |
 | `ForecastingPage` | `filters`; `granularity` (null\|'Quarter'\|'Month'\|'Week', default null = Fiscal Year) | Object (12 filter keys), String or null |
 | `MetricCards` | `active` (which card's modal is open) | String or null |
 | `Layer1PlanOverPlan` | `plans` (planA/planB, reset by `filters.planName` via `useEffect`), `open` | Object, Boolean |
@@ -218,6 +307,12 @@ No external state library. All state is local React `useState`:
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open`, `selectedRegion` (Visual3 drill state) | String, Object, Boolean, String or null |
 | `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalPeriod` | Boolean, String or null, String, String or null |
 | `HesGeoMap` | `open`, `hovered` | Boolean, Object |
+| `EsgCapacityPage` / `HesCapacityPage` | `filters`; `granularity` (same null-default convention) | Object, String or null |
+| `EsgCapacityMetricCards` / `HesCapacityMetricCards` | `active` (which card's modal is open) | String or null |
+| `PlanOverPlanLayer` (shared) | `open`, `plans` (planA/planB) | Boolean, Object |
+| `HeadcountLayer` / `HeadcountAttritionLayer` / `UtilizationLayer` / `WorkloadDistributionLayer` | `open`; per-visual `lens` (Region/Country) where applicable | Boolean, String |
+| `EsgCapacityGeoMap` | `open`, `metric` (Headcount/SL%), `viewMode` (Region/Country), `hovered` | Boolean, String, String, Object |
+| `HesCapacityGeoMap` | `open`, `hovered` | Boolean, Object |
 
 `filters` flows down as a prop to `MetricCards`, all three layers, and every Visual sub-component. Each chart/card recomputes its data via `useMemo(() => selectorFn(filters), [filters])`, calling into the selector functions exported from `mockData.js` (see Data Model). No FY/Quarter/Week drill-toggle state exists anymore — those were removed; the top filter bar's Fiscal Year/Quarter/Week filters are the only time control, and charts render at Fiscal Year granularity only.
 
@@ -458,6 +553,78 @@ hesCardData(filters) → { totalQueues, asuActuals, srActuals, cpasu, currentUcr
 
 ---
 
+## Data Model (`src/data/esgCapacityData.js`) — ESG Capacity Plan (2026-07-03)
+
+Same conventions as `mockData.js`/`hesData.js`. Built from `ACTIVE_QUEUE_NAMES` (the same 47-queue roster ESG Forecasting uses) — every queue gets HC/utilization/SL/leaves fields in addition to Forecasting's existing tags.
+
+```
+AUX_CODES         — ['Aux 1' ... 'Aux 9'] — illustrative culprit-code taxonomy for utilization gaps
+CAPACITY_QUEUES   — ACTIVE_QUEUE_NAMES.map(...) → Array<{
+  name, region, businessPartner, businessOrg, channel,
+  planHC, actualHC, hcDelta (getter),
+  utilTarget, utilActual, utilGap (getter), auxCulprit,
+  slTarget, slActual,
+  leavesPlan, leavesActual, leavesDelta (getter),
+}>
+filterCapacityQueues(filters) — narrows CAPACITY_QUEUES by combinedQueueName/capacityCode/channel/
+  businessPartner/businessOrg/region/country (matchesMulti)
+```
+
+```
+hcStaffingByFY(filters, granularity)       — {period, actual, plan, adherence} — Visual1 of HeadcountLayer + FTE/Staffing card modal
+attritionByFY(filters, granularity, lens)  — {period, headcount, attrition} — lens ('Region'|'Country') scales the output slightly;
+                                              no real per-country attrition dataset exists, same illustrative-structure convention as everywhere else
+slTrendByFY(filters, granularity)          — {period, actual, plan, slPct} — Visual3 of HeadcountLayer + SL% card modal
+defaulterQueues(filters)                   — queues where actual > plan, ascending by delta — the list under HeadcountLayer Visual3
+planOverPlanHCByFY(filters, granularity)   — {period, plan1, plan2, variance} — feeds the shared PlanOverPlanLayer
+utilizationByFY(filters, granularity)      — {period, actual, target, auxCulprit, auxImpactPct} — auxCulprit/auxImpactPct are
+                                              attached AFTER expansion (by array index), not passed through expandRateToGranularity,
+                                              since they're categorical/non-numeric fields the expansion helpers don't carry
+utilizationByQueue(filters, topN=6)        — queue-axis ranking, sorted by |utilGap| DESCENDING (worst first — see design_choice.md
+                                              for the sort-direction bug this fixes)
+leavesByQueue(filters, topN=6)             — queue-axis ranking: top-N by |leavesDelta| descending, then re-sorted ascending by
+                                              delta for display (see design_choice.md for the bug this fixes)
+capacityCardData(filters)                  — {staffing, utilization, sl, totalFte, attrition} — latest-FY snapshot, backs EsgCapacityMetricCards
+GEO_CAPACITY_BY_REGION / geoCapacityByRegion(filters) / geoCapacityByCountry(filters, metric) —
+  {region|country, fulfillmentPct, slPct} — backs EsgCapacityGeoMap's dual metric/view toggle
+COUNTRY_TO_WORLD_ATLAS_NAME / WORLD_ATLAS_TO_COUNTRY — small explicit lookup mapping the curated
+  14-country COUNTRIES list to/from world-atlas topojson country names, kept separate from
+  mockData.js's regionForCountry() (tuned for full-map-coverage choropleths, not a compact filter list)
+```
+
+Business logic: Total FTE and Attrition % invert the usual "higher actual is better" framing — `actual > plan` is BAD (red) for both, since overstaffing/high-attrition are the problems being flagged; Utilization %/SL % keep the normal "actual ≥ target is good" framing.
+
+---
+
+## Data Model (`src/data/hesCapacityData.js`) — HES Capacity Plan (2026-07-03)
+
+Reuses `hesData.js`'s `LOB_LIST`, `LOB_FACTS`, `filterLobs`, `hesEffectiveFiscalYears` directly — this page's filter set is identical to HES Forecasting's, so no separate fact table or filter function was built for the base LOB scoping.
+
+```
+lobScopeRatio(filters) — filterLobs(filters).length / LOB_FACTS.length (local copy of hesData.js's private helper)
+fteByFY(filters, granularity)             — {period, actual, plan, adherence} — Total FTE card + HeadcountAttritionLayer Visual1
+hesAttritionByFY(filters, granularity, lens) — {period, headcount, attrition} — Attrition card + HeadcountAttritionLayer Visual2
+hesUtilByFY(filters, granularity, lens)   — {period, actual, target, adherence} — HeadcountAttritionLayer Visual3
+cpfByFY(filters, granularity)             — {period, actual, plan} — Cases per FTE card (rate-preserving expansion)
+actHrsByFY(filters, granularity)          — {period, actual, plan} — Avg Case Time card + WorkloadDistributionLayer Visual3
+  (rate-preserving expansion — avg case time is hours-per-case, not a summable volume)
+geoSloByRegion() / HES_GEO_SLO_BY_REGION  — {region, slo} × 4 — backs the Global SLO card's region-breakdown modal + HesCapacityGeoMap;
+  tuned so exactly 2 of 4 regions sit below the FY27 SLO target, matching the mockup's literal "2 regions at risk" card message
+hesCapacityCardData(filters)              — {totalFte, attrition, casesPerFte, avgCaseTime, globalSlo} — latest-FY snapshot,
+  globalSlo additionally carries regionsAtRisk (count of HES_GEO_SLO_BY_REGION rows below the latest FY's target)
+planOverPlanFteByFY(filters, granularity) — {period, plan1, plan2, variance} — feeds the shared PlanOverPlanLayer
+workloadSankey(filters)                   — {nodes, links} recharts Sankey shape: 3 illustrative CQN priority-tier source nodes
+  (CQN-Standard/Critical/Enterprise) → 4 real LOB target nodes (Networking/Storage/Server/PowerScale), 12 links,
+  each value scaled by lobScopeRatio(filters)
+HES_CAPACITY_LOBS                         — LOB_FACTS.map(...) + {region, workloadPlan, workloadActual, actHrsPlan, actHrsActual} —
+  per-LOB fact table backing workload/ACT figures (spreads LOB_FACTS's own businessPartner/globalGrouping tags rather than re-deriving them)
+workloadByFY(filters, granularity)        — {period, actual, plan} — WorkloadDistributionLayer Visual2
+```
+
+Business logic is the mirror image of ESG Capacity's: Total FTE flags `actual < plan` (understaffed) as BAD (red), while Attrition/Cases-per-FTE/Avg-Case-Time flag `actual > plan` (overload) as BAD — both distinct, page-specific conventions honored literally from each page's own mockup rather than forced to match each other.
+
+---
+
 ## Build & Deployment
 
 ### Local build
@@ -504,3 +671,7 @@ Steps:
 10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
 11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
 12. HES Forecasting's RCA/CLCA sidebar (`HesRcaClcaPanel.jsx`) is static illustrative example content, same as the Forecasting page's `RcaClcaPanel` — not yet connected to a real RCA workflow
+13. Neither Capacity Plan page has an RCA/CLCA sidebar — not specified in either page's mockups; revisit if requested
+14. HES Capacity's Sankey diagram (`workloadSankey()`) uses an illustrative 3-tier CQN taxonomy as flow sources since this page's filter set has no real per-queue dimension — only the 4 target LOB names are real
+15. HES Capacity's Geo Map is single-metric (SLO only, region-only) — the mockup ("Layer 5", renumbered to 04) only specifies a region-level SLO heatmap, unlike ESG Capacity's dual metric/view-toggle map
+16. The landing page, Capacity Plan pages, and per-business sub-toggle (2026-07-03) weren't visually clicked through in a rendered browser by the agent — no browser-automation tool available this session; verified via clean production build + Node data smoke tests only
