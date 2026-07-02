@@ -1,5 +1,13 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## HES Forecasting: Total Queues Card + RCA/CLCA Sidebar (2026-07-02)
+
+- **Total Queues card added at the front of the Key Metrics row**, mirroring the Forecasting page's card exactly (icon, "Active / Inactive" sublabel, `71 / 221` value format, "150 inactive queues" sub-line). **UCR Impacted SR (the last card) was removed** to make room — the row is back to 5 cards: Total Queues, Active Service Units, Service Requests, CPASU, Current UCR.
+- **Data source:** `LOB_QUEUES['High End Storage']`'s real 71 active / ~150 inactive queue names — previously treated as one LOB's queue sample, now used as the page-level "HES queue roster" for this card, since it's the only real per-queue name data this page has. New exports in `hesData.js`: `HES_ACTIVE_QUEUE_NAMES`, `HES_INACTIVE_QUEUE_NAMES`, `HES_ACTIVE_QUEUES` (each active name tagged with a region via `inferRegion()`, newly exported from `mockData.js`). `hesCardData()` gained a `totalQueues` field; it doesn't respond to any filter (no per-queue lob/businessPartner/globalGrouping tags exist to narrow by).
+- **Drill-down is a region donut + table**, same mechanic as the Forecasting page's Total Queues card: click a slice (or legend entry) to narrow the table below to that region, click again or "Clear" to reset. Table shows Queue + Region (no Accuracy column — that concept doesn't exist for HES queues, so it wasn't included just to visually match).
+- **`ucrImpactedSrByFY()` removed** as dead code along with the card that used it.
+- **New RCA & CLCA sidebar** (`HesRcaClcaPanel.jsx`) — sticky right-hand column alongside Layers 1-4 (AsuLayer/SrLayer/AsuSrTrendLayer/HesGeoMap), same layout mechanism as the Forecasting page's `RcaClcaPanel` (starts at the "Analysis Layers" divider, KPI cards stay full-width). Content is illustrative and written specifically for this page's own metrics (ASU/SR/CPASU/UCR/LOB language) rather than reusing the Forecasting page's queue/call-volume-themed copy, per the standing decision documented in `design_choice.md` not to copy that content verbatim.
+
 ## HES Forecasting: Card Modals, Renames & Layer 3 Redesign (2026-07-02)
 
 - **Card drill-downs are now popup modals**, not inline panels. `HesMetricCards.jsx`'s `DrillDownModal` wraps every card's chart in the new shared `Modal` (`HesChartKit.jsx`) — centered overlay, closes on backdrop click or ✕. Closing it only clears local `active` state; `filters` is untouched, so the dashboard is exactly as the user left it.
@@ -198,8 +206,9 @@ These are in the original SPOG_views.pptx but not yet implemented:
 3. Queue/capacity/plan **names** are real; volume, accuracy, and variance **numbers** are still mock/static — no API or database connection yet.
 4. Chunk size warning (~697KB bundle) — consider code-splitting recharts and react-simple-maps in future.
 5. `INACTIVE_QUEUE_NAMES` (406 real names) is defined in `mockData.js` but has no drill-down UI yet — only the count is shown on the Total Queues card.
-6. `LOB_QUEUES` (HES Forecasting's real per-queue lists for "High End Storage") has no UI consumer since "UCR Runrate with Target" switched from a queue-level list to a year-click modal of top-5 non-adherent LOBs (2026-07-02) — revisit if a queue-level drill-down is wanted again.
+6. `LOB_QUEUES`'s real per-queue lists for "High End Storage" now back the HES Forecasting Total Queues card (2026-07-02) — no longer the dead data flagged in the prior note here.
 7. HES Forecasting's CPASU Trend region/time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists yet, same "illustrative structure" convention as the rest of this page's mock numbers.
+8. HES Forecasting's Total Queues card treats `LOB_QUEUES['High End Storage']`'s real names as the whole page's queue roster (not scoped to that one LOB) — it's the only real per-queue name data supplied for this page; if real per-LOB queue lists arrive for the other 32 LOBs, this should be revisited to decide whether Total Queues should sum across all of them instead.
 
 ---
 

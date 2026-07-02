@@ -93,9 +93,9 @@ App
 HesForecastingPage
 ├── HesFilterPanel        — Controlled: filters state lifted to HesForecastingPage
 ├── HesMetricCards(filters) — hesCardData(filters) recomputed on every change
-│   └── DrillDownModal     — Popup (HesChartKit's Modal), one of AsuTrendChart/SrDbOspChart/CpasuChart/
-│                            CurrentUcrChart/UcrImpactedChart; closing it only clears local `active`
-│                            state, filters prop is untouched
+│   └── DrillDownModal     — Popup (HesChartKit's Modal), one of TotalQueuesSection/AsuTrendChart/
+│                            SrDbOspChart/CpasuChart/CurrentUcrChart; closing it only clears local
+│                            `active` state, filters prop is untouched
 ├── AsuLayer(filters)     — "ASU Trend", collapsible, badge "01"
 │   ├── Visual1 "Actuals vs Plan Comparison"  — ComposedChart: asuByFY(filters) + Adherence% line, "Plan Name" dropdown
 │   ├── Visual2 "Plan vs Plan Comparison"     — ComposedChart: asuPlanVsPlanByFY(filters) + Variance% line, Plan A/B dropdowns
@@ -113,8 +113,11 @@ HesForecastingPage
 │                                            topNonAdherentLobsByYear(filters, year) — top 5 LOBs, not queues
 └── HesGeoMap(filters)    — Collapsible, badge "04"; same choropleth mechanism as Layer3GeoMap,
                             colored by geoAdherenceByRegion(filters); no Region/Sub-region toggle
+
+HesRcaClcaPanel — sticky sidebar (position: sticky) alongside the 4 layers above, starting at the
+                  "Analysis Layers" divider — same layout as ForecastingPage's RcaClcaPanel, own
+                  illustrative content written for this page's ASU/SR/CPASU/UCR metrics
 ```
-No RCA/CLCA sidebar on this page.
 
 ---
 
@@ -131,7 +134,7 @@ No external state library. All state is local React `useState`:
 | `Layer2ActualVsPlan` | `plan` (reset by `filters.planName` via `useEffect`), `open` | String, Boolean |
 | `Layer3GeoMap` | `viewMode` (Region/Country), `hovered`, `open` | String, Object, Boolean |
 | `HesForecastingPage` | `filters` | Object (7 filter keys) |
-| `HesMetricCards` | `active` (which card's modal is open) | String or null |
+| `HesMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill) | String or null, String or null |
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open`, `selectedRegion` (Visual3 drill state) | String, Object, Boolean, String or null |
 | `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalYear` | Boolean, String or null, String, String or null |
 | `HesGeoMap` | `open`, `hovered` | Boolean, Object |
@@ -273,8 +276,15 @@ IMPACT_REGIONS        — ['AMER', 'APJ', 'EMEA', 'Global'] — the 4-region set
                          (AsuLayer/SrLayer Visual3) and for CPASU Trend's region breakdown
                          (AsuSrTrendLayer Visual1), distinct from the 5-region REGIONS
 LOB_QUEUES            — { 'High End Storage': { active: [...71 real names], inactive: [...~150 real names] } }
-                         (business-supplied verbatim); other LOBs have no entry yet. No UI consumer
-                         as of 2026-07-02 (see Known Limitations) — kept for a future queue-level drill-down.
+                         (business-supplied verbatim); other LOBs have no entry yet. Backs
+                         HES_ACTIVE_QUEUE_NAMES/HES_ACTIVE_QUEUES below (Total Queues card).
+HES_ACTIVE_QUEUE_NAMES / HES_INACTIVE_QUEUE_NAMES — = LOB_QUEUES['High End Storage'].active/.inactive,
+                         used as the page-level HES queue roster (not scoped to one LOB) since it's
+                         the only real per-queue name data this page has
+HES_ACTIVE_QUEUES     — HES_ACTIVE_QUEUE_NAMES.map(name => ({ name, region: inferRegion(name) })) —
+                         inferRegion() is imported from mockData.js (newly exported), same
+                         APJ/EMEA/LATAM/NAMER-prefix-else-Global logic as the Forecasting page's
+                         own queue fact table. Backs the Total Queues card's region donut + table.
 ```
 
 ### LOB fact table
@@ -351,10 +361,12 @@ geoAdherenceByRegion(filters) — averages adherence across filterLobs(filters) 
 
 ### Cards
 ```
-hesCardData(filters) → { asuActuals, srActuals, cpasu, currentUcr, ucrImpactedSr }, each the
-  latest-FY snapshot (asu[asu.length-1] etc.) off the selector functions above. asuActuals/srActuals/
-  cpasu additionally carry { period, prevPeriod, yoyPct } — yoyPct is the % change vs the prior in-scope
-  FY (null if there isn't one), backing each card's "YTD <period>: ... vs <prevPeriod>" sub-message.
+hesCardData(filters) → { totalQueues, asuActuals, srActuals, cpasu, currentUcr }, each the
+  latest-FY snapshot (asu[asu.length-1] etc.) off the selector functions above, except totalQueues
+  ({ active, inactive } = HES_ACTIVE_QUEUE_NAMES.length/HES_INACTIVE_QUEUE_NAMES.length), which
+  ignores filters entirely. asuActuals/srActuals/cpasu additionally carry { period, prevPeriod,
+  yoyPct } — yoyPct is the % change vs the prior in-scope FY (null if there isn't one), backing
+  each card's "YTD <period>: ... vs <prevPeriod>" sub-message.
 ```
 
 ---
@@ -399,8 +411,9 @@ Steps:
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
 5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (406 real names) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
-7. `LOB_QUEUES` (HES Forecasting) has real active/inactive queue data for one LOB ("High End Storage") but, as of 2026-07-02, no UI consumer at all — "UCR Runrate with Target" moved from a queue-level list to a LOB-level top-5 modal
+7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the HES Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs
 8. `GLOBAL_GROUPING_LIST` (HES Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong
 9. HES Forecasting's Geo Map has no Region/Sub-region toggle (unlike ESG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view
 10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
 11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
+12. HES Forecasting's RCA/CLCA sidebar (`HesRcaClcaPanel.jsx`) is static illustrative example content, same as the Forecasting page's `RcaClcaPanel` — not yet connected to a real RCA workflow

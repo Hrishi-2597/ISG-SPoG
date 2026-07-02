@@ -5,7 +5,7 @@
 // and metrics, and keeping it decoupled avoids any risk to the ESG Forecasting page.
 import {
   FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS, REGIONS,
-  regionForCountry, matchesMulti,
+  regionForCountry, matchesMulti, inferRegion,
 } from './mockData'
 
 // Real Dell ISG product/technology lines (business-supplied).
@@ -149,16 +149,6 @@ export function ucrByFY(filters = {}) {
   return UCR_BY_FY.filter(d => years.includes(d.period))
 }
 
-// ── UCR-impacted SR (actual SR + SR deflected) ────────────────────────────────
-export function ucrImpactedSrByFY(filters = {}) {
-  const sr = srByFY(filters)
-  return sr.map((d, i) => ({
-    period: d.period,
-    actualSR: d.actual,
-    srDeflected: Math.round(d.actual * (0.08 + i * 0.01)),
-  }))
-}
-
 // ── SR handled by Bots vs humans, plus SR Plan (Layer 3 "UCR Impact on SR") ───
 export function srBotsByFY(filters = {}) {
   const sr = srByFY(filters)
@@ -264,8 +254,24 @@ export const LOB_QUEUES = {
 // NOTE: the per-queue non-adherent list that used to live here (keyed off
 // LOB_QUEUES['High End Storage']) was replaced by topNonAdherentLobsByYear above
 // when "UCR Runrate with Target" switched from an always-visible queue list to a
-// year-click modal of top-5 non-adherent LOBs. LOB_QUEUES itself is left in place
-// (real business-supplied data) — see handoff.md for its current UI status.
+// year-click modal of top-5 non-adherent LOBs. LOB_QUEUES's real names are now
+// used by the Total Queues card below instead.
+
+// ── HES Total Queues (Key Metrics card) ────────────────────────────────────────
+// The business-supplied active/inactive queue lists for this page — same role
+// ACTIVE_QUEUE_NAMES/INACTIVE_QUEUE_NAMES play for the Forecasting page's Total
+// Queues card. Sourced from LOB_QUEUES['High End Storage'], the only per-queue
+// list supplied so far; treated as the page-level HES queue roster rather than
+// scoped to one LOB, since it's the only real queue-name data this page has.
+export const HES_ACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].active
+export const HES_INACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].inactive
+
+// Region tagged via the same name-prefix inference mockData.js uses for its own
+// queue fact table (APJ/EMEA/LATAM/NAMER prefixes, else 'Global') — reused rather
+// than duplicated, since the naming convention is identical across both queue lists.
+export const HES_ACTIVE_QUEUES = HES_ACTIVE_QUEUE_NAMES.map(name => ({
+  name, region: inferRegion(name),
+}))
 
 // ── Plan Impact Analysis: region-level Plan A/B + LOB contribution ────────────
 // Requested 4-region set for Plan Impact (and reused by CPASU Trend's region
@@ -382,21 +388,23 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // Latest in-scope fiscal year's snapshot for each of the 5 KPI cards, plus a
 // YTD-vs-prior-year delta for the 3 cards that show a YTD message (ASU/SR/CPASU).
+// totalQueues doesn't depend on filters — the HES queue roster has no per-queue
+// lob/businessPartner/globalGrouping tags to narrow by, same reasoning as why
+// "UCR Runrate with Target" ignores Quarter/Week filters.
 export function hesCardData(filters = {}) {
   const asu = asuByFY(filters)
   const sr = srByFY(filters)
   const ucr = ucrByFY(filters)
-  const impacted = ucrImpactedSrByFY(filters)
   const cpasu = cpasuByFY(filters)
   const latestAsu = asu[asu.length - 1]
   const prevAsu = asu[asu.length - 2]
   const latestSr = sr[sr.length - 1]
   const prevSr = sr[sr.length - 2]
   const latestUcr = ucr[ucr.length - 1]
-  const latestImpacted = impacted[impacted.length - 1]
   const latestCpasu = cpasu[cpasu.length - 1]
   const prevCpasu = cpasu[cpasu.length - 2]
   return {
+    totalQueues: { active: HES_ACTIVE_QUEUE_NAMES.length, inactive: HES_INACTIVE_QUEUE_NAMES.length },
     asuActuals: {
       value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0,
       period: latestAsu?.period, prevPeriod: prevAsu?.period, yoyPct: yoyPct(latestAsu?.actual, prevAsu?.actual),
@@ -410,6 +418,5 @@ export function hesCardData(filters = {}) {
       period: latestCpasu?.period, prevPeriod: prevCpasu?.period, yoyPct: yoyPct(latestCpasu?.cpasu, prevCpasu?.cpasu),
     },
     currentUcr: { value: latestUcr?.current ?? 0, target: latestUcr?.target ?? 0, adherence: latestUcr?.adherence ?? 0 },
-    ucrImpactedSr: { value: latestImpacted?.srDeflected ?? 0, total: latestImpacted?.actualSR ?? 0 },
   }
 }

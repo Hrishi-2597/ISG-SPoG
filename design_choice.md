@@ -269,6 +269,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ### No RCA/CLCA sidebar on HES Forecasting
 **Decision:** `RcaClcaPanel` only renders on the ESG Forecasting page; HES Forecasting's 4 layers run full-width with no sidebar.
 **Why:** The sidebar's actual content (RCA/CLCA findings) is ESG-Forecasting-specific illustrative copy tied to that page's metrics — copying it verbatim onto a page about ASU/SR/UCR would be visibly wrong content, and the ASU/SR/UCR slides never showed an equivalent panel. If the user wants an HES-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy.
+**Update (2026-07-02):** Requested directly — see "HES-specific RCA/CLCA sidebar content" below. `HesRcaClcaPanel.jsx` now provides that page-specific content, following exactly the plan already laid out in this entry.
 
 ### Renamed "ESG Capacity Planning" → "HES Forecasting" (2026-07-02, same day)
 **Decision:** Renamed the page label, every component/file/folder (`capacity/` → `hes/`, `CapacityPlanningPage.jsx` → `HesForecastingPage.jsx`, `CapacityFilterPanel.jsx` → `HesFilterPanel.jsx`, `CapacityChartKit.jsx` → `HesChartKit.jsx`, `CapacityMetricCards.jsx` → `HesMetricCards.jsx`, `CapacityGeoMap.jsx` → `HesGeoMap.jsx`, `capacityData.js` → `hesData.js`), and every internal identifier that carried "capacity" in its name (`capacityCardData` → `hesCardData`, `capacityEffectiveFiscalYears` → `hesEffectiveFiscalYears`), via `git mv` to preserve file history.
@@ -281,6 +282,30 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ### Region/LOB delta formula: coprime multiplier instead of a small modulus
 **Decision:** `buildLobImpact()`'s per-LOB delta uses `(i*17 + ri*41) % 131` instead of the original `(i*7 + ri*13) % 21`.
 **Why:** Caught during Playwright verification — the original formula's modulus (21) was small enough relative to its multiplier (7, sharing a factor of 7 with 21) that only 3 distinct residues existed, so 6+ different LOBs displayed an identical delta in the "Plan Impact Analysis" drill-down list, which looked obviously fake once several rows in a row read `-2400`. A modulus that's prime (131) paired with a coprime multiplier (17) guarantees every one of the 33 LOBs maps to a distinct residue for a fixed region — still fully deterministic mock data, just varied enough to not visually expose itself as a repeating pattern.
+
+---
+
+## HES Forecasting: Total Queues Card + RCA/CLCA Sidebar (2026-07-02)
+
+### Total Queues card replaces UCR Impacted SR, front of the row
+**Decision:** Removed the "UCR Impacted SR" card (previously last) and added a "Total Queues" card at the front of the Key Metrics row, styled and worded identically to the Forecasting page's Total Queues card (`⬡` icon, "Active / Inactive" sublabel, `active / total` value, "N inactive queues" sub-line).
+**Why:** Requested directly ("remove the UCR card from the last and the front add the total queues card similarly we did for ESG Forecasting"). Matching the Forecasting page's exact wording/format makes the two pages read as the same product rather than two dashboards with similar-but-different conventions for the same concept.
+
+### `LOB_QUEUES['High End Storage']` reused as the page-level queue roster, not one LOB's sample
+**Decision:** `HES_ACTIVE_QUEUE_NAMES`/`HES_INACTIVE_QUEUE_NAMES` (new in `hesData.js`) point at the same real 71 active / ~150 inactive names already in `LOB_QUEUES['High End Storage']`, but the Total Queues card treats them as the whole page's queue count, not filtered to that one LOB.
+**Why:** The user said "I have already given you a list of active and inactive queues for HES" — referring to the only real per-queue name lists this page has. Treating them as LOB-scoped (the original framing when they were first added, for the UCR non-adherent-queue drill-down) would leave the Total Queues card with no real numbers to show for the other 32 LOBs; treating them as the page's queue roster uses real, business-supplied data honestly instead of inventing placeholder counts for LOBs with no real queue data. Flagged in `handoff.md`/`tech_spec.md` as a decision to revisit if real per-LOB queue lists arrive later.
+
+### Region tagging via `inferRegion()`, reused rather than re-implemented
+**Decision:** Exported `inferRegion()` from `mockData.js` (was file-local) and reused it in `hesData.js` to tag each HES active queue name with a region for the Total Queues donut.
+**Why:** The HES queue names follow the exact same prefix convention (`APJ …`, `EMEA …`, `NAMER …`, `LATAM …`, else `Global`) as the Forecasting page's queue names — writing a second, near-identical region-inference function would just be the same regex copy-pasted under a new name.
+
+### Total Queues drill-down: same donut-then-table mechanic, minus the Accuracy column
+**Decision:** Mirrored the Forecasting page's `QueuesByRegionChart` + `QueueTable` almost verbatim (click a slice or legend entry to filter the table to that region, "Clear" to reset) but dropped the Accuracy column from the table.
+**Why:** Requested directly ("drilldown should be similar pie chart we did for ESG Forecasting"). Accuracy is a forecast-quality concept tied to ESG Forecasting's plan/actual data; HES queues in this list have no equivalent real metric, so showing a column here would mean fabricating a number just to look consistent — Queue + Region is the honest subset of that pattern.
+
+### HES-specific RCA/CLCA sidebar content, not a copy of the Forecasting page's
+**Decision:** New `HesRcaClcaPanel.jsx`, wired into `HesForecastingPage.jsx` with the identical sticky-sidebar-next-to-Analysis-Layers layout as `RcaClcaPanel`/`ForecastingPage.jsx`, but with its own illustrative findings written in this page's own vocabulary (ASU/SR/CPASU/UCR/LOB) instead of reusing the Forecasting page's queue/call-volume-themed copy.
+**Why:** Requested directly ("add RCA and CLCA section similarly we did for ESG Forecasting") — "similarly" was read as *same mechanism and layout*, not *same words*, consistent with the standing decision already on record in this file ("No RCA/CLCA sidebar on HES Forecasting... If the user wants an HES-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy").
 
 ---
 

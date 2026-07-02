@@ -140,3 +140,18 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Ran `npm install` (dependencies weren't present in this fresh clone), `npm run build` (clean), and grepped the whole `src/` tree for stale old titles/removed function names — none found
 - Started the Vite dev server and confirmed it serves HTTP 200; this session's environment has no browser-automation tool available, so the popups/drill-throughs were verified by a clean production build and code/grep review rather than a live click-through — flagged to the user as a follow-up to verify manually
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
+## Prompt 10 — 2026-07-02
+**Input:** `remove the UCR card from the last and the front add the total queues card similarly we did for ESG Forecasting..I have already given you a list of active and inactive queues for HES.and drilldown should be similar pie chart we did for ESG Forecasting.Also add RCA and RLCA section similarly we did for ESG Forecasting.`
+
+**Action:**
+- Removed the "UCR Impacted SR" card (was last) and its `ucrImpactedSrByFY()` selector (dead code)
+- Added a "Total Queues" card at the front of the Key Metrics row, worded/styled identically to the Forecasting page's ("Active / Inactive" sublabel, `active / total` value, "N inactive" sub-line)
+- Reused `LOB_QUEUES['High End Storage']`'s real 71 active / ~150 inactive queue names as the page-level HES queue roster (new `HES_ACTIVE_QUEUE_NAMES`/`HES_INACTIVE_QUEUE_NAMES`/`HES_ACTIVE_QUEUES` in `hesData.js`) — the only real per-queue name data supplied for this page, so it backs the Total Queues card directly rather than staying scoped to one LOB
+- Exported `inferRegion()` from `mockData.js` (was file-local) and reused it to tag each HES active queue with a region
+- Built a region-donut-then-table drill-down for the new card, mirroring the Forecasting page's `QueuesByRegionChart`/`QueueTable` (click a slice/legend entry to filter, "Clear" to reset), minus the Accuracy column since that concept doesn't exist for HES queues
+- Created `HesRcaClcaPanel.jsx` with HES-specific illustrative RCA/CLCA content (ASU/SR/CPASU/UCR-themed, not a copy of the Forecasting page's queue/call-volume-themed copy) and wired it into `HesForecastingPage.jsx` as a sticky sidebar alongside Layers 1-4, matching `ForecastingPage.jsx`'s exact layout
+- Ran `npm run build` (clean) and grepped for stale references to the removed card/selector — none found
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`

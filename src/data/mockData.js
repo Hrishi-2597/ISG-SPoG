@@ -270,7 +270,7 @@ export const INACTIVE_QUEUE_NAMES = [
   'VXRail', 'Wipro AMER Midrange', 'Workflow Management', 'Workstation IND', 'Wyse IND',
 ]
 
-function inferRegion(name) {
+export function inferRegion(name) {
   if (/^APJ|^HCS APJ|^HCS LATAM|^Korea|^KOR|^ANZ|^MMCLA|^CCC|^Japan|^JP |^BRZ|^Brazil|CTE.*JPN|CTE.*KOR|CTE.*CCC/.test(name)) return 'APJ'
   if (/^LATAM|^ROLA|Portuguese$|Spanish$|Panama/.test(name)) return 'LATAM'
   if (/^EMEA|^ENG |^GER |^German|^FRA |^French|^ITA |^Italian|^SPA |^EC |^CER|^CZE|^ROE|^SWE|Nordics|^UKI|^UKI/.test(name)) return 'EMEA'

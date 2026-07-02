@@ -5,6 +5,7 @@ import AsuLayer from './AsuLayer'
 import SrLayer from './SrLayer'
 import AsuSrTrendLayer from './AsuSrTrendLayer'
 import HesGeoMap from './HesGeoMap'
+import HesRcaClcaPanel from './HesRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 // Every filter is multi-select: [] means "no selection = All" — same convention as
@@ -29,12 +30,20 @@ export default function HesForecastingPage() {
       <SectionDivider label="Key Metrics" />
       <HesMetricCards filters={filters} />
 
-      <SectionDivider label="Analysis Layers" />
-      <div className="px-4 pb-4 flex flex-col gap-3">
-        <AsuLayer filters={filters} />
-        <SrLayer filters={filters} />
-        <AsuSrTrendLayer filters={filters} />
-        <HesGeoMap filters={filters} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
+        <div className="flex-1 min-w-0">
+          <SectionDivider label="Analysis Layers" />
+          <div className="px-4 pb-4 flex flex-col gap-3">
+            <AsuLayer filters={filters} />
+            <SrLayer filters={filters} />
+            <AsuSrTrendLayer filters={filters} />
+            <HesGeoMap filters={filters} />
+          </div>
+        </div>
+
+        <div style={{ width: 300, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
+          <HesRcaClcaPanel />
+        </div>
       </div>
     </>
   )

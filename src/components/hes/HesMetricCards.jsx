@@ -1,14 +1,17 @@
 import React, { useMemo, useState } from 'react'
 import {
-  ComposedChart, BarChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  ComposedChart, BarChart, LineChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
-  hesCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, ucrImpactedSrByFY,
+  hesCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, HES_ACTIVE_QUEUES,
 } from '../../data/hesData'
 import { C, Tip, Modal } from './HesChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
+// Same region palette as the Forecasting page's Total Queues donut (MetricCards.jsx)
+// — regions should look the same everywhere in the app, not just on this page.
+const REGION_COLORS = { APJ: '#38bdf8', EMEA: '#fb923c', Global: '#a78bfa', LATAM: '#22d3ee', NAMER: '#fbbf24' }
 
 function fmt(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -131,31 +134,114 @@ function CurrentUcrChart({ filters }) {
   )
 }
 
-function UcrImpactedChart({ filters }) {
-  const data = useMemo(() => ucrImpactedSrByFY(filters), [filters])
+// Region-breakdown donut for the Total Queues card — same mechanic as the
+// Forecasting page's QueuesByRegionChart (MetricCards.jsx): click a slice (or its
+// legend entry) to narrow the table below to that region; click again to clear.
+function QueuesByRegionChart({ rows, selectedRegion, onSelectRegion }) {
+  const data = useMemo(() => {
+    const counts = {}
+    rows.forEach(q => { counts[q.region] = (counts[q.region] || 0) + 1 })
+    return Object.entries(counts)
+      .map(([region, count]) => ({ region, count }))
+      .sort((a, b) => b.count - a.count)
+  }, [rows])
+  const total = rows.length
+  const centerCount = selectedRegion ? (data.find(d => d.region === selectedRegion)?.count ?? 0) : total
+
   return (
-    <div style={CHART_BOX}>
-      <ResponsiveContainer width="100%" height={210}>
-        <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="actualSR" name="Actual SR" stackId="sr" fill={C.metric1} opacity={0.85} maxBarSize={54} />
-          <Bar dataKey="srDeflected" name="SR Deflected" stackId="sr" fill={C.behind} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-        </BarChart>
+    <div style={{ ...CHART_BOX, position: 'relative' }}>
+      <p style={{ fontSize: 9.5, color: '#5a8bb0', marginBottom: 6, textAlign: 'center' }}>Click a slice to see that region's queues</p>
+      <ResponsiveContainer width="100%" height={230}>
+        <PieChart>
+          <Tooltip content={({ active, payload }) => {
+            if (!active || !payload?.length) return null
+            const { region, count } = payload[0].payload
+            return (
+              <div className="chart-tooltip">
+                <p style={{ fontSize: 10, fontWeight: 700, color: REGION_COLORS[region] || '#38bdf8', marginBottom: 3 }}>{region}</p>
+                <p style={{ fontSize: 11, color: '#cfe8fb' }}>{count} queues <span style={{ color: '#5a8bb0' }}>({total ? Math.round(count / total * 100) : 0}%)</span></p>
+              </div>
+            )
+          }} />
+          <Legend verticalAlign="bottom" height={30}
+            onClick={e => onSelectRegion(e.value)}
+            wrapperStyle={{ fontSize: 10, color: C.tick, cursor: 'pointer' }} />
+          <Pie data={data} dataKey="count" nameKey="region" cx="50%" cy="46%"
+            innerRadius={54} outerRadius={82} paddingAngle={2}
+            onClick={d => onSelectRegion(d.region)} style={{ cursor: 'pointer' }}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={REGION_COLORS[d.region] || C.tick}
+                stroke="#0c1929" strokeWidth={2}
+                opacity={selectedRegion == null || selectedRegion === d.region ? 0.92 : 0.25} />
+            ))}
+          </Pie>
+        </PieChart>
       </ResponsiveContainer>
+      <div style={{
+        position: 'absolute', top: '42%', left: '50%', transform: 'translate(-50%, -50%)',
+        textAlign: 'center', pointerEvents: 'none',
+      }}>
+        <p className="num" style={{ fontSize: 19, fontWeight: 700, color: '#e6f1ff', lineHeight: 1 }}>{centerCount}</p>
+        <p style={{ fontSize: 9, color: '#5a8bb0', marginTop: 2 }}>{selectedRegion || 'Queues'}</p>
+      </div>
     </div>
   )
 }
 
+function QueueTable({ rows }) {
+  return (
+    <div style={{ overflowX: 'auto', maxHeight: 220, overflowY: 'auto' }}>
+      <table className="w-full" style={{ fontSize: 11, borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', color: '#3d607a', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Queue</th>
+            <th style={{ textAlign: 'right', padding: '4px 0', color: '#3d607a', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Region</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((q, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <td style={{ padding: '5px 12px 5px 0', fontFamily: 'monospace', fontSize: 10, color: '#7fa8cc' }}>{q.name}</td>
+              <td style={{ padding: '5px 0', textAlign: 'right', color: '#3d607a' }}>{q.region}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function TotalQueuesSection() {
+  const [selectedRegion, setSelectedRegion] = useState(null)
+  const filteredRows = selectedRegion ? HES_ACTIVE_QUEUES.filter(q => q.region === selectedRegion) : HES_ACTIVE_QUEUES
+  return (
+    <>
+      <QueuesByRegionChart rows={HES_ACTIVE_QUEUES} selectedRegion={selectedRegion}
+        onSelectRegion={r => setSelectedRegion(prev => prev === r ? null : r)} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 6px' }}>
+        <p style={{ fontSize: 10, color: '#5a8bb0' }}>
+          {selectedRegion ? <><span style={{ color: '#38bdf8', fontWeight: 600 }}>{selectedRegion}</span> — {filteredRows.length} queues</> : `All regions — ${filteredRows.length} queues`}
+        </p>
+        {selectedRegion && (
+          <button onClick={() => setSelectedRegion(null)} style={{
+            fontSize: 10, color: '#7fa8cc', background: 'none', border: 'none', cursor: 'pointer',
+            textDecoration: 'underline', textDecorationColor: 'rgba(127,168,204,0.3)',
+          }}>Clear</button>
+        )}
+      </div>
+      <QueueTable rows={filteredRows} />
+    </>
+  )
+}
+
 const MODAL_TITLES = {
-  asu:      'Active Service Units — Trend',
-  sr:       'Service Requests — DB vs OSP',
-  cpasu:    'CPASU Trend',
-  ucr:      'Current UCR vs Target',
-  impacted: 'Actual SR + SR Deflected',
+  totalQueues: 'HES Queue Directory',
+  asu:         'Active Service Units — Trend',
+  sr:          'Service Requests — DB vs OSP',
+  cpasu:       'CPASU Trend',
+  ucr:         'Current UCR vs Target',
 }
 
 // Opening/closing a card's popup only touches this component's own `active`
@@ -164,11 +250,11 @@ const MODAL_TITLES = {
 function DrillDownModal({ type, filters, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
+      {type === 'totalQueues' && <TotalQueuesSection />}
       {type === 'asu' && <AsuTrendChart filters={filters} />}
       {type === 'sr' && <SrDbOspChart filters={filters} />}
       {type === 'cpasu' && <CpasuChart filters={filters} />}
       {type === 'ucr' && <CurrentUcrChart filters={filters} />}
-      {type === 'impacted' && <UcrImpactedChart filters={filters} />}
     </Modal>
   )
 }
@@ -197,6 +283,10 @@ export default function HesMetricCards({ filters }) {
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
+        <Card icon="⬡" label="Total Queues" sublabel="Active / Inactive"
+          value={`${d.totalQueues.active} / ${d.totalQueues.active + d.totalQueues.inactive}`}
+          sub={`${d.totalQueues.inactive} inactive queues`}
+          onClick={() => toggle('totalQueues')} active={active === 'totalQueues'} />
         <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}
@@ -214,10 +304,6 @@ export default function HesMetricCards({ filters }) {
           sub={`Target ${d.currentUcr.target}% · ${d.currentUcr.adherence}% adherence`}
           trend={d.currentUcr.adherence >= 95}
           onClick={() => toggle('ucr')} active={active === 'ucr'} />
-        <Card icon="↩" label="UCR Impacted SR" sublabel="Deflected volume"
-          value={fmt(d.ucrImpactedSr.value)}
-          sub={`${d.ucrImpactedSr.total ? Math.round(d.ucrImpactedSr.value / d.ucrImpactedSr.total * 100) : 0}% of total SR`}
-          onClick={() => toggle('impacted')} active={active === 'impacted'} />
       </div>
 
       {active && <DrillDownModal type={active} filters={filters} onClose={() => setActive(null)} />}
