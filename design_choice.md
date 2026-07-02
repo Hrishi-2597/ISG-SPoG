@@ -358,6 +358,19 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## ESG Forecasting: Corrected Queue Roster (2026-07-02)
+
+### Replace the arrays wholesale, not merge/append
+**Decision:** `ACTIVE_QUEUE_NAMES` and `INACTIVE_QUEUE_NAMES` in `mockData.js` were fully replaced with the newly business-supplied lists (47 active, 146 inactive), rather than merged with the prior 199/406 names.
+**Why:** The new lists were explicitly labeled "for ESG Forecasting... update accordingly," and cross-checking showed every name in both new lists already existed somewhere in the old lists (the new active list is a subset of the old active list; the new inactive list is a subset of the old inactive list, plus `'CCC MidRange Mandarin'` moved over from active) — this reads as a corrected, pruned roster the business wants reflected exactly, not an addition to what was already there. Merging would have kept ~350+ names the correction was meant to drop.
+**Verified before applying:** scripted checks (not manual eyeballing) confirmed no duplicate names within either new list and no overlap between the two new lists, since a name appearing in both would silently break `filterQueues`'s assumption that a queue is either active or inactive, never both.
+
+### No code changes needed — the pipeline was already count-agnostic
+**Decision:** Only the two array literals changed; `filterQueues`, `callVolumeByFY`, `dbOspVolumeByFY`, `cardData`, and the CQN-variance selectors were left untouched.
+**Why:** Every one of those functions already reads `ACTIVE_QUEUE_NAMES.length` or `ACTIVE_QUEUES.length` dynamically rather than a hardcoded `199` — a queue-count change is exactly the kind of update this data model was built to absorb without a code change. This is also why the Call Volume/DB-OSP baseline totals (285.4K/268.7K) didn't need touching: they scale by a ratio (`filtered / total active`) that's still 1.0 with no filters applied, regardless of how many rows are on each side of that ratio.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

@@ -1,5 +1,12 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## ESG Forecasting: Corrected Queue Roster (2026-07-02)
+
+- **`ACTIVE_QUEUE_NAMES` and `INACTIVE_QUEUE_NAMES` (`mockData.js`) were replaced wholesale** with a corrected, business-supplied roster: **47 active** (down from 199) and **146 inactive** (down from 406, including `'CCC MidRange Mandarin'` — moved here from the prior active list). Total Queues: 193 (was 605).
+- No code changes were needed beyond the two array literals — every selector (`filterQueues`, `callVolumeByFY`, `dbOspVolumeByFY`, `cardData`, the CQN-variance charts, etc.) reads `ACTIVE_QUEUE_NAMES.length`/`ACTIVE_QUEUES.length` dynamically rather than a hardcoded count, so the whole filtering/scaling pipeline picked up the new roster automatically.
+- Verified no duplicate names within either list and no overlap between the two lists (scripted check, not just eyeballing).
+- Region tagging (`inferRegion()`) still resolves sensibly against the new names — no `NAMER` entries in the new active list, which is fine (the Total Queues donut and Geo Map already handle a region having zero/no data).
+
 ## Forecasting Page: Card Drill-Downs Are Now Modals Too (2026-07-02)
 
 - **`MetricCards.jsx`'s 5 card drill-downs (Total Queues, Call Volume, DB/OSP Split, Forecast Accuracy, CQN Variance) now open in a popup modal**, matching the behavior already shipped for HES Forecasting's cards. Closing the modal only clears local `active` state — `filters` (owned by `ForecastingPage`) is untouched, so the dashboard is exactly as filtered when it closes.
@@ -121,8 +128,8 @@ Queue names, capacity codes, plan names, business partners, sub-regions, and L5 
 
 | Constant | Count | Used by |
 |---|---|---|
-| `ACTIVE_QUEUE_NAMES` | 199 | Queue Name filter, feeds the `ACTIVE_QUEUES` fact table |
-| `INACTIVE_QUEUE_NAMES` | 406 | Total Queues card total (605 = 199 + 406); not yet drillable |
+| `ACTIVE_QUEUE_NAMES` | 47 (updated 2026-07-02, was 199) | Queue Name filter, feeds the `ACTIVE_QUEUES` fact table |
+| `INACTIVE_QUEUE_NAMES` | 146 (updated 2026-07-02, was 406) | Total Queues card total (193 = 47 + 146); not yet drillable |
 | `CAPACITY_CODES` | ~610 | Capacity Code filter, tagged onto each active queue |
 | `PLAN_NAMES` | 4 (`AOP_FY26Q4_AA`, `FY27 Q1 APR Plan`, `FY27 Q2 JUN Plan`, `FY27Q1_AA`) | Plan Name filter, Layer 1 Plan A/B dropdowns, Layer 2 plan selector |
 | `FISCAL_QUARTERS` | 12 (`FY25Q1` ... `FY27Q4`) | Fiscal Quarter filter |
@@ -157,7 +164,7 @@ The filter bar was restructured away from a flat 12-dropdown grid (which read li
 
 ### Filters are searchable multi-selects
 
-All 11 dropdown filters (everything except DB/OSP, which stays the 3-way segmented pill) are now `MultiSelectField` — a button that opens a popover with a search box, "Select all"/"Clear", and a checkbox list; pick any number of values. This matters most for Queue Name (199 options) and Capacity Code (~610), which were unusable to scroll through as a plain `<select>`.
+All 11 dropdown filters (everything except DB/OSP, which stays the 3-way segmented pill) are now `MultiSelectField` — a button that opens a popover with a search box, "Select all"/"Clear", and a checkbox list; pick any number of values. This mattered most for Queue Name (originally 199 options, now 47 — see the 2026-07-02 roster update above) and Capacity Code (~610), which were unusable to scroll through as a plain `<select>`.
 
 **Every filter's value changed from a string to an array.** `[]` means "no selection = All" (this replaced the old `'All'` sentinel string everywhere except `dbOsp`). `filterQueues()` and every region/FY selector in `mockData.js` now check `array.includes(value)` instead of `value === selected`. If you're adding a new filter or a new selector function, follow that pattern — see `tech_spec.md` → "Data Model".
 
@@ -211,7 +218,7 @@ These are in the original SPOG_views.pptx but not yet implemented:
 2. **Geo map** fetches world GeoJSON from CDN (`cdn.jsdelivr.net/npm/world-atlas@2`) — requires internet at runtime.
 3. Queue/capacity/plan **names** are real; volume, accuracy, and variance **numbers** are still mock/static — no API or database connection yet.
 4. Chunk size warning (~697KB bundle) — consider code-splitting recharts and react-simple-maps in future.
-5. `INACTIVE_QUEUE_NAMES` (406 real names) is defined in `mockData.js` but has no drill-down UI yet — only the count is shown on the Total Queues card.
+5. `INACTIVE_QUEUE_NAMES` (146 real names as of 2026-07-02) is defined in `mockData.js` but has no drill-down UI yet — only the count is shown on the Total Queues card.
 6. `LOB_QUEUES`'s real per-queue lists for "High End Storage" now back the HES Forecasting Total Queues card (2026-07-02) — no longer the dead data flagged in the prior note here.
 7. HES Forecasting's CPASU Trend region/time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists yet, same "illustrative structure" convention as the rest of this page's mock numbers.
 8. HES Forecasting's Total Queues card treats `LOB_QUEUES['High End Storage']`'s real names as the whole page's queue roster (not scoped to that one LOB) — it's the only real per-queue name data supplied for this page; if real per-LOB queue lists arrive for the other 32 LOBs, this should be revisited to decide whether Total Queues should sum across all of them instead.

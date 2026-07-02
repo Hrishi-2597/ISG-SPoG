@@ -155,8 +155,9 @@ All 12 filters funnel into a small set of selector functions that take `filters`
 
 ### Constants
 ```
-ACTIVE_QUEUE_NAMES   — 199 real active queue names (business-supplied)
-INACTIVE_QUEUE_NAMES — 406 real inactive queue names (business-supplied, no UI yet)
+ACTIVE_QUEUE_NAMES   — 47 real active queue names (business-supplied; updated 2026-07-02, was 199)
+INACTIVE_QUEUE_NAMES — 146 real inactive queue names (business-supplied, no UI yet; updated
+                        2026-07-02, was 406)
 CAPACITY_CODES       — ~610 real capacity codes (business-supplied)
 PLAN_NAMES           — ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Plan', 'FY27Q1_AA']
 FISCAL_YEARS         — ['FY25', 'FY26', 'FY27']
@@ -195,16 +196,20 @@ cardData(filters) → {
                                                    headline around 40-50%, not the ~75-80% a
                                                    looser threshold would give)
   callVolume, dbOspSplit                        — from filterQueues(filters), scaled off a
-                                                   285.4K/268.7K baseline by the filtered/199 ratio
-                                                   (DB/OSP genuinely scopes volume here)
+                                                   285.4K/268.7K baseline by the filtered-vs-total-
+                                                   active-queue ratio (DB/OSP genuinely scopes volume
+                                                   here); the ratio's denominator is
+                                                   ACTIVE_QUEUES.length, not a hardcoded count, so it
+                                                   tracks whatever the active roster currently is
 }
 ```
 
 ### Card drill-down selectors (`MetricCards.jsx`)
 ```
 callVolumeByFY(filters) — {period, offered, handled} per FY, narrowed to effectiveFiscalYears(filters);
-  scaled by filterQueues(filters).length/199 off a per-FY baseline (BASE_CALL_VOLUME_BY_FY) that
-  sums to the same 285.4K/268.7K totals as cardData's callVolume. Backs the Call Volume drill-down.
+  scaled by filterQueues(filters).length/ACTIVE_QUEUES.length off a per-FY baseline
+  (BASE_CALL_VOLUME_BY_FY) that sums to the same 285.4K/268.7K totals as cardData's callVolume.
+  Backs the Call Volume drill-down.
 dbOspVolumeByFY(filters) — {period, db, osp} per FY: same BASE_CALL_VOLUME_BY_FY.offered baseline,
   split by each in-scope queue's dbOsp tag. Ignores filters.dbOsp itself (unlike callVolumeByFY) —
   every other filter still narrows the candidate queues. Backs the DB/OSP Split drill-down.
@@ -413,7 +418,7 @@ Steps:
 2. ~711KB bundle (recharts + react-simple-maps) — consider dynamic imports
 3. No authentication, no role-based views
 4. No mobile/responsive layout optimisation (designed for 1280px+ screens)
-5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (406 real names) — only the count surfaces on the Total Queues card
+5. No drill-down UI for `INACTIVE_QUEUE_NAMES` (146 real names as of 2026-07-02) — only the count surfaces on the Total Queues card
 6. Plan Name filter only pre-selects Plan A on Layer 1/2 — Plan B and the per-visual overrides are unaffected, by design (see `design_choice.md`)
 7. `LOB_QUEUES['High End Storage']`'s real active/inactive queue names now back the HES Forecasting Total Queues card, but are treated as the whole page's queue roster rather than scoped to that one LOB — the only real per-queue name data this page has (see `design_choice.md`); revisit if real per-LOB queue lists arrive for the other 32 LOBs
 8. `GLOBAL_GROUPING_LIST` (HES Forecasting) is an inference from an older PPT note, not explicitly confirmed by the user — revisit if it turns out to be wrong

@@ -167,3 +167,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 - This supersedes the Forecasting page's original "Drill-down as inline panel (not modal)" decision, noted in `design_choice.md`
 - Ran `npm run build` (clean) and grepped for stale `DrillDownPanel` references — none found
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the change; committed and pushed to `main`
+
+---
+
+## Prompt 12 — 2026-07-02
+**Input:** Two lists of real queue names pasted in chat, labeled "Inactive queues list for ESG Forecasting and CCC MidRange Mandarin" and "Active queues for ESG Forecasting - update accordingly"
+
+**Action:**
+- Cross-checked both pasted lists against the existing `ACTIVE_QUEUE_NAMES`/`INACTIVE_QUEUE_NAMES` in `mockData.js`: every name in the "active" list was already somewhere in the old active list, every name in the "inactive" list was already somewhere in the old inactive list — confirmed this is a pruned/corrected roster, not new additions
+- Replaced `ACTIVE_QUEUE_NAMES` wholesale with the new 47-name list, and `INACTIVE_QUEUE_NAMES` wholesale with the new 146-name list (145 pasted names + `'CCC MidRange Mandarin'`, which the label indicated moved from active to inactive)
+- Verified via a small Node script: exact counts (47/146), no duplicates within either list, no overlap between the two lists
+- Confirmed no code (only the two array literals) needed to change — `filterQueues`, `callVolumeByFY`, `dbOspVolumeByFY`, `cardData`, and the CQN-variance selectors all read `ACTIVE_QUEUE_NAMES.length`/`ACTIVE_QUEUES.length` dynamically, not a hardcoded `199`
+- Sanity-checked `inferRegion()` against the new active names — reasonable region spread (EMEA/Global/APJ/LATAM), no crashes, no `NAMER` entries this time (handled fine by existing empty-region UI states)
+- Ran `npm run build` (clean)
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` — corrected every stale `199`/`406`/`605` count reference, generalized two prose references to the ratio formula that had named the old `199` divisor explicitly so they won't go stale again; committed and pushed to `main`
