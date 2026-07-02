@@ -9,8 +9,8 @@ import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './HesChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
-function Visual1({ filters, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => asuByFY(filters), [filters])
+function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
+  const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
@@ -34,8 +34,8 @@ function Visual1({ filters, selectedPlan, onPlanChange }) {
   )
 }
 
-function Visual2({ filters, planA, planB, onPlanChange }) {
-  const data = useMemo(() => asuPlanVsPlanByFY(filters), [filters])
+function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
+  const data = useMemo(() => asuPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
@@ -106,7 +106,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   )
 }
 
-export default function AsuLayer({ filters }) {
+export default function AsuLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [plan, setPlan] = useState('FY27 Q1 APR Plan')
   const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
@@ -118,14 +118,14 @@ export default function AsuLayer({ filters }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#38bdf8', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>01</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>ASU Trend</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— average service unit tracking</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— Active Service Unit tracking</span>
         </div>
         <span style={{ fontSize: 11, color: '#38bdf8', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} selectedPlan={plan} onPlanChange={setPlan} />
-          <Visual2 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual2 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
           <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
         </div>
       )}

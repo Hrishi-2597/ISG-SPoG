@@ -4,6 +4,7 @@ import {
   FISCAL_WEEK_LIST, CHANNELS, REGIONS, SUB_REGIONS, BUSINESS_PARTNERS, L5_MANAGERS,
 } from '../data/mockData'
 import MultiSelectField from './MultiSelectField'
+import GranularityToggle from './GranularityToggle'
 
 const ICONS = {
   scope: <path d="M2 3.5h10M2 7h10M2 10.5h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />,
@@ -33,7 +34,7 @@ function ClusterDivider() {
   return <div style={{ width: 1, alignSelf: 'stretch', background: 'linear-gradient(180deg, transparent, rgba(56,189,248,0.18) 30%, rgba(56,189,248,0.18) 70%, transparent)', margin: '0 14px' }} />
 }
 
-export default function FilterPanel({ filters, onChange }) {
+export default function FilterPanel({ filters, onChange, granularity, onGranularityChange }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
   const defs = {
@@ -71,6 +72,8 @@ export default function FilterPanel({ filters, onChange }) {
         <Cluster icon="scope">{field('cqn')}{field('capacityCode')}{field('planName')}</Cluster>
         <ClusterDivider />
         <Cluster icon="time">{field('fiscalYear')}{field('fiscalQuarter')}{field('fiscalWeek')}</Cluster>
+        <ClusterDivider />
+        <GranularityToggle value={granularity} onChange={onGranularityChange} />
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
         <Cluster icon="people">{field('channel')}{field('businessPartner')}{field('l5Manager')}</Cluster>

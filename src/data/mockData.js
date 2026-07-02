@@ -9,6 +9,66 @@ export const FISCAL_WEEK_LIST = FISCAL_YEARS.flatMap(fy =>
   Array.from({ length: 52 }, (_, i) => `${fy}W${String(i + 1).padStart(2, '0')}`)
 )
 
+// Fiscal Month options: FY25M01 ... FY27M12 — canonical here; hesData.js imports this
+// instead of keeping its own duplicate (HES Forecasting was the first page with a
+// Month filter, but this is now shared by the granularity toggle on both pages).
+export const FISCAL_MONTH_LIST = FISCAL_YEARS.flatMap(fy =>
+  Array.from({ length: 12 }, (_, i) => `${fy}M${String(i + 1).padStart(2, '0')}`)
+)
+
+// ── Global time-granularity toggle (Quarter / Month / Week) ───────────────────
+// A page-wide view control (not a value filter): both pages let the user pick what
+// axis granularity every period-keyed chart renders at, instead of everything being
+// fixed at Fiscal Year. Charts whose x-axis is something other than time (region,
+// queue, LOB) aren't affected — there's no "week" of a region.
+export function periodsForGranularity(granularity, years) {
+  const list = granularity === 'Month' ? FISCAL_MONTH_LIST
+    : granularity === 'Week' ? FISCAL_WEEK_LIST
+    : FISCAL_QUARTERS
+  return list.filter(p => years.includes(p.slice(0, 4)))
+}
+
+function periodsPerYear(granularity) {
+  return granularity === 'Month' ? 12 : granularity === 'Week' ? 52 : 4
+}
+
+// Expands an FY-level {period, ...rawFields} series into quarter/month/week-level
+// synthetic points, dividing each FY's raw values across the periods within it with
+// a small deterministic wobble — same technique HES's cpasuTrendByRegion already
+// used for its own region-drill trend. Callers recompute any derived/getter field
+// (adherence, variance, etc.) from the divided raw fields afterward; ratios stay
+// approximately consistent since both sides of a ratio scale down together.
+export function expandToGranularity(fySeries, granularity, rawFields) {
+  if (!granularity || granularity === 'Year') return fySeries
+  const divisor = periodsPerYear(granularity)
+  return fySeries.flatMap((row, ri) => {
+    const periods = periodsForGranularity(granularity, [row.period])
+    return periods.map((period, i) => {
+      const wobble = 0.9 + ((i * 13 + ri * 7) % 21) / 100
+      const out = { period }
+      rawFields.forEach(k => { out[k] = Math.round(row[k] / divisor * wobble) })
+      return out
+    })
+  })
+}
+
+// For rate/percentage fields (targets, adherence-style values) rather than additive
+// volumes — dividing a percentage by the sub-period count would be meaningless (a
+// UCR target of 88% isn't "22% per quarter"). These stay in the same magnitude
+// across every sub-period, with only a small wobble for variety.
+export function expandRateToGranularity(fySeries, granularity, rateFields) {
+  if (!granularity || granularity === 'Year') return fySeries
+  return fySeries.flatMap((row, ri) => {
+    const periods = periodsForGranularity(granularity, [row.period])
+    return periods.map((period, i) => {
+      const wobble = 0.96 + ((i * 13 + ri * 7) % 9) / 100
+      const out = { period }
+      rateFields.forEach(k => { out[k] = +(row[k] * wobble).toFixed(1) })
+      return out
+    })
+  })
+}
+
 export const CHANNELS = ['Voice', 'Chat', 'Email', 'Social']
 export const REGIONS = ['APJ', 'EMEA', 'Global', 'LATAM', 'NAMER']
 
@@ -272,28 +332,29 @@ const BASE_CALL_VOLUME_BY_FY = {
 }
 
 // Drives the Call Volume card drill-down: Offered vs Handled, by Fiscal Year.
-export function callVolumeByFY(filters = {}) {
+export function callVolumeByFY(filters = {}, granularity) {
   const rows = filterQueues(filters)
   const ratio = ACTIVE_QUEUES.length ? rows.length / ACTIVE_QUEUES.length : 0
   const years = effectiveFiscalYears(filters)
-  return years.map(year => ({
+  const fyRows = years.map(year => ({
     period: year,
     offered: Math.round(BASE_CALL_VOLUME_BY_FY[year].offered * ratio),
     handled: Math.round(BASE_CALL_VOLUME_BY_FY[year].handled * ratio),
   }))
+  return expandToGranularity(fyRows, granularity, ['offered', 'handled'])
 }
 
 // Drives the DB/OSP Split card drill-down: DB vs OSP offered volume, by Fiscal Year.
 // Deliberately ignores the DB/OSP filter itself (unlike callVolumeByFY) — collapsing to
 // one bar when the ambient filter is "DB" would defeat the point of a split chart. Every
 // other filter (region, queue, etc.) still narrows the candidate queues.
-export function dbOspVolumeByFY(filters = {}) {
+export function dbOspVolumeByFY(filters = {}, granularity) {
   const rows = filterQueues({ ...filters, dbOsp: 'All' })
   const total = ACTIVE_QUEUES.length
   const ratio = total ? rows.length / total : 0
   const dbShare = rows.length ? rows.filter(q => q.dbOsp === 'DB').length / rows.length : 0
   const years = effectiveFiscalYears(filters)
-  return years.map(year => {
+  const fyRows = years.map(year => {
     const totalOffered = Math.round(BASE_CALL_VOLUME_BY_FY[year].offered * ratio)
     return {
       period: year,
@@ -301,6 +362,7 @@ export function dbOspVolumeByFY(filters = {}) {
       osp: Math.round(totalOffered * (1 - dbShare)),
     }
   })
+  return expandToGranularity(fyRows, granularity, ['db', 'osp'])
 }
 
 // ── Forecast Accuracy by Region ───────────────────────────────────────────────
@@ -358,9 +420,12 @@ export const PLAN_VS_PLAN_BY_REGION = REGIONS.map((r, i) => ({
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 
-export function planOverPlanByFY(filters = {}) {
+export function planOverPlanByFY(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
-  return PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const rows = PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan1: d.plan1, plan2: d.plan2 }))
+  return expandToGranularity(rows, granularity, ['plan1', 'plan2'])
+    .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
 export function planOverPlanByRegion(filters = {}) {
@@ -394,14 +459,33 @@ export const STACKED_ADHERENCE = [
   { fy: 'FY27', under10: 42, between10and20: 30, between20and30: 18, above30: 10 },
 ]
 
-export function actualVsPlanByFY(filters = {}) {
+export function actualVsPlanByFY(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
-  return ACTUAL_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const rows = ACTUAL_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, actual: d.actual, plan: d.plan }))
+  return expandToGranularity(rows, granularity, ['actual', 'plan'])
+    .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
 
-export function stackedAdherenceByFY(filters = {}) {
+const STACKED_KEYS = ['under10', 'between10and20', 'between20and30', 'above30']
+
+// Percentage buckets aren't additive across sub-periods the way raw counts are, so
+// this doesn't reuse expandToGranularity — instead each sub-period gets the parent
+// FY's bucket mix with a small wobble, renormalized to still sum to ~100%.
+export function stackedAdherenceByFY(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
-  return STACKED_ADHERENCE.filter(d => years.includes(d.fy))
+  const rows = STACKED_ADHERENCE.filter(d => years.includes(d.fy))
+  if (!granularity || granularity === 'Year') return rows
+  return rows.flatMap((row, ri) => {
+    const periods = periodsForGranularity(granularity, [row.fy])
+    return periods.map((period, i) => {
+      const wobbled = STACKED_KEYS.map((k, ki) => row[k] * (0.85 + ((i * 13 + ri * 7 + ki * 5) % 31) / 100))
+      const sum = wobbled.reduce((a, b) => a + b, 0)
+      const out = { fy: period }
+      STACKED_KEYS.forEach((k, ki) => { out[k] = sum ? +(wobbled[ki] / sum * 100).toFixed(1) : 0 })
+      return out
+    })
+  })
 }
 
 // "CQN Highest Variance": biggest |actual vs plan| gap first (same ranking logic as

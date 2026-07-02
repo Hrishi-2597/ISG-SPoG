@@ -395,6 +395,34 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## Global Time-Granularity Toggle: Quarter/Month/Week for Both Pages (2026-07-02)
+
+### Placement: inside the filter bar, top-right, not a separate control or the header
+**Decision:** The View By pill sits in the filter bar itself — same row as the value-filter clusters, after a divider, right-aligned (it ends up there naturally: the clusters' `flex-grow` consumes whatever width the fixed-size pill doesn't need, so no extra positioning trick was required).
+**Why:** Researched before building (per the request) — dashboard UX guidance on filter placement says page-wide filters belong in a horizontal filter bar or toolbar rather than scattered per-widget, and time-granularity/date-range controls specifically are conventionally placed prominently and persistently near the other filters, often paired with a date-range picker. That argued against two alternatives considered: the app header (reserved for page-level chrome like the ESG/HES toggle and the light/dark switch — a different category of setting, not a data view control) and a brand-new toolbar row of its own (adds UI surface for one control when the existing filter bar already is the page's "toolbar"). Sources: [Pencil & Paper — Filter UX Design Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-enterprise-filtering), [Pencil & Paper — Dashboard Design UX Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-data-dashboards), [Evolving Web — Date Filter UI Patterns](https://evolvingweb.com/blog/most-popular-date-filter-ui-patterns-and-how-decide-each-one).
+
+### A view setting, not a value filter — visually distinct despite sharing the bar
+**Decision:** The toggle uses the existing `.drill-toggle`/`.drill-btn` pill styling (already established for DB/OSP, the ESG/HES page switch, and the light/dark toggle) rather than a `MultiSelectField`, and is labeled "View By" rather than "Granularity" or a plain filter name.
+**Why:** It changes *how* every time-axis chart renders (what granularity its x-axis uses), not *which rows are in scope* — a fundamentally different kind of control than the other 7-12 filters in the bar, even though it lives in the same row. Reusing the pill pattern (rather than a new widget) keeps it visually consistent with the app's other three-way exclusive toggles instead of introducing a fourth control style.
+
+### One shared expansion helper for additive fields, a separate one for rates
+**Decision:** `expandToGranularity()` divides an FY value across its sub-periods (with a small wobble) for additive/volume fields — ASU/SR counts, call volume, plan dollars. `expandRateToGranularity()` instead keeps percentage/rate fields (UCR target/current) at the same magnitude across every sub-period, only wobbling them slightly.
+**Why:** An FY plan of 24,000 ASUs genuinely represents ~6,000 per quarter (additive — the whole year's total is the sum of its quarters), but a UCR target of 88% doesn't represent "22% per quarter" (a rate is the same kind of number regardless of the window you measure it over). Applying the additive divide to a rate field was an actual bug caught during verification — the first pass divided UCR target/current by 4/12/52 the same way as volumes, which would have shown target percentages in the low single digits at Week granularity. Caught by writing a throwaway Node script that exercised every changed selector at all three granularities before calling this done, not by inspection.
+
+### Stacked percentage distribution doesn't reuse either helper
+**Decision:** ESG's "Forecast Variance Distribution" (a 4-bucket stacked % chart) gets its own expansion: each sub-period keeps the parent FY's bucket *mix* with a wobble, renormalized so the 4 buckets still sum to ~100%.
+**Why:** Neither generic helper fit — dividing the buckets (like a volume) would make them stop summing to 100%; leaving them completely untouched (like a rate) would make every sub-period within a year look identical, which is less useful for a granularity toggle whose entire point is to show variation across the finer time window.
+
+### The global toggle supersedes two decisions made earlier the same day
+**Decision:** HES's "UCR Runrate with Target" chart, fixed to always render at Fiscal Year in the previous change ("keep it at fiscal year default"), now responds to the global granularity toggle like every other time-axis chart. The CPASU Trend region-drill's granularity, previously inferred from which of the top filter bar's Quarter/Week filters happened to be selected, is now driven directly by the global toggle instead.
+**Why:** The request was explicit that "all the graphs should interact with" the new control — a page-wide granularity setting that silently exempts two charts (one of which had *just* been hardcoded to ignore time filters, for unrelated reasons at the time) would be a confusing inconsistency. Superseding an same-day decision this quickly is unusual, but the new instruction is more specific and directly contradicts the old one for these two charts specifically.
+
+### Region/queue/LOB-axis charts are exempt by nature, not by omission
+**Decision:** Plan Impact (region x-axis), Top Queues by Variance (queue x-axis), both Geo Maps (region/sub-region), and the LOB donut breakdowns don't take a `granularity` argument at all.
+**Why:** These charts don't have a time axis to begin with — there's no "week" of a region or a queue. Making "all the graphs interact with the filter" literal would mean inventing a meaningless per-week region breakdown; the honest reading is "every chart whose axis is time," which is exactly what changed.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

@@ -67,8 +67,8 @@ function QueueTick({ x, y, payload }) {
 }
 
 
-function Visual1({ filters, planA, planB, onPlanChange }) {
-  const data = useMemo(() => planOverPlanByFY(filters), [filters])
+function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
+  const data = useMemo(() => planOverPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="PoP Variation" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
@@ -152,7 +152,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   )
 }
 
-export default function Layer1PlanOverPlan({ filters }) {
+export default function Layer1PlanOverPlan({ filters, granularity }) {
   const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
   const [open, setOpen] = useState(true)
   const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
@@ -187,7 +187,7 @@ export default function Layer1PlanOverPlan({ filters }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
+          <Visual1 filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
           <Visual2 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
           <Visual3 filters={filters} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
         </div>

@@ -54,8 +54,8 @@ function Card({ icon, label, sublabel, value, sub, trend, onClick, active }) {
   )
 }
 
-function AsuTrendChart({ filters }) {
-  const data = useMemo(() => asuByFY(filters), [filters])
+function AsuTrendChart({ filters, granularity }) {
+  const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
@@ -74,8 +74,8 @@ function AsuTrendChart({ filters }) {
 
 // Grouped columns, not stacked — DB and OSP render as two side-by-side bars per
 // fiscal year instead of one stacked bar, per the requested chart-type change.
-function SrDbOspChart({ filters }) {
-  const data = useMemo(() => srDbOspByFY(filters), [filters])
+function SrDbOspChart({ filters, granularity }) {
+  const data = useMemo(() => srDbOspByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
@@ -95,8 +95,8 @@ function SrDbOspChart({ filters }) {
 
 // Line-only, CPASU alone — the bars (SR/ASU) that used to share this chart were
 // dropped per the requested "just CPASU over years" redesign.
-function CpasuChart({ filters }) {
-  const data = useMemo(() => cpasuByFY(filters), [filters])
+function CpasuChart({ filters, granularity }) {
+  const data = useMemo(() => cpasuByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
@@ -113,8 +113,8 @@ function CpasuChart({ filters }) {
   )
 }
 
-function CurrentUcrChart({ filters }) {
-  const data = useMemo(() => ucrByFY(filters), [filters])
+function CurrentUcrChart({ filters, granularity }) {
+  const data = useMemo(() => ucrByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={210}>
@@ -247,14 +247,14 @@ const MODAL_TITLES = {
 // Opening/closing a card's popup only touches this component's own `active`
 // state — the `filters` prop keeps flowing from HesForecastingPage unchanged,
 // so closing the modal always returns to the dashboard exactly as filtered.
-function DrillDownModal({ type, filters, onClose }) {
+function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
       {type === 'totalQueues' && <TotalQueuesSection />}
-      {type === 'asu' && <AsuTrendChart filters={filters} />}
-      {type === 'sr' && <SrDbOspChart filters={filters} />}
-      {type === 'cpasu' && <CpasuChart filters={filters} />}
-      {type === 'ucr' && <CurrentUcrChart filters={filters} />}
+      {type === 'asu' && <AsuTrendChart filters={filters} granularity={granularity} />}
+      {type === 'sr' && <SrDbOspChart filters={filters} granularity={granularity} />}
+      {type === 'cpasu' && <CpasuChart filters={filters} granularity={granularity} />}
+      {type === 'ucr' && <CurrentUcrChart filters={filters} granularity={granularity} />}
     </Modal>
   )
 }
@@ -271,7 +271,7 @@ function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
   return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
 }
 
-export default function HesMetricCards({ filters }) {
+export default function HesMetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
   const d = useMemo(() => hesCardData(filters), [filters])
   const toggle = key => setActive(prev => prev === key ? null : key)
@@ -306,7 +306,7 @@ export default function HesMetricCards({ filters }) {
           onClick={() => toggle('ucr')} active={active === 'ucr'} />
       </div>
 
-      {active && <DrillDownModal type={active} filters={filters} onClose={() => setActive(null)} />}
+      {active && <DrillDownModal type={active} filters={filters} granularity={granularity} onClose={() => setActive(null)} />}
     </div>
   )
 }

@@ -26,23 +26,28 @@ const DEFAULT_FILTERS = {
 
 export default function ForecastingPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
+  // Page-wide "view by" granularity — Quarter/Month/Week — separate from the value
+  // filters above: it changes what axis every time-series chart renders at, not
+  // which rows are in scope. See design_choice.md for why it isn't one of the
+  // MultiSelectField filters.
+  const [granularity, setGranularity] = useState('Quarter')
 
   return (
     <>
       {/* ── Filters ──────────────────────────────────────────────── */}
-      <FilterPanel filters={filters} onChange={setFilters} />
+      <FilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
 
       {/* ── KPI Cards — full width, cards sit alone here ────────────── */}
       <SectionDivider label="Key Metrics" />
-      <MetricCards filters={filters} />
+      <MetricCards filters={filters} granularity={granularity} />
 
       {/* ── Analysis Layers + RCA/CLCA sidebar ──────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
         <div className="flex-1 min-w-0">
           <SectionDivider label="Analysis Layers" />
           <div className="px-4 pb-4 flex flex-col gap-3">
-            <Layer1PlanOverPlan filters={filters} />
-            <Layer2ActualVsPlan filters={filters} />
+            <Layer1PlanOverPlan filters={filters} granularity={granularity} />
+            <Layer2ActualVsPlan filters={filters} granularity={granularity} />
             <Layer3GeoMap filters={filters} />
           </div>
         </div>

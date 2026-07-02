@@ -4,6 +4,7 @@ import {
 } from '../../data/hesData'
 import { FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS } from '../../data/mockData'
 import MultiSelectField from '../MultiSelectField'
+import GranularityToggle from '../GranularityToggle'
 
 const ICONS = {
   scope: <path d="M2 3.5h10M2 7h10M2 10.5h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />,
@@ -34,7 +35,7 @@ function ClusterDivider() {
   return <div style={{ width: 1, alignSelf: 'stretch', background: 'linear-gradient(180deg, transparent, rgba(56,189,248,0.18) 30%, rgba(56,189,248,0.18) 70%, transparent)', margin: '0 14px' }} />
 }
 
-export default function HesFilterPanel({ filters, onChange }) {
+export default function HesFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
   const defs = {
@@ -69,6 +70,8 @@ export default function HesFilterPanel({ filters, onChange }) {
         </Cluster>
         <ClusterDivider />
         <Cluster icon="people" cols={2}>{field('businessPartner')}{field('globalGrouping')}</Cluster>
+        <ClusterDivider />
+        <GranularityToggle value={granularity} onChange={onGranularityChange} />
       </div>
 
       {activeFilters.length > 0 && (

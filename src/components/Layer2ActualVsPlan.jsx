@@ -69,8 +69,8 @@ function QueueTick({ x, y, payload }) {
   )
 }
 
-function Visual1({ filters, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => actualVsPlanByFY(filters), [filters])
+function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
+  const data = useMemo(() => actualVsPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
       <ResponsiveContainer width="100%" height={222}>
@@ -94,8 +94,8 @@ function Visual1({ filters, selectedPlan, onPlanChange }) {
   )
 }
 
-function Visual2({ filters, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => stackedAdherenceByFY(filters), [filters])
+function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
+  const data = useMemo(() => stackedAdherenceByFY(filters, granularity), [filters, granularity])
   // Same DB/OSP-agnostic queue count the Total Queues card uses — converts each
   // bucket's % into "how many queues" for the tooltip, since a bare % repeats what
   // the on-bar label already shows.
@@ -180,7 +180,7 @@ function Visual3({ filters }) {
   )
 }
 
-export default function Layer2ActualVsPlan({ filters }) {
+export default function Layer2ActualVsPlan({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [plan, setPlan] = useState('FY27 Q1 APR Plan')
 
@@ -206,8 +206,8 @@ export default function Layer2ActualVsPlan({ filters }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} selectedPlan={plan} onPlanChange={setPlan} />
-          <Visual2 filters={filters} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
+          <Visual2 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
           <Visual3 filters={filters} />
         </div>
       )}

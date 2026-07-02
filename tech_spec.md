@@ -37,14 +37,15 @@ SPoG/
 │   │   ├── ForecastingPage.jsx # ESG Forecasting page body (filters + cards + 3 layers + RCA/CLCA sidebar)
 │   │   ├── SectionDivider.jsx  # Shared "KEY METRICS" / "ANALYSIS LAYERS" section label, used by both pages
 │   │   ├── Modal.jsx           # Shared popup modal — used by both pages' Key Metrics card drill-downs
-│   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips
+│   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by both filter bars
+│   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
 │   │   ├── Layer2ActualVsPlan.jsx  # Actual vs Plan: 3 chart visuals + stacked bar
 │   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers + summary table
 │   │   └── hes/                # HES Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── HesForecastingPage.jsx  # Page body: filters + cards + 4 layers + RCA/CLCA sidebar
-│   │       ├── HesFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping
+│   │       ├── HesFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle
 │   │       ├── HesChartKit.jsx         # Shared chart primitives (Visual wrapper, Tip, PlanDropdowns, truncate, etc.);
 │   │       │                            re-exports Modal from ../Modal.jsx
 │   │       ├── HesMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
@@ -155,6 +156,50 @@ reference a page-level CSS variable) — it uses a fixed neutral slate that read
 
 ---
 
+## Global Time-Granularity Toggle (2026-07-02)
+
+`GranularityToggle.jsx` (shared) renders a Quarter/Month/Week pill inside both filter bars. The value lives
+in `ForecastingPage`/`HesForecastingPage` state (`granularity`, default `'Quarter'`) alongside `filters`,
+and flows down as a plain prop to every chart-rendering component — no context, no separate store, same
+pattern as `filters` itself.
+
+Shared math, in `mockData.js` (imported by `hesData.js` where needed):
+```
+FISCAL_MONTH_LIST                      — FY25M01...FY27M12 (36 values); canonical here now, hesData.js re-exports it
+periodsForGranularity(granularity, years) — returns the ordered FISCAL_QUARTERS/FISCAL_MONTH_LIST/FISCAL_WEEK_LIST
+                                             slice matching the given years, based on granularity ('Month'|'Week'|else Quarter)
+expandToGranularity(fySeries, granularity, rawFields) — for ADDITIVE fields (volumes, counts, dollars):
+                                             divides each FY row's listed fields across its sub-periods
+                                             (÷4 Quarter, ÷12 Month, ÷52 Week) with a small deterministic
+                                             wobble; returns fySeries unchanged if granularity is falsy/'Year'
+expandRateToGranularity(fySeries, granularity, rateFields) — for RATE fields (percentages, targets):
+                                             keeps each field at the parent FY's magnitude across every
+                                             sub-period (wobble only, no division) — dividing a percentage
+                                             by a period count would be meaningless
+```
+
+Selectors that accept a `granularity` argument (all default to `undefined`/`'Year'` — i.e. unchanged FY
+behavior — when omitted, so any caller that doesn't pass one still works):
+```
+mockData.js:  planOverPlanByFY, actualVsPlanByFY, stackedAdherenceByFY (own bespoke expansion — renormalizes
+              % buckets rather than dividing them), callVolumeByFY, dbOspVolumeByFY
+hesData.js:   asuByFY, srByFY, asuPlanVsPlanByFY, srPlanVsPlanByFY, cpasuByFY (derives from the above, no
+              separate expansion needed), ucrByFY (uses expandRateToGranularity — see design_choice.md for
+              the bug this avoided), srBotsByFY, srDbOspByFY (both derive from srByFY, no separate expansion),
+              regionTrendGranularity(filters, granularity) / cpasuTrendByRegion(filters, region, granularity)
+              — granularity now comes from the global toggle, not inferred from which time filter was selected
+```
+
+`topNonAdherentLobsByYear(filters, period, count)` (HES) was generalized to derive its target fiscal year via
+`period.slice(0, 4)`, since the "UCR Runrate with Target" chart it backs now renders at whatever granularity
+is selected — a clicked bar can carry a quarter/month/week label, not just a bare fiscal year.
+
+Charts whose x-axis isn't time — region (Plan Impact, both Geo Maps), queue (Top Queues by Variance), or
+LOB (the LOB donut breakdowns) — don't take a `granularity` argument at all; there's no sub-year view of
+"which region," so the toggle doesn't apply to them by design.
+
+---
+
 ## State Management
 
 No external state library. All state is local React `useState`:
@@ -162,15 +207,15 @@ No external state library. All state is local React `useState`:
 | Component | State | Type |
 |---|---|---|
 | `App` | `page` ('forecasting'\|'hes'); `theme` ('dark'\|'light', persisted to localStorage) | String, String |
-| `ForecastingPage` | `filters` | Object (12 filter keys) |
+| `ForecastingPage` | `filters`; `granularity` ('Quarter'\|'Month'\|'Week', default 'Quarter') | Object (12 filter keys), String |
 | `MetricCards` | `active` (which card's modal is open) | String or null |
 | `Layer1PlanOverPlan` | `plans` (planA/planB, reset by `filters.planName` via `useEffect`), `open` | Object, Boolean |
 | `Layer2ActualVsPlan` | `plan` (reset by `filters.planName` via `useEffect`), `open` | String, Boolean |
 | `Layer3GeoMap` | `viewMode` (Region/Country), `hovered`, `open` | String, Object, Boolean |
-| `HesForecastingPage` | `filters` | Object (7 filter keys) |
+| `HesForecastingPage` | `filters`; `granularity` ('Quarter'\|'Month'\|'Week', default 'Quarter') | Object (7 filter keys), String |
 | `HesMetricCards` | `active` (which card's modal is open); `TotalQueuesSection`'s `selectedRegion` (donut drill) | String or null, String or null |
 | `AsuLayer` / `SrLayer` | `plan`, `plans` (planA/planB), `open`, `selectedRegion` (Visual3 drill state) | String, Object, Boolean, String or null |
-| `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalYear` | Boolean, String or null, String, String or null |
+| `AsuSrTrendLayer` | `open`; Visual1's `selectedRegion` (CPASU Trend drill); Visual2's `plan`; Visual3's `modalPeriod` | Boolean, String or null, String, String or null |
 | `HesGeoMap` | `open`, `hovered` | Boolean, Object |
 
 `filters` flows down as a prop to `MetricCards`, all three layers, and every Visual sub-component. Each chart/card recomputes its data via `useMemo(() => selectorFn(filters), [filters])`, calling into the selector functions exported from `mockData.js` (see Data Model). No FY/Quarter/Week drill-toggle state exists anymore — those were removed; the top filter bar's Fiscal Year/Quarter/Week filters are the only time control, and charts render at Fiscal Year granularity only.
@@ -348,13 +393,15 @@ cpasuByFY(filters) — cpasu = sr.actual / asu.actual per period, rounded to 2 d
 
 ### UCR
 ```
-UCR_BY_FY — {period, target, current, adherence (getter)} × 3 FYs, static (BASE_UCR_TARGET 82/85/88).
-  AsuSrTrendLayer Visual3 renders this array directly (not through ucrByFY) so it always shows all 3
-  FYs regardless of Quarter/Week filter narrowing.
-ucrByFY(filters) — narrowed to hesEffectiveFiscalYears; still used by the Current UCR card's drill-down
-ucrImpactedSrByFY(filters) — {period, actualSR, srDeflected} — srDeflected ≈ 8-11% of actualSR, illustrative
-srBotsByFY(filters) — {period, humanSR, botsSR (~35% of actual), plan} — rendered as "SR's" / "UCR Handled
-  SR's" in AsuSrTrendLayer Visual2 (display names only; data keys unchanged)
+UCR_BY_FY — {period, target, current, adherence (getter)} × 3 FYs, static (BASE_UCR_TARGET 82/85/88)
+ucrByFY(filters, granularity) — narrowed to hesEffectiveFiscalYears, then expandRateToGranularity'd on
+  target/current (see "Global Time-Granularity Toggle" above). Backs both the Current UCR card's
+  drill-down and AsuSrTrendLayer Visual3 ("UCR Runrate with Target") — Visual3 used to render UCR_BY_FY
+  directly to force always-FY regardless of filters; it now goes through ucrByFY(filters, granularity)
+  like everything else, per the 2026-07-02 granularity-toggle change.
+srBotsByFY(filters, granularity) — {period, humanSR, botsSR (~35% of actual), plan} — rendered as "SR's" /
+  "UCR Handled SR's" in AsuSrTrendLayer Visual2 (display names only; data keys unchanged). Granularity
+  flows through via srByFY(filters, granularity) internally; no separate expansion needed here.
 srDbOspByFY(filters) — {period, db (~70% of actual), osp} — backs the Service Requests card's drill-down,
   rendered as grouped columns (not stacked)
 topNonAdherentLobsByYear(filters, fy, count=5) — {lob, runrate, target} × count, sorted ascending by

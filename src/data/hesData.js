@@ -4,9 +4,11 @@
 // numbers) but is a fully separate module — HES Forecasting has its own filter set
 // and metrics, and keeping it decoupled avoids any risk to the ESG Forecasting page.
 import {
-  FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS, REGIONS,
-  regionForCountry, matchesMulti, inferRegion,
+  FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, FISCAL_MONTH_LIST, BUSINESS_PARTNERS, REGIONS,
+  regionForCountry, matchesMulti, inferRegion, periodsForGranularity, expandToGranularity, expandRateToGranularity,
 } from './mockData'
+
+export { FISCAL_MONTH_LIST }
 
 // Real Dell ISG product/technology lines (business-supplied).
 export const LOB_LIST = [
@@ -19,12 +21,6 @@ export const LOB_LIST = [
 ]
 
 export const GLOBAL_GROUPING_LIST = ['Consumer', 'Commercial', 'Enterprise']
-
-// Fiscal Month filter options: FY25M01 ... FY27M12 — this page adds Month as a time
-// filter granularity that Forecasting doesn't have.
-export const FISCAL_MONTH_LIST = FISCAL_YEARS.flatMap(fy =>
-  Array.from({ length: 12 }, (_, i) => `${fy}M${String(i + 1).padStart(2, '0')}`)
-)
 
 const HES_FILTER_KEYS = ['lob', 'businessPartner', 'globalGrouping']
 const HES_FIELD_BY_KEY = { lob: 'lob', businessPartner: 'businessPartner', globalGrouping: 'globalGrouping' }
@@ -96,38 +92,46 @@ export const SR_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map(fy => ({
   get variance() { return +((this.plan2 - this.plan1) / this.plan1 * 100).toFixed(1) },
 }))
 
-export function asuByFY(filters = {}) {
+export function asuByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
-  return ASU_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ ...d, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+  const fyRows = ASU_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+  return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
+    .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
 
-export function srByFY(filters = {}) {
+export function srByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
-  return SR_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ ...d, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+  const fyRows = SR_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
+  return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
+    .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
 
-export function asuPlanVsPlanByFY(filters = {}) {
+export function asuPlanVsPlanByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
-  return ASU_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio), variance: d.variance }))
+  const fyRows = ASU_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
+  return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
+    .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
-export function srPlanVsPlanByFY(filters = {}) {
+export function srPlanVsPlanByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
-  return SR_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio), variance: d.variance }))
+  const fyRows = SR_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
+  return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
+    .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
 // ── CPASU (= SR / ASU) ─────────────────────────────────────────────────────
-export function cpasuByFY(filters = {}) {
-  const asu = asuByFY(filters)
-  const sr = srByFY(filters)
+export function cpasuByFY(filters = {}, granularity) {
+  const asu = asuByFY(filters, granularity)
+  const sr = srByFY(filters, granularity)
   return asu.map((a, i) => ({
     period: a.period, asu: a.actual, sr: sr[i].actual,
     cpasu: a.actual ? +(sr[i].actual / a.actual).toFixed(2) : 0,
@@ -144,14 +148,21 @@ export const UCR_BY_FY = FISCAL_YEARS.map(fy => ({
   get adherence() { return +((this.current / this.target) * 100).toFixed(1) },
 }))
 
-export function ucrByFY(filters = {}) {
+// Now responds to the global granularity toggle like every other chart on this page —
+// supersedes the 2026-07-02 "always Fiscal Year" decision for this chart specifically
+// (see design_choice.md), since the toggle is meant to make every time-axis chart
+// interactive, not just some of them.
+export function ucrByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
-  return UCR_BY_FY.filter(d => years.includes(d.period))
+  const fyRows = UCR_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, target: d.target, current: d.current }))
+  return expandRateToGranularity(fyRows, granularity, ['target', 'current'])
+    .map(d => ({ ...d, adherence: d.target ? +((d.current / d.target) * 100).toFixed(1) : 0 }))
 }
 
 // ── SR handled by Bots vs humans, plus SR Plan (Layer 3 "UCR Impact on SR") ───
-export function srBotsByFY(filters = {}) {
-  const sr = srByFY(filters)
+export function srBotsByFY(filters = {}, granularity) {
+  const sr = srByFY(filters, granularity)
   return sr.map(d => {
     const botsSR = Math.round(d.actual * 0.35)
     return { period: d.period, humanSR: d.actual - botsSR, botsSR, plan: d.plan }
@@ -159,19 +170,24 @@ export function srBotsByFY(filters = {}) {
 }
 
 // ── DB/OSP split of SR actuals (SR Actuals card drill-down) ───────────────────
-export function srDbOspByFY(filters = {}) {
-  const sr = srByFY(filters)
+export function srDbOspByFY(filters = {}, granularity) {
+  const sr = srByFY(filters, granularity)
   return sr.map(d => {
     const db = Math.round(d.actual * 0.7)
     return { period: d.period, db, osp: d.actual - db }
   })
 }
 
-// ── Top LOBs not adhering to UCR target, by fiscal year ───────────────────────
-// Backs the "UCR Runrate with Target" year-click modal (Layer 03, Visual 3).
-export function topNonAdherentLobsByYear(filters = {}, fy, count = 5) {
-  const target = UCR_BY_FY.find(d => d.period === fy)?.target ?? 85
-  const yearIndex = FISCAL_YEARS.indexOf(fy)
+// ── Top LOBs not adhering to UCR target, by clicked period ────────────────────
+// Backs the "UCR Runrate with Target" bar-click modal (Layer 03, Visual 3). `period`
+// is whatever label the clicked bar carries — a fiscal year ('FY27') when the global
+// granularity toggle is on Year, but a quarter/month/week label ('FY27Q2', 'FY27M03',
+// 'FY27W14') once that chart started responding to the toggle too — the target/index
+// lookups just key off the year prefix either way.
+export function topNonAdherentLobsByYear(filters = {}, period, count = 5) {
+  const year = period.slice(0, 4)
+  const target = UCR_BY_FY.find(d => d.period === year)?.target ?? 85
+  const yearIndex = FISCAL_YEARS.indexOf(year)
   const pool = filterLobs(filters).length ? filterLobs(filters) : LOB_FACTS
   return pool
     .map((l, i) => ({
@@ -336,18 +352,21 @@ export function cpasuByRegion(filters = {}) {
   })
 }
 
-export function regionTrendGranularity(filters = {}) {
-  if (filters.fiscalWeek?.length) return { granularity: 'Week', periods: [...filters.fiscalWeek].sort() }
-  if (filters.fiscalQuarter?.length) return { granularity: 'Quarter', periods: [...filters.fiscalQuarter].sort() }
-  return { granularity: 'Year', periods: hesEffectiveFiscalYears(filters) }
+// Now driven by the global granularity toggle (defaults to 'Quarter' if none is
+// passed) instead of inferring granularity from which time filter happened to be
+// selected — the toggle is the one control meant to answer "what granularity" for
+// every time-axis chart on the page, this one included.
+export function regionTrendGranularity(filters = {}, granularity = 'Quarter') {
+  const years = hesEffectiveFiscalYears(filters)
+  return { granularity, periods: periodsForGranularity(granularity, years) }
 }
 
 function periodsPerYear(granularity) {
-  return granularity === 'Week' ? 52 : granularity === 'Quarter' ? 4 : 1
+  return granularity === 'Week' ? 52 : granularity === 'Month' ? 12 : granularity === 'Quarter' ? 4 : 1
 }
 
-export function cpasuTrendByRegion(filters = {}, region) {
-  const { granularity, periods } = regionTrendGranularity(filters)
+export function cpasuTrendByRegion(filters = {}, region, granularity) {
+  const { periods } = regionTrendGranularity(filters, granularity)
   const share = REGION_SHARE[region] ?? 1 / IMPACT_REGIONS.length
   const ratio = lobScopeRatio(filters)
   const divisor = periodsPerYear(granularity)

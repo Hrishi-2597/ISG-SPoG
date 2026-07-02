@@ -6,22 +6,22 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import {
   cpasuByRegion, regionTrendGranularity, cpasuTrendByRegion, srBotsByFY,
-  UCR_BY_FY, topNonAdherentLobsByYear,
+  ucrByFY, topNonAdherentLobsByYear,
 } from '../../data/hesData'
 import { C, Visual, Tip, PlanSelect, Modal, PillButton } from './HesChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
 // Regions render by default (one bar-pair per region); clicking a region drills
-// into that region's own trend at whatever time granularity is most specific in
-// the top filter bar (Week > Quarter > Year).
-function Visual1({ filters }) {
+// into that region's own trend at whatever granularity the page-wide View By
+// toggle is set to.
+function Visual1({ filters, granularity: pageGranularity }) {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const regionData = useMemo(() => cpasuByRegion(filters), [filters])
-  const { granularity } = useMemo(() => regionTrendGranularity(filters), [filters])
+  const { granularity } = useMemo(() => regionTrendGranularity(filters, pageGranularity), [filters, pageGranularity])
   const trendData = useMemo(
-    () => (selectedRegion ? cpasuTrendByRegion(filters, selectedRegion) : []),
-    [filters, selectedRegion]
+    () => (selectedRegion ? cpasuTrendByRegion(filters, selectedRegion, pageGranularity) : []),
+    [filters, selectedRegion, pageGranularity]
   )
 
   const data = selectedRegion ? trendData : regionData
@@ -53,9 +53,9 @@ function Visual1({ filters }) {
   )
 }
 
-function Visual2({ filters }) {
+function Visual2({ filters, granularity }) {
   const [plan, setPlan] = useState('FY27 Q1 APR Plan')
-  const data = useMemo(() => srBotsByFY(filters), [filters])
+  const data = useMemo(() => srBotsByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="UCR Impact on SR" cornerControls={<PlanSelect value={plan} onChange={setPlan} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
@@ -75,34 +75,36 @@ function Visual2({ filters }) {
   )
 }
 
-// Always renders all 3 fiscal years (ignores the top filter bar's finer Quarter/Week
-// narrowing) — clicking a year's bar opens a modal with that year's top 5 LOBs
+// Now responds to the page-wide View By granularity toggle like every other chart
+// on this page (superseding the earlier "always Fiscal Year" decision — see
+// design_choice.md) — clicking a bar opens a modal with that period's top 5 LOBs
 // furthest from the UCR target, replacing the old always-visible queue list.
-function Visual3({ filters }) {
-  const [modalYear, setModalYear] = useState(null)
+function Visual3({ filters, granularity }) {
+  const [modalPeriod, setModalPeriod] = useState(null)
+  const data = useMemo(() => ucrByFY(filters, granularity), [filters, granularity])
   const topLobs = useMemo(
-    () => (modalYear ? topNonAdherentLobsByYear(filters, modalYear) : []),
-    [filters, modalYear]
+    () => (modalPeriod ? topNonAdherentLobsByYear(filters, modalPeriod) : []),
+    [filters, modalPeriod]
   )
 
   return (
-    <Visual title="UCR Runrate with Target" subtitle="Click a year to see its top 5 non-adherent LOBs">
+    <Visual title="UCR Runrate with Target" subtitle="Click a bar to see that period's top 5 non-adherent LOBs">
       <ResponsiveContainer width="100%" height={210}>
-        <ComposedChart data={UCR_BY_FY} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Bar dataKey="current" name="Runrate" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40}
-            onClick={d => setModalYear(d.period)} style={{ cursor: 'pointer' }} />
+            onClick={d => setModalPeriod(d.period)} style={{ cursor: 'pointer' }} />
           <Line type="monotone" dataKey="target" name="Target" stroke={C.behind} strokeWidth={2} strokeDasharray="4 3"
             dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} />
         </ComposedChart>
       </ResponsiveContainer>
 
-      {modalYear && (
-        <Modal title={`${modalYear} — Top 5 Non-Adherent LOBs`} onClose={() => setModalYear(null)} width={420}>
+      {modalPeriod && (
+        <Modal title={`${modalPeriod} — Top 5 Non-Adherent LOBs`} onClose={() => setModalPeriod(null)} width={420}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {topLobs.map((l, i) => (
               <div key={i} style={{
@@ -122,7 +124,7 @@ function Visual3({ filters }) {
   )
 }
 
-export default function AsuSrTrendLayer({ filters }) {
+export default function AsuSrTrendLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
 
   return (
@@ -137,9 +139,9 @@ export default function AsuSrTrendLayer({ filters }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} />
-          <Visual2 filters={filters} />
-          <Visual3 filters={filters} />
+          <Visual1 filters={filters} granularity={granularity} />
+          <Visual2 filters={filters} granularity={granularity} />
+          <Visual3 filters={filters} granularity={granularity} />
         </div>
       )}
     </div>

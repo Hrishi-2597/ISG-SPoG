@@ -198,3 +198,21 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Ran `npm run build` (clean), grepped the compiled CSS to confirm both `:root` and `[data-theme='light']` blocks survived Tailwind/PostCSS, and grepped the whole component tree to confirm no stray hardcoded chrome colors were left unconverted
 - This session's environment has no browser-automation tool, so the toggle wasn't visually clicked through in a rendered browser — flagged to the user as a follow-up to verify manually
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
+## Prompt 14 — 2026-07-02
+**Input:** Add a page-wide Quarter/Month/Week filter for both pages ("in order - Quarter | Month | Week"), with every graph interacting with it, researched and placed well at the top; also rename HES's ASU Layer subtitle from "average service unit" to "Active Service Unit"
+
+**Action:**
+- Ran a web search on dashboard time-granularity/date-filter placement conventions before building anything, per the explicit request — findings (page-wide filters belong in the horizontal filter toolbar; granularity toggles sit prominently near other filters) informed placing the new control inside each filter bar rather than the header or a new toolbar row; cited in `design_choice.md`
+- Built a shared `GranularityToggle.jsx` (Quarter/Month/Week pill, same `.drill-toggle` styling as the DB/OSP and page toggles) and added it to the top-right of both `FilterPanel.jsx` and `HesFilterPanel.jsx`'s filter-bar rows
+- Lifted `granularity` state (default `'Quarter'`) into `ForecastingPage.jsx`/`HesForecastingPage.jsx` alongside `filters`, threaded as a prop into every chart component with a time axis
+- Added `FISCAL_MONTH_LIST` (moved to `mockData.js`, `hesData.js` now re-exports it), `periodsForGranularity()`, `expandToGranularity()` (additive fields — volumes/counts, divides across sub-periods with a wobble) and `expandRateToGranularity()` (rate fields — percentages/targets, keeps magnitude constant across sub-periods) to `mockData.js`
+- Applied granularity to every period-keyed selector on both pages: ESG's `planOverPlanByFY`, `actualVsPlanByFY`, `stackedAdherenceByFY` (own bespoke bucket-renormalizing expansion, not either generic helper), `callVolumeByFY`, `dbOspVolumeByFY`; HES's `asuByFY`, `srByFY`, `asuPlanVsPlanByFY`, `srPlanVsPlanByFY`, `cpasuByFY`, `ucrByFY`, `srBotsByFY`, `srDbOspByFY`, and `regionTrendGranularity`/`cpasuTrendByRegion` (now driven by the global toggle instead of inferring granularity from which time filter was selected)
+- Caught and fixed a real bug during this pass: `ucrByFY` initially used the additive `expandToGranularity` on target/current, which are percentages — dividing an 88% target by 52 weeks would have shown ~1.7% at Week granularity. Fixed by routing rate fields through the new `expandRateToGranularity` instead
+- This supersedes two same-day decisions: "UCR Runrate with Target" (fixed to always-FY earlier the same day) and the CPASU Trend region-drill's filter-bar-inferred granularity both now follow the new global toggle, since the request was explicit that every time-axis chart should respond to it
+- Generalized `topNonAdherentLobsByYear` to accept any period label (not just a bare fiscal year), deriving the target year via the first 4 characters, since its host chart can now render at quarter/month/week granularity
+- Renamed AsuLayer's subtitle from "— average service unit tracking" to "— Active Service Unit tracking"
+- Verified with `npm run build` (clean) plus a throwaway Node script exercising every changed selector at Quarter/Month/Week directly (not just via the build) — confirmed correct period counts (12/36/156), additive fields summing back close to their FY totals, rate fields staying in range instead of being divided down, and the generalized LOB-modal function handling non-year period labels
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`

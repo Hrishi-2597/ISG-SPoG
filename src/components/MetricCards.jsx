@@ -198,10 +198,10 @@ function QueueTable({ rows }) {
   )
 }
 
-function VolumeByFYChart({ filters }) {
-  const data = useMemo(() => callVolumeByFY(filters).map(d => ({
+function VolumeByFYChart({ filters, granularity }) {
+  const data = useMemo(() => callVolumeByFY(filters, granularity).map(d => ({
     ...d, handledPct: d.offered ? +(d.handled / d.offered * 100).toFixed(1) : 0,
-  })), [filters])
+  })), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
@@ -224,8 +224,8 @@ function VolumeByFYChart({ filters }) {
   )
 }
 
-function DbOspByFYChart({ filters }) {
-  const data = useMemo(() => dbOspVolumeByFY(filters), [filters])
+function DbOspByFYChart({ filters, granularity }) {
+  const data = useMemo(() => dbOspVolumeByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
@@ -350,13 +350,13 @@ const MODAL_TITLES = {
 // Opening/closing a card's popup only touches this component's own `active`
 // state — `filters` keeps flowing from ForecastingPage unchanged, so closing
 // the modal always returns to the dashboard exactly as filtered.
-function DrillDownModal({ type, filters, rows, onClose }) {
+function DrillDownModal({ type, filters, granularity, rows, onClose }) {
   const [selectedYear, setSelectedYear] = useState(null)
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
       {type === 'queues' && <QueuesSection rows={rows} />}
-      {type === 'volume' && <VolumeByFYChart filters={filters} />}
-      {type === 'dbOsp' && <DbOspByFYChart filters={filters} />}
+      {type === 'volume' && <VolumeByFYChart filters={filters} granularity={granularity} />}
+      {type === 'dbOsp' && <DbOspByFYChart filters={filters} granularity={granularity} />}
       {type === 'forecast' && <ForecastByRegionChart filters={filters} />}
       {type === 'variance' && <VarianceByFYChart filters={filters} onSelectYear={setSelectedYear} />}
 
@@ -365,7 +365,7 @@ function DrillDownModal({ type, filters, rows, onClose }) {
   )
 }
 
-export default function MetricCards({ filters }) {
+export default function MetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
   const d = useMemo(() => cardData(filters), [filters])
   // Total Queues drill-down matches the card's own portfolio scoping (DB/OSP-agnostic).
@@ -410,7 +410,7 @@ export default function MetricCards({ filters }) {
         />
       </div>
 
-      {active && <DrillDownModal type={active} filters={filters} rows={structuralRows} onClose={() => setActive(null)} />}
+      {active && <DrillDownModal type={active} filters={filters} granularity={granularity} rows={structuralRows} onClose={() => setActive(null)} />}
     </div>
   )
 }
