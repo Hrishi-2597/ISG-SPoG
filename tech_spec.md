@@ -164,27 +164,41 @@ App
 └── HesForecastingPage / HesCapacityPage   — rendered when view === 'hes', by hesSubPage
 ```
 
-### EsgCapacityPage
+### EsgCapacityPage (revised 2026-07-03 — see design_choice.md for the full rationale)
 
 ```
 EsgCapacityPage
 ├── EsgCapacityFilterPanel  — Controlled: filters state lifted to EsgCapacityPage; combinedQueueName/
-│                              capacityCode/planName/fiscalYear/fiscalQuarter/fiscalWeek/channel/
-│                              businessPartner/businessOrg/region/country/dbOsp + GranularityToggle
-├── EsgCapacityMetricCards(filters, granularity) — capacityCardData(filters); 5 cards, each a Modal drill-down
+│                              capacityCode/planName(PLAN_NAMES)/fiscalYear/fiscalQuarter/fiscalWeek/
+│                              channel/businessPartner/region/subRegion/dbOsp + GranularityToggle
+│                              (businessOrg and country were removed; subRegion replaced country)
+├── EsgCapacityMetricCards(filters, granularity) — capacityCardData(filters, granularity); 5 cards with
+│   │                          YTD/YoY sub-messages (ytdSub helper, same pattern as HesMetricCards.jsx),
+│   │                          each a Modal drill-down
 │   └── DrillDownModal — StaffingTrendChart / UtilizationTrendChart / SlTrendChart (line-only) / AttritionTrendChart
 ├── HeadcountLayer(filters, granularity)   — badge "01"
-│   ├── Visual1 "Actual vs Planned HC Staffing Summary" — ComposedChart: hcStaffingByFY(filters, granularity), PlanSelect
-│   ├── Visual2 "Attrition"                              — ComposedChart: attritionByFY(filters, granularity, lens), Region/Country BinaryToggle
-│   └── Visual3 "Actual vs Plan Trend with SL%"           — ComposedChart: slTrendByFY(filters, granularity) +
-│                                                             defaulterQueues(filters) list below (ascending, actual-over-plan)
-├── PlanOverPlanLayer(filters, granularity, dataFn=planOverPlanHCByFY) — shared component, badge "02"
-├── UtilizationLayer(filters, granularity) — badge "03"
-│   ├── Visual1 "Actual vs Target Utilization"  — time-axis BarChart: utilizationByFY(filters, granularity),
-│   │                                              tooltip shows Aux-code culprit when actual < target
-│   ├── Visual2 "Queues with Aux Culprit"       — queue-axis horizontal bars: utilizationByQueue(filters), worst-gap-first
-│   └── Visual3 "Outage — Actual vs Target Leaves" — queue-axis horizontal bars: leavesByQueue(filters), ascending
-└── EsgCapacityGeoMap(filters)              — badge "04"; dual BinaryToggle (Headcount/SL% metric × Region/Country view)
+│   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: hcStaffingByFY(filters, granularity),
+│   │                                                   PlanSelect now offers PLAN_NAMES; line renamed "Variation %"
+│   ├── Visual2 "Attrition"          — Region/Sub-region-level default (attritionByDimension), click a bar to
+│   │                                   drill into attritionTrendByDimension(filters, key, dimension, granularity);
+│   │                                   custom tooltip also shows the raw attritionCount, not just the %
+│   └── Visual3 "Headcount Impact on SL" (renamed) — ComposedChart: slTrendByFY(filters, granularity);
+│                                                     Region/Country toggle removed; defaulter list below now
+│                                                     slDefaulterQueues(filters) — actual>plan AND SL<90
+├── PlanOverPlanVariationLayer(filters, granularity) — ESG-specific (no longer the shared component), badge "02"
+│   ├── MainChart "Plan over Plan Variation" (renamed) — Region/Sub-region default view (planOverPlanByDimension),
+│   │                                                     click a bar to drill into planOverPlanTrendByDimension
+│   └── QueueVarianceChart "Queues with Highest Variation" — diverging horizontal bars: planOverPlanQueueVariance(filters),
+│                                                             worst |variance| first, value-labeled (same polish as
+│                                                             Forecasting's Top Queues by Variance charts)
+├── UtilizationLayer(filters, granularity) — renamed "Utilization and Outage Analysis", badge "03"
+│   ├── Visual1 "Actual vs Target Utilization"     — time-axis BarChart+Line: utilizationByFY(filters, granularity)
+│   │                                                 now includes an Adherence % line; tooltip shows top-3 auxBreakdown
+│   ├── Visual2 "Utilization Defaulter Queues" (renamed) — queue-axis horizontal bars: utilizationByQueue(filters),
+│   │                                                       each queue's tooltip now lists 2-3 auxes
+│   └── Visual3 "Leave Impact — Actual vs Target" (renamed) — queue-axis horizontal bars: leavesByQueue(filters), ascending
+└── EsgCapacityGeoMap(filters)              — badge "04"; dual BinaryToggle (Headcount/SL% metric × Region/Sub-region view,
+                                               replacing the earlier curated-14-country view)
 
 No RCA/CLCA sidebar — not specified in this page's mockups.
 ```
@@ -553,46 +567,67 @@ hesCardData(filters) → { totalQueues, asuActuals, srActuals, cpasu, currentUcr
 
 ---
 
-## Data Model (`src/data/esgCapacityData.js`) — ESG Capacity Plan (2026-07-03)
+## Data Model (`src/data/esgCapacityData.js`) — ESG Capacity Plan (2026-07-03, revised 2026-07-03)
 
-Same conventions as `mockData.js`/`hesData.js`. Built from `ACTIVE_QUEUE_NAMES` (the same 47-queue roster ESG Forecasting uses) — every queue gets HC/utilization/SL/leaves fields in addition to Forecasting's existing tags.
+Same conventions as `mockData.js`/`hesData.js`. Built from `ACTIVE_QUEUE_NAMES` (the same 47-queue roster ESG Forecasting uses) — every queue gets HC/utilization/SL/leaves fields in addition to Forecasting's existing tags. `subRegion` is read directly off `ACTIVE_QUEUES[i]` (same index, same source array) rather than independently assigned, so a queue's sub-region tag matches on both this page and ESG Forecasting.
 
 ```
 AUX_CODES         — ['Aux 1' ... 'Aux 9'] — illustrative culprit-code taxonomy for utilization gaps
 CAPACITY_QUEUES   — ACTIVE_QUEUE_NAMES.map(...) → Array<{
-  name, region, businessPartner, businessOrg, channel,
+  name, region, subRegion, businessPartner, channel,
   planHC, actualHC, hcDelta (getter),
   utilTarget, utilActual, utilGap (getter), auxCulprit,
   slTarget, slActual,
   leavesPlan, leavesActual, leavesDelta (getter),
+  popPlan1, popPlan2, popVariance (getter) — Plan-over-Plan headcount, distinct from planHC/actualHC
 }>
 filterCapacityQueues(filters) — narrows CAPACITY_QUEUES by combinedQueueName/capacityCode/channel/
-  businessPartner/businessOrg/region/country (matchesMulti)
+  businessPartner/region/subRegion (matchesMulti) — businessOrg/country dropped 2026-07-03
+shareByKey(rows, key) — deterministic {key: share} distribution of a queue set across 'region' or
+  'subRegion', backing both the Attrition and Plan over Plan Variation region/sub-region drills
 ```
 
 ```
-hcStaffingByFY(filters, granularity)       — {period, actual, plan, adherence} — Visual1 of HeadcountLayer + FTE/Staffing card modal
-attritionByFY(filters, granularity, lens)  — {period, headcount, attrition} — lens ('Region'|'Country') scales the output slightly;
-                                              no real per-country attrition dataset exists, same illustrative-structure convention as everywhere else
-slTrendByFY(filters, granularity)          — {period, actual, plan, slPct} — Visual3 of HeadcountLayer + SL% card modal
-defaulterQueues(filters)                   — queues where actual > plan, ascending by delta — the list under HeadcountLayer Visual3
-planOverPlanHCByFY(filters, granularity)   — {period, plan1, plan2, variance} — feeds the shared PlanOverPlanLayer
-utilizationByFY(filters, granularity)      — {period, actual, target, auxCulprit, auxImpactPct} — auxCulprit/auxImpactPct are
-                                              attached AFTER expansion (by array index), not passed through expandRateToGranularity,
-                                              since they're categorical/non-numeric fields the expansion helpers don't carry
-utilizationByQueue(filters, topN=6)        — queue-axis ranking, sorted by |utilGap| DESCENDING (worst first — see design_choice.md
-                                              for the sort-direction bug this fixes)
+hcStaffingByFY(filters, granularity)       — {period, actual, plan, adherence} — HeadcountLayer Visual1 ("Actual vs Plan
+                                              Variation") + FTE/Staffing card modal
+attritionByFY(filters, granularity, lens)  — {period, headcount, attrition} — still backs the Attrition card's own Modal
+                                              popup only (unchanged, "pop up view is good"); NOT used by HeadcountLayer
+                                              Visual2 anymore, which uses the dimension selectors below instead
+attritionByDimension(filters, dimension)   — {key, headcount, attrition, attritionCount} × regions or sub-regions —
+  ('Region'|'SubRegion')                     HeadcountLayer Visual2's default view, sized by shareByKey
+attritionTrendByDimension(filters, key,    — {period, headcount, attrition, attritionCount} — FY/granularity trend for
+  dimension, granularity)                    one clicked region/sub-region key, same drill mechanic as hesData.js's cpasuTrendByRegion
+slTrendByFY(filters, granularity)          — {period, actual, plan, slPct} — HeadcountLayer Visual3 ("Headcount Impact
+                                              on SL") + SL% card modal
+slDefaulterQueues(filters, count=6)        — queues where actualHC > planHC AND slActual < 90, sorted by slActual
+                                              ascending (worst SL first) — replaces the old actual>plan-only defaulterQueues
+planOverPlanByDimension(filters, dimension) — {key, plan1, plan2, variance} × regions or sub-regions — PlanOverPlanVariationLayer's
+                                               MainChart default view, sized by shareByKey
+planOverPlanTrendByDimension(filters, key, — {period, plan1, plan2, variance} — FY/granularity trend for one clicked key
+  dimension, granularity)
+planOverPlanQueueVariance(filters, topN=8)  — {name, plan1, plan2, variance} sorted by |variance| DESCENDING — the
+                                               "Queues with Highest Variation" ranked chart, this page's headline visual
+utilizationByFY(filters, granularity)      — {period, actual, target, adherence, auxBreakdown, auxCulprit, auxImpactPct} —
+                                              auxBreakdown is the top-3 Aux codes by impact (auxCulprit/auxImpactPct kept
+                                              for back-compat = auxBreakdown[0]); attached AFTER expansion (by array
+                                              index), not passed through expandRateToGranularity, since Aux codes are
+                                              categorical/non-numeric fields the expansion helpers don't carry
+utilizationByQueue(filters, topN=6)        — queue-axis ranking, sorted by |utilGap| DESCENDING (worst first), each row
+                                              now carries `auxes` (3 distinct Aux codes) instead of a single auxCulprit
 leavesByQueue(filters, topN=6)             — queue-axis ranking: top-N by |leavesDelta| descending, then re-sorted ascending by
                                               delta for display (see design_choice.md for the bug this fixes)
-capacityCardData(filters)                  — {staffing, utilization, sl, totalFte, attrition} — latest-FY snapshot, backs EsgCapacityMetricCards
-GEO_CAPACITY_BY_REGION / geoCapacityByRegion(filters) / geoCapacityByCountry(filters, metric) —
-  {region|country, fulfillmentPct, slPct} — backs EsgCapacityGeoMap's dual metric/view toggle
-COUNTRY_TO_WORLD_ATLAS_NAME / WORLD_ATLAS_TO_COUNTRY — small explicit lookup mapping the curated
-  14-country COUNTRIES list to/from world-atlas topojson country names, kept separate from
-  mockData.js's regionForCountry() (tuned for full-map-coverage choropleths, not a compact filter list)
+capacityCardData(filters, granularity)     — {staffing, utilization, sl, totalFte, attrition}, each carrying
+                                              {value/actual, period, prevPeriod, yoyPct} — headline value drills with
+                                              granularity, yoyPct is always FY-over-FY (same split as hesCardData)
+GEO_CAPACITY_BY_REGION / geoCapacityByRegion(filters) — {region, fulfillmentPct, slPct}
+GEO_CAPACITY_BY_SUBREGION / geoCapacityBySubRegion(filters, metric) — {subRegion, value} × 24 real SUB_REGIONS values,
+  replacing the earlier curated-14-country geoCapacityByCountry/COUNTRY_TO_WORLD_ATLAS_NAME machinery entirely
 ```
 
-Business logic: Total FTE and Attrition % invert the usual "higher actual is better" framing — `actual > plan` is BAD (red) for both, since overstaffing/high-attrition are the problems being flagged; Utilization %/SL % keep the normal "actual ≥ target is good" framing.
+Business logic: Total FTE and Attrition % invert the usual "higher actual is better" framing — an increase YoY is BAD
+(red) for both, since overstaffing/rising attrition are the problems being flagged; Utilization %/SL % keep the normal
+"growth is good" framing. Plan Name filter options now come from `mockData.js`'s `PLAN_NAMES` (ESG Forecasting's own
+list), not a page-specific plan list.
 
 ---
 
@@ -675,3 +710,5 @@ Steps:
 14. HES Capacity's Sankey diagram (`workloadSankey()`) uses an illustrative 3-tier CQN taxonomy as flow sources since this page's filter set has no real per-queue dimension — only the 4 target LOB names are real
 15. HES Capacity's Geo Map is single-metric (SLO only, region-only) — the mockup ("Layer 5", renumbered to 04) only specifies a region-level SLO heatmap, unlike ESG Capacity's dual metric/view-toggle map
 16. The landing page, Capacity Plan pages, and per-business sub-toggle (2026-07-03) weren't visually clicked through in a rendered browser by the agent — no browser-automation tool available this session; verified via clean production build + Node data smoke tests only
+17. ESG Capacity's Region/Sub-region drill (Attrition, Plan over Plan Variation) scales one FY-level baseline by each key's share of in-scope queues (`shareByKey`) — not a real per-region/sub-region historical dataset
+18. The 2026-07-03 ESG Capacity revision pass (filters, YTD cards, Attrition/Plan-over-Plan drill, Utilization aux detail, Geo Map sub-region toggle) was verified via an extended Node smoke test + clean build only, same browser-automation gap as item 16

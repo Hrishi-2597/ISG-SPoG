@@ -6,9 +6,9 @@ import {
 import { utilizationByFY, utilizationByQueue, leavesByQueue } from '../../data/esgCapacityData'
 import { C, Visual, Tip, CategoryTick } from '../ChartKit'
 
-// Extends the shared Tip with an Aux-code culprit line when utilization missed
-// target for that period — the one place on this page where the tooltip needs to
-// read a field (auxCulprit/auxImpactPct) that isn't one of the plotted series.
+// Extends the shared Tip with the top-3 Aux codes driving the gap (a shortfall can
+// genuinely be caused by more than one Aux code, so the tooltip surfaces the top 3
+// by impact rather than a single culprit) and an Adherence % line on a second axis.
 function UtilFyTip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const row = payload[0].payload
@@ -20,31 +20,39 @@ function UtilFyTip({ active, payload, label }) {
           {p.name}: <span style={{ fontWeight: 600 }}>{p.value}%</span>
         </p>
       ))}
-      {row.actual < row.target && (
-        <p style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
-          Driven by <span style={{ color: C.behind, fontWeight: 600 }}>{row.auxCulprit}</span> ({row.auxImpactPct > 0 ? '-' : ''}{row.auxImpactPct}pt)
-        </p>
+      {row.actual < row.target && row.auxBreakdown?.length > 0 && (
+        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
+          <p style={{ marginBottom: 2 }}>Driven by:</p>
+          {row.auxBreakdown.map((a, i) => (
+            <p key={i} style={{ marginLeft: 4 }}>
+              <span style={{ color: C.behind, fontWeight: 600 }}>{a.code}</span> (-{a.impactPct}pt)
+            </p>
+          ))}
+        </div>
       )}
     </div>
   )
 }
 
 // Time-axis view — Fiscal Year default, drillable to Quarter/Week via the page-wide
-// granularity toggle, same as every other Layer 1/2 time chart on this page.
+// granularity toggle, same as every other Layer 1/2 time chart on this page. Now
+// carries an Adherence % line on a second axis alongside Actual/Target.
 function Visual1({ filters, granularity }) {
   const data = useMemo(() => utilizationByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Target Utilization" subtitle="Hover a bar to see which Aux code drove the gap">
+    <Visual title="Actual vs Target Utilization" subtitle="Hover a bar to see the Aux codes driving the gap">
       <ResponsiveContainer width="100%" height={222}>
-        <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <YAxis yAxisId="r" orientation="right" tick={{ fill: C.trend, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip content={<UtilFyTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="actual" name="Actual" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-          <Bar dataKey="target" name="Target" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-        </BarChart>
+          <Bar yAxisId="l" dataKey="actual" name="Actual" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Bar yAxisId="l" dataKey="target" name="Target" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
+          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+        </ComposedChart>
       </ResponsiveContainer>
     </Visual>
   )
@@ -85,17 +93,17 @@ function QueueBarChart({ data, actualLabel, targetLabel, actualColor, targetColo
 }
 
 // Queue-axis view — which specific queues have the worst Aux-driven utilization
-// gap, worst first (see design_choice.md for why this differs from Visual1).
+// gap, worst first. Each queue now lists 2-3 contributing Aux codes, not one.
 function Visual2({ filters }) {
   const data = useMemo(() => utilizationByQueue(filters), [filters])
   return (
-    <Visual title="Queues with Aux Culprit" subtitle="Worst utilization gap first">
+    <Visual title="Utilization Defaulter Queues" subtitle="Worst utilization gap first">
       <QueueBarChart
         data={data} actualLabel="Actual %" targetLabel="Target %" actualColor={C.metric1} targetColor={C.metric2}
         tooltipExtra={row => (
           <p style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
             Adherence <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{row.adherence}%</span> · Driven by{' '}
-            <span style={{ color: C.behind, fontWeight: 600 }}>{row.auxCulprit}</span>
+            <span style={{ color: C.behind, fontWeight: 600 }}>{row.auxes?.join(', ')}</span>
           </p>
         )}
       />
@@ -103,10 +111,12 @@ function Visual2({ filters }) {
   )
 }
 
+// Renamed from "Outage — Actual vs Target Leaves" for clarity: this shows which
+// queues are burning through more leave than planned, and by how much.
 function Visual3({ filters }) {
   const data = useMemo(() => leavesByQueue(filters), [filters])
   return (
-    <Visual title="Outage — Actual vs Target Leaves" subtitle="Highest delta, ascending">
+    <Visual title="Leave Impact — Actual vs Target" subtitle="Highest delta, ascending">
       <QueueBarChart
         data={data} actualLabel="Actual Leaves" targetLabel="Target Leaves" actualColor={C.behind} targetColor={C.metric2}
         tooltipExtra={row => (
@@ -127,8 +137,8 @@ export default function UtilizationLayer({ filters, granularity }) {
       <div className="layer-header" onClick={() => setOpen(o => !o)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#fb923c', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>03</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Utilization</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— Aux-driven utilization &amp; outage</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Utilization and Outage Analysis</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— Aux-driven utilization &amp; leave outage</span>
         </div>
         <span style={{ fontSize: 11, color: '#fb923c', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>

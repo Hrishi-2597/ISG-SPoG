@@ -483,6 +483,62 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## ESG Capacity Plan: Revision Pass — Filters, Cards, Drills, Aux Detail (2026-07-03)
+
+### Filters: reuse ESG Forecasting's own lists instead of page-specific ones
+**Decision:** Plan Name now uses `mockData.js`'s `PLAN_NAMES` (was a page-specific `CAPACITY_PLAN_NAMES`), Sub-region uses the same `SUB_REGIONS` list as ESG Forecasting; Business Org and Country were removed entirely rather than kept as unused/decorative fields.
+**Why:** Requested directly ("Use same plan name for ESG Capacity used for ESG Forecasting," "remove this filter completely" for Business Org, "remove this completely and add sub-region instead"). Neither `businessOrg` nor `country` was ever consumed by a data selector on this page beyond narrowing the queue fact table — removing them outright (rather than leaving inert filter chips) is honest about what actually drives the page's numbers, and reusing Forecasting's own lists keeps a queue's Plan Name/Sub-region options identical whichever ESG page you're on.
+
+### Sub-region tag reused from ACTIVE_QUEUES, not re-derived
+**Decision:** `CAPACITY_QUEUES`'s `subRegion` field reads `ACTIVE_QUEUES[i]?.subRegion` (same index, same source array) instead of building an independent round-robin assignment.
+**Why:** Both fact tables are built from the identical `ACTIVE_QUEUE_NAMES` array in the same order — reusing the existing tag guarantees a queue shows the same sub-region on ESG Forecasting and ESG Capacity, whereas two independently-computed round-robins (even both deterministic) would drift apart the moment their modulo arithmetic differed even slightly. One source of truth for a fact that's supposed to be the same fact everywhere.
+
+### Cards: YTD/YoY sub-message, reusing HES Forecasting's own pattern verbatim
+**Decision:** All 5 ESG Capacity cards now show `YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>` via a `ytdSub` helper copied structurally from `HesMetricCards.jsx`, replacing each card's static "Target ..."/"Plan ..." sub-line. The headline value drills with the page-wide granularity toggle (`capacityCardData(filters, granularity)`); the YoY comparison itself stays FY-over-FY regardless of granularity.
+**Why:** Requested directly for all 5 cards, plus "cards should change according to the quarter, month and week slicer." Reusing the exact pattern already proven on HES Forecasting (rather than inventing a new sub-line format) keeps every card across the app speaking the same "YTD vs prior year" language. FY-over-FY YoY regardless of granularity mirrors `hesCardData`'s own reasoning: the sub-year numbers are synthesized from the FY total via a deterministic wobble, so a "quarter vs same quarter last year" comparison would be comparing two synthetic numbers with no real independent basis — the FY comparison is the only one with an actual signal behind it.
+
+### Total FTE / Attrition: inverted color logic now compares YoY, not vs plan/target
+**Decision:** Both cards' green/red status now reflects the YoY direction (`yoyPct`) rather than actual-vs-plan/target — an increase is red (bad) for both, a decrease is green (good).
+**Why:** Requested directly ("if total FTE is increased over past year then it is not a good sign for business... show it as red and vice versa," repeated for Attrition). This is a different axis than the card's own headline number staying an absolute value (still "actual" for FTE, "actual %" for Attrition) — only the color judgment moved from a static-target comparison to a YoY one, consistent with every other card on this page now being framed around YTD/YoY.
+
+### Attrition and Plan over Plan Variation: region/sub-region drill, not a flat lens toggle
+**Decision:** Both visuals moved from a cosmetic "Region/Country lens" (a small multiplier that barely changed the numbers) to a real click-to-drill mechanic: a default view with one bar per region or sub-region key (sized by `shareByKey` — each key's share of currently in-scope queues), and clicking a bar drills into that key's own FY/granularity trend via `attritionTrendByDimension`/`planOverPlanTrendByDimension`.
+**Why:** Requested directly and specifically ("the region and sub-region toggle should work like keep the graph at region level and when user clicks on particular region the Fiscal year graph should open and should be able to change according to the filters above"). This is the exact same "region-level default, click to drill into time trend" mechanic already proven on HES Forecasting's CPASU Trend (`AsuSrTrendLayer.jsx` Visual1) — reusing a pattern the codebase already has, rather than inventing a new interaction, for a request that describes that pattern almost verbatim.
+
+### `shareByKey` extracted as a shared helper, not duplicated per visual
+**Decision:** A single `shareByKey(rows, key)` function computes a `{key: share}` distribution for either `'region'` or `'subRegion'`, used by both `attritionByDimension` and `planOverPlanByDimension` (and their trend-drill counterparts).
+**Why:** Both visuals needed the identical "how should a Region/Sub-region default view distribute a single aggregate baseline across N keys" logic — deriving shares from actual queue counts (rather than hand-maintaining a hardcoded share table with an entry per region AND per sub-region, 4 + 24 = 28 magic numbers) scales automatically if `SUB_REGIONS` or `REGIONS` ever change, and guarantees the shares are internally consistent with whatever queues the current filters actually left in scope.
+
+### Attrition tooltip: raw attritted-employee count added alongside the percentage
+**Decision:** A new `attritionCount` field (`Math.round(headcount * attrition / 100)`) is computed per row and shown in a custom tooltip below the existing Headcount/Attrition-% lines, rather than added as a third plotted series.
+**Why:** "Attrition % along with original number should be shown" — read as "the underlying count, not just the ratio," since a bare percentage without its denominator's scale is genuinely harder to reason about. Surfacing it in the tooltip (rather than a third bar/line) keeps the chart itself uncluttered while still making the number available on hover, consistent with how Utilization's Aux breakdown and Plan-over-Plan's queue-variance tooltip also carry supporting numbers that don't need their own axis.
+
+### "Headcount Impact on SL" defaulter list: AND, not OR
+**Decision:** `slDefaulterQueues` requires **both** `actualHC > planHC` **and** `slActual < 90` — a queue that's merely over headcount plan (with healthy SL) or merely below 90% SL (while adequately staffed) no longer appears.
+**Why:** Requested directly and explicitly: "if the actuals are more than plan and still SL% dropped below 90 then those queues should be shown." The old logic (over-plan headcount alone) answered a different, less actionable question — "who's overstaffed" — the new rule specifically surfaces "who's overstaffed AND still failing," which is the genuinely alarming case worth a manager's attention (extra heads didn't fix the problem).
+
+### Plan over Plan Variation: split into its own component instead of extending the shared layer
+**Decision:** Built a new ESG-only `PlanOverPlanVariationLayer.jsx` rather than adding Region/Sub-region toggle + queue-variance-ranking branches to the shared `capacity/PlanOverPlanLayer.jsx` that HES Capacity also uses.
+**Why:** None of these new capabilities were requested for HES Capacity's Plan-over-Plan layer, and HES doesn't have an equivalent per-queue variance concept (it has LOBs, not queues) to rank in the first place. Branching the shared component on a page-specific feature set (`if (page === 'esg') {...}`) would make it neither simple nor truly shared — splitting cleanly here, while leaving HES's usage of the original shared component completely untouched, keeps both call sites simple. The now-unused `planOverPlanHCByFY` selector and its `CAPACITY_PLAN_VS_PLAN_BY_FY`-consuming function were removed from `esgCapacityData.js` as dead code once nothing called them anymore.
+
+### "Queues with Highest Variation" reuses the polished diverging-bar convention, not a plain list
+**Decision:** The new queue-variance ranking is a diverging horizontal bar chart with a zero `ReferenceLine`, rounded axis ticks, and `+X%`/`-X%` value labels printed at each bar's end via two sign-split `LabelList`s — the exact same construction as Forecasting's "Top Queues by Variance" charts (`Layer1PlanOverPlan.jsx` Visual3), not the simple text-list format used by HeadcountLayer's SL-defaulter list or Utilization's leaves list.
+**Why:** Explicitly called out as "the most important graph in ESG Capacity planning... make it worth" — the diverging-bar-with-labels treatment is this codebase's most visually resolved pattern for "which of these things is furthest off," reserved until now for the Forecasting page's own headline variance charts. Giving this visual the same treatment (rather than a plain sorted list, which several other defaulter/outage lists on this page already use) signals it's meant to carry the same weight.
+
+### Utilization: 3-Aux breakdown instead of a single culprit, everywhere a culprit was shown
+**Decision:** `utilizationByFY` now returns a sorted `auxBreakdown` array (top 3 by impact) instead of a single `auxCulprit`/`auxImpactPct` pair (kept as `auxBreakdown[0]` for anything still expecting the old shape); `utilizationByQueue` similarly returns 3 distinct `auxes` per queue. Visual1 also gained an Adherence % trend line.
+**Why:** Requested directly for both visuals ("it can be driven by many auxes show at least 3," "Add 2-3 auxes in the list as well") plus "Show a line for adherence as well." A single culprit code was always a simplification — real utilization shortfalls are rarely attributable to exactly one Aux code — so surfacing the top 3 (still deterministic mock data, same "real-code-names + illustrative structure" convention) is a more honest shape for what the tooltip claims to explain.
+
+### Renaming "Outage — Actual vs Target Leaves" to "Leave Impact — Actual vs Target"
+**Decision:** The user asked for a better name but didn't supply one ("I am not getting any name rn"); picked "Leave Impact — Actual vs Target."
+**Why:** The visual shows which queues are burning more leave-days than planned and by how much — "impact" better captures "this is a contributing factor to a problem" than "outage" (which implies the leaves themselves are the failure, when really they're a driver of understaffing/SL risk elsewhere on the page). Matches the "Actual vs Target" phrasing pattern already used by Visual1's title on the same layer, for naming consistency within the layer.
+
+### Geo Map: Sub-region replaces Country, mirroring ESG Forecasting's own fallback mechanic exactly
+**Decision:** The Region/Country `BinaryToggle` became Region/Sub-region, using `subRegionForCountry`/`SUB_REGIONS` and the identical "unmapped countries fall back to their parent region's shade at 35% opacity, suppressed once Region/Sub-region filters already narrow the view" logic as `Layer3GeoMap.jsx`.
+**Why:** Directly requested, and once Country was removed as a filter dimension entirely (see above), keeping a Country-based map view would have been the one place on the page still referencing a retired concept. Sub-region is also the correct replacement dimension precisely because it's now a real filter on this page's own filter bar (unlike the old curated 14-country list, which had no matching filter) — map view and filter dimension now agree, matching how the region/sub-region relationship already works on ESG Forecasting's own Geo Map.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

@@ -3,16 +3,18 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
-import { hcStaffingByFY, attritionByFY, slTrendByFY, defaulterQueues } from '../../data/esgCapacityData'
-import { C, Visual, Tip, PlanSelect, BinaryToggle } from '../ChartKit'
+import { PLAN_NAMES } from '../../data/mockData'
+import {
+  hcStaffingByFY, attritionByDimension, attritionTrendByDimension, slTrendByFY, slDefaulterQueues,
+} from '../../data/esgCapacityData'
+import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
 
-const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
+const PLANS = PLAN_NAMES
 
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => hcStaffingByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Planned HC Staffing Summary" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -23,27 +25,74 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Bar yAxisId="l" dataKey="actual" name="Actual HC" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
           <Bar yAxisId="l" dataKey="plan" name="Plan HC" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
-          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Staffing %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line yAxisId="r" type="monotone" dataKey="adherence" name="Variation %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </Visual>
   )
 }
 
-function Visual2({ filters, granularity }) {
-  const [lens, setLens] = useState('Region')
-  const data = useMemo(() => attritionByFY(filters, granularity, lens), [filters, granularity, lens])
+// Custom tooltip so the raw attrition headcount (not just the %) is always visible,
+// not only inferrable by eye from the bar — "attrition % along with original number"
+// per the request.
+function AttritionTip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload
   return (
-    <Visual title="Attrition" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Country" value={lens} onChange={setLens} />}>
+    <div className="chart-tooltip">
+      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', marginBottom: 5 }}>{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ fontSize: 11, color: p.color, marginBottom: 2 }}>
+          {p.name}: <span style={{ fontWeight: 600 }}>{typeof p.value === 'number' && p.value > 99 ? p.value.toLocaleString() : p.value}</span>
+        </p>
+      ))}
+      {row?.attritionCount != null && (
+        <p style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
+          ≈ <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{row.attritionCount.toLocaleString()}</span> employees attritted
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Region/Sub-region renders by default (one bar+line per key); clicking a bar drills
+// into that key's own FY/granularity trend, same "click to drill" mechanic as HES
+// Forecasting's CPASU Trend (AsuSrTrendLayer Visual1). Switching the Region/Sub-region
+// toggle while drilled in resets the drill, since a selected key from one dimension
+// has no matching key in the other.
+function Visual2({ filters, granularity }) {
+  const [dimension, setDimension] = useState('Region')
+  const [selectedKey, setSelectedKey] = useState(null)
+  const dimLabel = dimension === 'SubRegion' ? 'Sub-region' : 'Region'
+  const dimData = useMemo(() => attritionByDimension(filters, dimension), [filters, dimension])
+  const trendData = useMemo(
+    () => (selectedKey ? attritionTrendByDimension(filters, selectedKey, dimension, granularity) : []),
+    [filters, selectedKey, dimension, granularity]
+  )
+  const handleDimensionChange = val => {
+    setDimension(val === 'Sub-region' ? 'SubRegion' : 'Region')
+    setSelectedKey(null)
+  }
+
+  const data = selectedKey ? trendData : dimData
+  const xKey = selectedKey ? 'period' : 'key'
+  const handleBarClick = selectedKey ? undefined : (d => setSelectedKey(d.key))
+
+  return (
+    <Visual title="Attrition"
+      subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
+      cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
+      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}>
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <XAxis dataKey={xKey} tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="l" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
           <YAxis yAxisId="r" orientation="right" tick={{ fill: C.behind, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
+          <Tooltip content={<AttritionTip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40} />
+          <Bar yAxisId="l" dataKey="headcount" name="Headcount" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={40}
+            onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           <Line yAxisId="r" type="monotone" dataKey="attrition" name="Attrition %" stroke={C.behind} strokeWidth={2} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
@@ -51,12 +100,15 @@ function Visual2({ filters, granularity }) {
   )
 }
 
+// Renamed from "Actual vs Plan Trend with SL%"; the Region/Country toggle is gone
+// (not requested here) and the defaulter list below now uses a stricter, more
+// actionable rule: over-plan headcount that STILL hasn't fixed SL — see
+// slDefaulterQueues in esgCapacityData.js.
 function Visual3({ filters, granularity }) {
-  const [lens, setLens] = useState('Region')
   const data = useMemo(() => slTrendByFY(filters, granularity), [filters, granularity])
-  const defaulters = useMemo(() => defaulterQueues(filters), [filters])
+  const defaulters = useMemo(() => slDefaulterQueues(filters), [filters])
   return (
-    <Visual title="Actual vs Plan Trend with SL%" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Country" value={lens} onChange={setLens} />}>
+    <Visual title="Headcount Impact on SL">
       <ResponsiveContainer width="100%" height={175}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -70,15 +122,19 @@ function Visual3({ filters, granularity }) {
           <Line yAxisId="r" type="monotone" dataKey="slPct" name="SL %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>
-      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', margin: '6px 0 4px', textAlign: 'center' }}>Defaulter queues — actual over plan, ascending</p>
+      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', margin: '6px 0 4px', textAlign: 'center' }}>
+        Over-plan queues still below 90% SL
+      </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {defaulters.map((q, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '2px 4px' }}>
             <span style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: 9.5 }}>{q.name}</span>
-            <span style={{ fontWeight: 600, color: C.behind }}>{q.actual} <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>vs {q.plan} plan (+{q.delta})</span></span>
+            <span style={{ fontWeight: 600, color: C.behind }}>
+              SL {q.slActual}% <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>· HC {q.actualHC} vs {q.planHC} plan (+{q.hcDelta})</span>
+            </span>
           </div>
         ))}
-        {defaulters.length === 0 && <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>No queues currently over plan.</p>}
+        {defaulters.length === 0 && <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>No over-plan queues currently below 90% SL.</p>}
       </div>
     </Visual>
   )

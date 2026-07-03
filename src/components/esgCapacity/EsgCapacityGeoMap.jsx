@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoCapacityByRegion, geoCapacityByCountry, regionForCountry, WORLD_ATLAS_TO_COUNTRY } from '../../data/esgCapacityData'
+import { geoCapacityByRegion, geoCapacityBySubRegion, regionForCountry, subRegionForCountry } from '../../data/esgCapacityData'
 import { BinaryToggle } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -20,12 +20,14 @@ const LEGEND = [
   { label: '< 70% Critical',  color: '#dc2626' },
 ]
 
-// Same choropleth mechanism as Layer3GeoMap/HesGeoMap, but with two independent
-// toggles per the mockup: which metric colors the map (Headcount fulfillment vs
-// SL%), and whether the highlighted areas are whole regions or the curated
-// 14-country list. Non-highlighted countries fall back to their parent region's
-// shade at 35% opacity in Country view, same "full coverage, named areas pop"
-// convention Layer3GeoMap established.
+// Same choropleth mechanism as Layer3GeoMap/HesGeoMap, with two independent toggles:
+// which metric colors the map (Headcount fulfillment vs SL%), and whether the
+// highlighted areas are whole regions or the real 24 SUB_REGIONS values — replacing
+// the earlier curated 14-country view entirely, per direct request. Sub-region view
+// falls back to the parent region's shade at 35% opacity for countries with no
+// specific sub-region tag, same "full coverage, named areas pop" convention
+// Layer3GeoMap established, and is suppressed once Region/Sub-region filters
+// already narrow the view (see subRegionIsNarrowed below).
 export default function EsgCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [metric, setMetric] = useState('Headcount')
@@ -34,9 +36,10 @@ export default function EsgCapacityGeoMap({ filters }) {
 
   const metricKey = metric === 'Headcount' ? 'fulfillmentPct' : 'slPct'
   const regionRows = useMemo(() => geoCapacityByRegion(filters), [filters])
-  const countryRows = useMemo(() => geoCapacityByCountry(filters, metricKey), [filters, metricKey])
+  const subRegionRows = useMemo(() => geoCapacityBySubRegion(filters, metricKey), [filters, metricKey])
   const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r[metricKey]])), [regionRows, metricKey])
-  const countryValue = useMemo(() => Object.fromEntries(countryRows.map(r => [r.worldAtlasName, r.value])), [countryRows])
+  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r.value])), [subRegionRows])
+  const subRegionIsNarrowed = filters.region?.length > 0 || filters.subRegion?.length > 0
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -54,7 +57,7 @@ export default function EsgCapacityGeoMap({ filters }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
             <BinaryToggle leftLabel="Headcount" rightLabel="SL%" value={metric} onChange={setMetric} />
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1 }}>Global Region Performance Overview</p>
-            <BinaryToggle leftLabel="Region" rightLabel="Country" value={viewMode} onChange={setViewMode} />
+            <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={setViewMode} />
           </div>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10 }}>
             {metric === 'Headcount' ? 'Headcount fulfillment %' : 'Service Level %'} · {viewMode} view
@@ -87,20 +90,23 @@ export default function EsgCapacityGeoMap({ filters }) {
                 {({ geographies }) =>
                   geographies.map(geo => {
                     const name = geo.properties.name
-                    const region = regionForCountry(name)
                     let value, displayName, isFallback = false
                     if (viewMode === 'Region') {
+                      const region = regionForCountry(name)
                       value = region != null ? regionValue[region] : undefined
                       displayName = region
                     } else {
-                      const curatedCountry = WORLD_ATLAS_TO_COUNTRY[name]
-                      if (curatedCountry != null && countryValue[name] != null) {
-                        value = countryValue[name]
-                        displayName = curatedCountry
-                      } else if (region != null) {
-                        value = regionValue[region]
-                        displayName = region
-                        isFallback = true
+                      const subRegion = subRegionForCountry(name)
+                      if (subRegion != null) {
+                        value = subRegionValue[subRegion]
+                        displayName = subRegion
+                      } else if (!subRegionIsNarrowed) {
+                        const parentRegion = regionForCountry(name)
+                        if (parentRegion != null) {
+                          value = regionValue[parentRegion]
+                          displayName = parentRegion
+                          isFallback = true
+                        }
                       }
                     }
                     const fill = value != null ? vColor(value) : DEFAULT_FILL
@@ -138,7 +144,7 @@ export default function EsgCapacityGeoMap({ filters }) {
                 </tr>
               </thead>
               <tbody>
-                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, value: r[metricKey] })) : countryRows.map(r => ({ key: r.country, value: r.value }))).map(r => {
+                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, value: r[metricKey] })) : subRegionRows.map(r => ({ key: r.subRegion, value: r.value }))).map(r => {
                   const col = vColor(r.value)
                   const status = r.value >= 90 ? 'Excellent' : r.value >= 80 ? 'Good' : r.value >= 70 ? 'Fair' : 'Critical'
                   const badgeCls = r.value >= 80 ? 'badge-good' : r.value >= 70 ? 'badge-warn' : 'badge-bad'

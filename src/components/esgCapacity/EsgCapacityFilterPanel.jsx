@@ -1,7 +1,7 @@
 import React from 'react'
 import {
-  ACTIVE_QUEUE_NAMES, CAPACITY_CODES, CAPACITY_PLAN_NAMES, FISCAL_YEARS, FISCAL_QUARTERS,
-  FISCAL_WEEK_LIST, CHANNELS, REGIONS, COUNTRIES, BUSINESS_PARTNERS, BUSINESS_ORGS,
+  ACTIVE_QUEUE_NAMES, CAPACITY_CODES, PLAN_NAMES, FISCAL_YEARS, FISCAL_QUARTERS,
+  FISCAL_WEEK_LIST, CHANNELS, REGIONS, SUB_REGIONS, BUSINESS_PARTNERS,
 } from '../../data/mockData'
 import MultiSelectField from '../MultiSelectField'
 import GranularityToggle from '../GranularityToggle'
@@ -21,11 +21,11 @@ function ClusterIcon({ name }) {
   )
 }
 
-function Cluster({ icon, children }) {
+function Cluster({ icon, cols = 3, children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flex: '1 1 0' }}>
       <div style={{ paddingBottom: 6 }}><ClusterIcon name={icon} /></div>
-      <div className="grid grid-cols-3 gap-x-3 flex-1 min-w-0">{children}</div>
+      <div className="grid gap-x-3 flex-1 min-w-0" style={{ gridTemplateColumns: `repeat(${cols}, minmax(110px, 1fr))` }}>{children}</div>
     </div>
   )
 }
@@ -34,29 +34,28 @@ function ClusterDivider() {
   return <div style={{ width: 1, alignSelf: 'stretch', background: 'linear-gradient(180deg, transparent, rgba(56,189,248,0.18) 30%, rgba(56,189,248,0.18) 70%, transparent)', margin: '0 14px' }} />
 }
 
-// Mirrors FilterPanel.jsx's cluster layout exactly (Scope/Time/People/Geography +
-// DB/OSP pill), swapping in this page's own field set: Combined Queue Name instead
-// of Queue Name, Country + Business Org instead of Sub-region + L5 Manager. The
-// GranularityToggle sits at the end of the first row, same placement convention as
-// both Forecasting filter bars.
+// Mirrors FilterPanel.jsx's cluster layout (Scope/Time/People/Geography + DB/OSP
+// pill), swapping in this page's own field set: Combined Queue Name instead of
+// Queue Name. Plan Name, Region and Sub-region reuse the exact same options lists
+// as ESG Forecasting's own FilterPanel.jsx (PLAN_NAMES/REGIONS/SUB_REGIONS) rather
+// than page-specific lists, per direct request — Business Org and Country (this
+// page's original two extra dimensions) were dropped entirely. The GranularityToggle
+// sits at the end of the first row, same placement convention as both Forecasting
+// filter bars.
 export default function EsgCapacityFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
-  // planName/businessOrg default to a pre-selected value ('Actual'/'ISG ESG'), not
-  // "All" like every other filter here — defaultValue lets the chip strip and Clear
-  // All tell "still at default" apart from "user actually changed this."
   const defs = {
     combinedQueueName: { label: 'Combined Queue Name', options: ACTIVE_QUEUE_NAMES, mono: true, defaultValue: [] },
     capacityCode:      { label: 'Capacity Code',       options: CAPACITY_CODES, mono: true, defaultValue: [] },
-    planName:          { label: 'Plan Name',           options: CAPACITY_PLAN_NAMES, defaultValue: ['Actual'] },
+    planName:          { label: 'Plan Name',           options: PLAN_NAMES, defaultValue: [] },
     fiscalYear:        { label: 'Fiscal Year',         options: FISCAL_YEARS, defaultValue: [] },
     fiscalQuarter:     { label: 'Fiscal Quarter',      options: FISCAL_QUARTERS, defaultValue: [] },
     fiscalWeek:        { label: 'Fiscal Week',         options: FISCAL_WEEK_LIST, defaultValue: [] },
     channel:           { label: 'Channel',             options: CHANNELS, defaultValue: [] },
     businessPartner:   { label: 'Business Partner',    options: BUSINESS_PARTNERS, defaultValue: [] },
-    businessOrg:       { label: 'Business Org',        options: BUSINESS_ORGS, defaultValue: ['ISG ESG'] },
     region:            { label: 'Region',              options: REGIONS, defaultValue: [] },
-    country:           { label: 'Country',             options: COUNTRIES, defaultValue: [] },
+    subRegion:         { label: 'Sub-region',          options: SUB_REGIONS, defaultValue: [] },
   }
 
   const field = key => (
@@ -85,13 +84,13 @@ export default function EsgCapacityFilterPanel({ filters, onChange, granularity,
         <GranularityToggle value={granularity} onChange={onGranularityChange} />
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-        <Cluster icon="people">{field('channel')}{field('businessPartner')}{field('businessOrg')}</Cluster>
+        <Cluster icon="people" cols={2}>{field('channel')}{field('businessPartner')}</Cluster>
         <ClusterDivider />
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flex: '1 1 0' }}>
           <div style={{ paddingBottom: 6 }}><ClusterIcon name="geo" /></div>
           <div className="grid grid-cols-3 gap-x-3 flex-1 min-w-0">
             {field('region')}
-            {field('country')}
+            {field('subRegion')}
             <div className="flex flex-col gap-1 min-w-0">
               <label style={{ fontSize: 8.5, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.09em', paddingLeft: 1 }}>
                 DB / OSP

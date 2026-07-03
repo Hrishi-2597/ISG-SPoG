@@ -131,6 +131,21 @@ const MODAL_TITLES = {
   attrition: 'Headcount & Attrition Trend',
 }
 
+// Builds the "YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>" sub-message shared by
+// all 5 cards, replacing the earlier static "Target ..."/"Plan ..." line — same
+// pattern HesMetricCards.jsx uses. `lowerIsBetter` flips which direction counts as
+// "good" (green): Total FTE and Attrition are worse when they climb YoY (overstaffing/
+// rising attrition), so both pass lowerIsBetter=true, unlike Staffing/Utilization/SL
+// where growth is the good direction.
+function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
+  if (metric.yoyPct === null || metric.yoyPct === undefined) {
+    return { text: `YTD ${metric.period}: ${formattedValue} · no prior year in scope`, trend: undefined }
+  }
+  const up = metric.yoyPct >= 0
+  const good = lowerIsBetter ? !up : up
+  return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
+}
+
 function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
@@ -145,36 +160,37 @@ function DrillDownModal({ type, filters, granularity, onClose }) {
 
 export default function EsgCapacityMetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
-  const d = useMemo(() => capacityCardData(filters), [filters])
+  const d = useMemo(() => capacityCardData(filters, granularity), [filters, granularity])
   const toggle = key => setActive(prev => prev === key ? null : key)
+
+  const staffingYtd = ytdSub(d.staffing, `${d.staffing.value}%`)
+  const utilizationYtd = ytdSub(d.utilization, `${d.utilization.actual}%`)
+  const slYtd = ytdSub(d.sl, `${d.sl.actual}%`)
+  const fteYtd = ytdSub(d.totalFte, d.totalFte.actual.toLocaleString(), { lowerIsBetter: true })
+  const attritionYtd = ytdSub(d.attrition, `${d.attrition.actual}%`, { lowerIsBetter: true })
 
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
         <Card icon="👥" label="Staffing Summary"
           value={`${d.staffing.value}%`}
-          sub="Recommended ~94%"
-          trend={d.staffing.value >= 94}
+          sub={staffingYtd.text} trend={staffingYtd.trend}
           onClick={() => toggle('staffing')} active={active === 'staffing'} />
         <Card icon="📊" label="Utilization %"
           value={`${d.utilization.actual}%`}
-          sub={`Target ${d.utilization.target}%`}
-          trend={d.utilization.actual >= d.utilization.target}
+          sub={utilizationYtd.text} trend={utilizationYtd.trend}
           onClick={() => toggle('utilization')} active={active === 'utilization'} />
         <Card icon="🎯" label="SL %"
           value={`${d.sl.actual}%`}
-          sub={`Target ${d.sl.target}%`}
-          trend={d.sl.actual >= d.sl.target}
+          sub={slYtd.text} trend={slYtd.trend}
           onClick={() => toggle('sl')} active={active === 'sl'} />
         <Card icon="🧑‍💼" label="Total FTE"
           value={d.totalFte.actual.toLocaleString()}
-          sub={`Plan ${d.totalFte.plan.toLocaleString()}`}
-          trend={d.totalFte.actual <= d.totalFte.plan}
+          sub={fteYtd.text} trend={fteYtd.trend}
           onClick={() => toggle('fte')} active={active === 'fte'} />
         <Card icon="↩" label="Attrition %"
           value={`${d.attrition.actual}%`}
-          sub={`Target ${d.attrition.target}%`}
-          trend={d.attrition.actual <= d.attrition.target}
+          sub={attritionYtd.text} trend={attritionYtd.trend}
           onClick={() => toggle('attrition')} active={active === 'attrition'} />
       </div>
 
