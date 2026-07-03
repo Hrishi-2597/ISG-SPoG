@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoSloByRegion } from '../../data/hesCapacityData'
-import { regionForCountry } from '../../data/mockData'
+import { geoSloByRegion, geoSloBySubRegion } from '../../data/hesCapacityData'
+import { regionForCountry, subRegionForCountry } from '../../data/mockData'
+import { BinaryToggle } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -20,15 +21,19 @@ const LEGEND = [
   { label: '< 70% Critical',  color: '#dc2626' },
 ]
 
-// SLO across regions — same single-metric, region-only choropleth mechanism as
-// HesGeoMap on the Forecasting page. The mockup labels this "Layer 5" but skips a
-// "Layer 4" entirely; renumbered to 04 here to keep this page's badges sequential
-// (see design_choice.md).
+// Worldwide SLO, now with a Region/Sub-region toggle (2026-07-03) mirroring
+// EsgCapacityGeoMap's exact fallback mechanic: unmapped countries in Sub-region view
+// shade at their parent region's color, 35% opacity. The mockup labels this "Layer 5"
+// but skips a "Layer 4" entirely; renumbered to 04 here to keep this page's badges
+// sequential (see design_choice.md).
 export default function HesCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
+  const [viewMode, setViewMode] = useState('Region')
   const [hovered, setHovered] = useState(null)
-  const rows = useMemo(() => geoSloByRegion(filters), [filters])
-  const sloByRegion = useMemo(() => Object.fromEntries(rows.map(r => [r.region, r.slo])), [rows])
+  const regionRows = useMemo(() => geoSloByRegion(filters), [filters])
+  const subRegionRows = useMemo(() => geoSloBySubRegion(filters), [filters])
+  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r.slo])), [regionRows])
+  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r.slo])), [subRegionRows])
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -36,16 +41,19 @@ export default function HesCapacityGeoMap({ filters }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#a78bfa', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>04</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Geo Map</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— SLO by region</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— worldwide SLO by region &amp; sub-region</span>
         </div>
         <span style={{ fontSize: 11, color: '#a78bfa', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
 
       {open && (
         <div style={{ padding: 14 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Global SLO Heatmap</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+            <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={setViewMode} />
+          </div>
+          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Worldwide SLO Heatmap</p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            All CQNs across regions, colored by Service Level %
+            Service Level % · {viewMode} view
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -75,16 +83,33 @@ export default function HesCapacityGeoMap({ filters }) {
                 {({ geographies }) =>
                   geographies.map(geo => {
                     const name = geo.properties.name
-                    const region = regionForCountry(name)
-                    const slo = region != null ? sloByRegion[region] : undefined
+                    let slo, displayName, isFallback = false
+                    if (viewMode === 'Region') {
+                      const region = regionForCountry(name)
+                      slo = region != null ? regionValue[region] : undefined
+                      displayName = region
+                    } else {
+                      const subRegion = subRegionForCountry(name)
+                      if (subRegion != null) {
+                        slo = subRegionValue[subRegion]
+                        displayName = subRegion
+                      } else {
+                        const parentRegion = regionForCountry(name)
+                        if (parentRegion != null) {
+                          slo = regionValue[parentRegion]
+                          displayName = parentRegion
+                          isFallback = true
+                        }
+                      }
+                    }
                     const fill = slo != null ? sloColor(slo) : DEFAULT_FILL
                     return (
                       <Geography key={geo.rsmKey} geography={geo}
-                        onMouseEnter={() => slo != null && setHovered({ name: region, slo })}
+                        onMouseEnter={() => slo != null && setHovered({ name: displayName, slo })}
                         onMouseLeave={() => setHovered(null)}
                         style={{
-                          default: { fill, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none', transition: 'fill 0.2s', cursor: slo != null ? 'pointer' : 'default' },
-                          hover:   { fill, opacity: 0.8, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none' },
+                          default: { fill, fillOpacity: isFallback ? 0.35 : 1, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none', transition: 'fill 0.2s', cursor: slo != null ? 'pointer' : 'default' },
+                          hover:   { fill, fillOpacity: isFallback ? 0.55 : 0.8, stroke: '#070f1a', strokeWidth: 0.4, outline: 'none' },
                           pressed: { fill, outline: 'none' },
                         }}
                       />
@@ -105,22 +130,22 @@ export default function HesCapacityGeoMap({ filters }) {
             <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Region', 'SLO', 'Status'].map((h, i) => (
+                  {[viewMode, 'SLO', 'Status'].map((h, i) => (
                     <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
                       fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.map(r => {
+                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, slo: r.slo })) : subRegionRows.map(r => ({ key: r.subRegion, slo: r.slo }))).map(r => {
                   const col = sloColor(r.slo)
                   const status = r.slo >= 90 ? 'Excellent' : r.slo >= 80 ? 'Good' : r.slo >= 70 ? 'Fair' : 'Critical'
                   const badgeCls = r.slo >= 80 ? 'badge-good' : r.slo >= 70 ? 'badge-warn' : 'badge-bad'
                   return (
-                    <tr key={r.region} style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                    <tr key={r.key} style={{ borderBottom: '1px solid var(--border-subtle)' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: 500 }}>{r.region}</td>
+                      <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: 500 }}>{r.key}</td>
                       <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.slo}%</td>
                       <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
                     </tr>

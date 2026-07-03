@@ -5,15 +5,34 @@
 // filter-panel component directly rather than duplicating them — only the metrics
 // are new.
 import {
-  LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, filterLobs, hesEffectiveFiscalYears,
+  LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, hesEffectiveFiscalYears,
 } from './hesData'
 import {
-  FISCAL_YEARS, REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
+  FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
 } from './mockData'
 
 function lobScopeRatio(filters) {
   const total = LOB_FACTS.length
   return total ? filterLobs(filters).length / total : 0
+}
+
+// Deterministic {key: share} distribution of a LOB set across 'region' or
+// 'subRegion' — same role as esgCapacityData.js's shareByKey, backing the
+// Attrition and Plan over Plan Variation region/sub-region drills below.
+function hesShareByKey(rows, key) {
+  const counts = {}
+  rows.forEach(l => { if (l[key] != null) counts[l[key]] = (counts[l[key]] || 0) + 1 })
+  const total = rows.length || 1
+  return Object.fromEntries(Object.entries(counts).map(([k, c]) => [k, c / total]))
+}
+
+// In-scope HES_CAPACITY_LOBS rows for the current filters (lob/businessPartner/
+// globalGrouping) — filterLobs(filters) narrows LOB_FACTS, this maps that back onto
+// the capacity-specific per-LOB rows so region/sub-region drills stay filter-aware.
+function filterCapacityLobs(filters) {
+  const inScope = new Set(filterLobs(filters).map(l => l.lob))
+  const rows = HES_CAPACITY_LOBS.filter(l => inScope.has(l.lob))
+  return rows.length ? rows : HES_CAPACITY_LOBS
 }
 
 // ── Total FTE ──────────────────────────────────────────────────────────────
@@ -51,6 +70,44 @@ export function hesAttritionByFY(filters = {}, granularity, lens = 'Region') {
   const expandedHc = expandToGranularity(fyRows, granularity, ['headcount'])
   const expandedRate = expandRateToGranularity(fyRows, granularity, ['attrition'])
   return expandedHc.map((d, i) => ({ ...d, attrition: expandedRate[i].attrition }))
+}
+
+// Region/Sub-region default view for HeadcountAttritionLayer Visual2 — one row per
+// key, sized by each key's share of currently in-scope LOBs; clicking a key drills
+// into hesAttritionTrendByDimension below. Same mechanic as esgCapacityData.js's
+// attritionByDimension, adapted to this page's LOB fact table.
+export function hesAttritionByDimension(filters = {}, dimension = 'Region') {
+  const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
+  const rows = filterCapacityLobs(filters)
+  const shares = hesShareByKey(rows, key)
+  const years = hesEffectiveFiscalYears(filters)
+  const fyRows = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const latest = fyRows[fyRows.length - 1] || HES_ATTRITION_BY_FY[HES_ATTRITION_BY_FY.length - 1]
+  return Object.entries(shares)
+    .map(([k, share], i) => {
+      const headcount = Math.round(latest.headcount * share)
+      const attrition = +(latest.attrition * (0.9 + ((i * 7) % 13) / 50)).toFixed(1)
+      return { key: k, headcount, attrition, attritionCount: Math.round(headcount * attrition / 100) }
+    })
+    .sort((a, b) => b.headcount - a.headcount)
+}
+
+// FY/granularity trend for one clicked region/sub-region key, same drill mechanic
+// as esgCapacityData.js's attritionTrendByDimension.
+export function hesAttritionTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+  const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
+  const rows = filterCapacityLobs(filters)
+  const shares = hesShareByKey(rows, dimKey)
+  const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
+  const years = hesEffectiveFiscalYears(filters)
+  const fyRows = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, headcount: Math.round(d.headcount * share), attrition: d.attrition }))
+  const expandedHc = expandToGranularity(fyRows, granularity, ['headcount'])
+  const expandedRate = expandRateToGranularity(fyRows, granularity, ['attrition'])
+  return expandedHc.map((d, i) => ({
+    ...d, attrition: expandedRate[i].attrition,
+    attritionCount: Math.round(d.headcount * expandedRate[i].attrition / 100),
+  }))
 }
 
 // ── Actual vs Plan utilization (Layer 1, Visual 3) ─────────────────────────
@@ -94,11 +151,26 @@ export const ACT_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 
 // Avg Case Time is a rate (hours per case), not a summable volume, so its trend
 // chart uses the rate-preserving expansion, same reasoning as UCR target/current
-// on HES Forecasting.
+// on HES Forecasting. `adherence` is plan/actual (not actual/target) since this is a
+// "lower is better" metric — adherence reads >=100 when actual is at or under plan,
+// <100 when it's running long, same directional convention as Cases per FTE's
+// "overload" framing on this page's cards.
 export function actHrsByFY(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
   const fyRows = ACT_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, actual: d.actual, plan: d.plan }))
   return expandRateToGranularity(fyRows, granularity, ['actual', 'plan'])
+    .map(d => ({ ...d, adherence: d.actual ? +((d.plan / d.actual) * 100).toFixed(1) : 0 }))
+}
+
+// LOBs whose Average Case Time is running above plan (worse — taking longer than
+// planned), worst delta first — backs the "top LOBs going above target" list under
+// both Workload Distribution ACT visuals.
+export function actHrsDefaulterLobs(filters = {}, count = 6) {
+  return filterCapacityLobs(filters)
+    .filter(l => l.actHrsActual > l.actHrsPlan)
+    .map(l => ({ lob: l.lob, actual: l.actHrsActual, plan: l.actHrsPlan, delta: +(l.actHrsActual - l.actHrsPlan).toFixed(1) }))
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, count)
 }
 
 // ── Global SLO ──────────────────────────────────────────────────────────────
@@ -121,26 +193,69 @@ export function geoSloByRegion() {
   return HES_GEO_SLO_BY_REGION
 }
 
+// Per-sub-region SLO, worldwide — rotates through the region baselines above with a
+// per-sub-region nudge, same "real names + illustrative structure" convention as
+// esgCapacityData.js's GEO_CAPACITY_BY_SUBREGION.
+export const HES_GEO_SLO_BY_SUBREGION = SUB_REGIONS.map((subRegion, i) => {
+  const base = HES_GEO_SLO_BY_REGION[i % HES_GEO_SLO_BY_REGION.length]
+  return { subRegion, slo: Math.max(60, Math.min(100, base.slo + ((i * 7) % 9) - 4)) }
+})
+
+export function geoSloBySubRegion() {
+  return HES_GEO_SLO_BY_SUBREGION
+}
+
+// Year-over-year % change between the latest in-scope FY and the one before it;
+// null when there's no prior year in scope, same convention as esgCapacityData.js's yoyPct.
+function yoyPct(curr, prev) {
+  if (prev === undefined || prev === null || !prev) return null
+  return +(((curr - prev) / prev) * 100).toFixed(1)
+}
+
 // ── Card headlines ─────────────────────────────────────────────────────────
-export function hesCapacityCardData(filters = {}) {
+// Staffing Summary/Attrition/Avg Case Time/SLO % headline values drill with the
+// page-wide granularity slicer; each YTD/YoY comparison stays FY-over-FY regardless
+// of granularity — same split as esgCapacityData.js's capacityCardData. Cases per
+// FTE is unchanged (still a plain Plan-based sub-line, not part of this revision).
+export function hesCapacityCardData(filters = {}, granularity) {
   const years = hesEffectiveFiscalYears(filters)
-  const fte = fteByFY(filters)
-  const attrition = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const fteGranular = fteByFY(filters, granularity)
+  const fteFY = fteByFY(filters)
+  const attritionFY = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
   const cpf = CPF_BY_FY.filter(d => years.includes(d.period))
-  const act = ACT_BY_FY.filter(d => years.includes(d.period))
-  const slo = SLO_BY_FY.filter(d => years.includes(d.period))
-  const latestFte = fte[fte.length - 1]
-  const latestAttrition = attrition[attrition.length - 1]
+  const actFY = ACT_BY_FY.filter(d => years.includes(d.period))
+  const sloFY = SLO_BY_FY.filter(d => years.includes(d.period))
+
+  const latestFte = fteGranular[fteGranular.length - 1]
+  const latestFteFY = fteFY[fteFY.length - 1]
+  const prevFteFY = fteFY[fteFY.length - 2]
+  const latestAttrition = attritionFY[attritionFY.length - 1]
+  const prevAttrition = attritionFY[attritionFY.length - 2]
   const latestCpf = cpf[cpf.length - 1]
-  const latestAct = act[act.length - 1]
-  const latestSlo = slo[slo.length - 1]
+  const latestAct = actFY[actFY.length - 1]
+  const prevAct = actFY[actFY.length - 2]
+  const latestSlo = sloFY[sloFY.length - 1]
+  const prevSlo = sloFY[sloFY.length - 2]
   const regionsAtRisk = latestSlo ? HES_GEO_SLO_BY_REGION.filter(r => r.slo < latestSlo.target).length : 0
+
   return {
-    totalFte: { actual: latestFte?.actual ?? 0, plan: latestFte?.plan ?? 0 },
-    attrition: { actual: latestAttrition?.attrition ?? 0, bench: latestAttrition?.bench ?? 0 },
+    totalFte: {
+      actual: latestFte?.actual ?? 0, plan: latestFte?.plan ?? 0,
+      period: latestFteFY?.period, prevPeriod: prevFteFY?.period, yoyPct: yoyPct(latestFteFY?.actual, prevFteFY?.actual),
+    },
+    attrition: {
+      actual: latestAttrition?.attrition ?? 0, bench: latestAttrition?.bench ?? 0,
+      period: latestAttrition?.period, prevPeriod: prevAttrition?.period, yoyPct: yoyPct(latestAttrition?.attrition, prevAttrition?.attrition),
+    },
     casesPerFte: { actual: latestCpf?.actual ?? 0, plan: latestCpf?.plan ?? 0 },
-    avgCaseTime: { actual: latestAct?.actual ?? 0, plan: latestAct?.plan ?? 0 },
-    globalSlo: { actual: latestSlo?.actual ?? 0, target: latestSlo?.target ?? 0, regionsAtRisk },
+    avgCaseTime: {
+      actual: latestAct?.actual ?? 0, plan: latestAct?.plan ?? 0,
+      period: latestAct?.period, prevPeriod: prevAct?.period, yoyPct: yoyPct(latestAct?.actual, prevAct?.actual),
+    },
+    globalSlo: {
+      actual: latestSlo?.actual ?? 0, target: latestSlo?.target ?? 0, regionsAtRisk,
+      period: latestSlo?.period, prevPeriod: prevSlo?.period, yoyPct: yoyPct(latestSlo?.actual, prevSlo?.actual),
+    },
   }
 }
 
@@ -151,60 +266,98 @@ export const HES_CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   plan2: Math.round(BASE_FTE_PLAN[fy] * (0.95 + (i * 7 % 11) / 100)),
 }))
 
-export function planOverPlanFteByFY(filters = {}, granularity) {
+// Region/Sub-region default view for the HES Plan over Plan Variation layer — same
+// share-weighted mechanic as esgCapacityData.js's planOverPlanByDimension.
+export function hesPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
+  const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
+  const rows = filterCapacityLobs(filters)
+  const shares = hesShareByKey(rows, key)
   const years = hesEffectiveFiscalYears(filters)
-  const rows = HES_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: d.plan1, plan2: d.plan2 }))
-  return expandToGranularity(rows, granularity, ['plan1', 'plan2'])
+  const fyRows = HES_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const latest = fyRows[fyRows.length - 1] || HES_CAPACITY_PLAN_VS_PLAN_BY_FY[HES_CAPACITY_PLAN_VS_PLAN_BY_FY.length - 1]
+  return Object.entries(shares)
+    .map(([k, share]) => {
+      const plan1 = Math.round(latest.plan1 * share)
+      const plan2 = Math.round(latest.plan2 * share)
+      return { key: k, plan1, plan2, variance: plan1 ? +((plan2 - plan1) / plan1 * 100).toFixed(1) : 0 }
+    })
+    .sort((a, b) => b.plan1 - a.plan1)
+}
+
+// FY/granularity trend for one clicked region/sub-region key, same drill mechanic
+// as esgCapacityData.js's planOverPlanTrendByDimension.
+export function hesPlanOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+  const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
+  const rows = filterCapacityLobs(filters)
+  const shares = hesShareByKey(rows, dimKey)
+  const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
+  const years = hesEffectiveFiscalYears(filters)
+  const fyRows = HES_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share), plan2: Math.round(d.plan2 * share) }))
+  return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
+}
+
+// LOBs with the highest Plan-over-Plan headcount variation, worst (largest
+// |variance|) first — the ranked list under the Plan over Plan Variation layer,
+// analogous to esgCapacityData.js's planOverPlanQueueVariance but for LOBs.
+export function planOverPlanLobVariance(filters = {}, topN = 8) {
+  const rows = filterCapacityLobs(filters)
+  return rows
+    .map(l => ({ name: l.lob, plan1: l.popPlan1, plan2: l.popPlan2, variance: l.popVariance }))
+    .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
+    .slice(0, topN)
 }
 
 // ── Workload distribution (Layer 3) — per-LOB fact table ───────────────────
 // Reuses LOB_FACTS's own businessPartner/globalGrouping tagging so a given LOB
 // carries the same tags across both HES pages, rather than re-deriving them with
 // a different index formula.
-export const HES_CAPACITY_LOBS = LOB_FACTS.map((l, i) => ({
-  ...l,
-  region: REGIONS[i % REGIONS.length],
-  workloadPlan: 500 + (i % 10) * 80,
-  workloadActual: Math.round((500 + (i % 10) * 80) * (0.7 + (i % 9) * 0.05)),
-  actHrsPlan: 6 + (i % 5),
-  actHrsActual: +((6 + (i % 5)) * (0.9 + (i % 7) * 0.05)).toFixed(1),
-}))
+export const HES_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
+  const popPlan1 = 8 + (i % 12)
+  const popPlan2 = Math.round(popPlan1 * (0.82 + (i % 17) * 0.018))
+  return {
+    ...l,
+    region: REGIONS[i % REGIONS.length],
+    subRegion: SUB_REGIONS[i % SUB_REGIONS.length],
+    workloadPlan: 500 + (i % 10) * 80,
+    workloadActual: Math.round((500 + (i % 10) * 80) * (0.7 + (i % 9) * 0.05)),
+    actHrsPlan: 6 + (i % 5),
+    actHrsActual: +((6 + (i % 5)) * (0.9 + (i % 7) * 0.05)).toFixed(1),
+    // Plan-over-Plan (Plan A vs Plan B) headcount per LOB — backs the "LOBs with
+    // highest variation" ranking under the Plan over Plan Variation layer.
+    popPlan1, popPlan2,
+    get popVariance() { return this.popPlan1 ? +((this.popPlan2 - this.popPlan1) / this.popPlan1 * 100).toFixed(1) : 0 },
+  }
+})
 
-// Illustrative Sankey: 3 CQN priority tiers flowing into 4 real LOBs. HES Capacity's
-// filter set has no per-queue (CQN) dimension of its own, so the tier labels are a
-// fixed small taxonomy rather than real per-queue data — the 4 target LOBs are real
-// names from LOB_LIST.
-const SANKEY_CQNS = ['CQN-Standard', 'CQN-Critical', 'CQN-Enterprise']
+// Illustrative Sankey, now with two modes (2026-07-03): 'LOB' flows 3 illustrative
+// CQN priority tiers into 4 real LOB names; 'CQN' flows 3 illustrative LOB-priority
+// tiers into 4 real HES queue names (pulled from LOB_QUEUES['High End Storage'] —
+// the only real per-queue list this page has access to). Neither direction has a
+// real per-queue-to-LOB mapping, so both tier label sets stay illustrative while the
+// leaf nodes they flow into are always real business names.
+const SANKEY_CQN_TIERS = ['CQN-Standard', 'CQN-Critical', 'CQN-Enterprise']
 const SANKEY_LOBS = ['Networking', 'Storage', 'Server', 'PowerScale']
+const SANKEY_LOB_TIERS = ['LOB-Storage', 'LOB-Networking', 'LOB-Compute']
+// Filtered against the real active-queue list so this stays a genuine subset of
+// LOB_QUEUES rather than a hand-typed name that could drift from the source data.
+const SANKEY_QUEUES = ['Global Networking', 'Global Symmetrix Backline', 'GLOBAL UDS PowerScale', 'Global VxRail']
+  .filter(name => LOB_QUEUES['High End Storage'].active.includes(name))
 
-export function workloadSankey(filters = {}) {
+export function workloadSankey(filters = {}, mode = 'LOB') {
   const ratio = lobScopeRatio(filters) || 1
-  const nodes = [...SANKEY_CQNS, ...SANKEY_LOBS].map(name => ({ name }))
+  const sources = mode === 'CQN' ? SANKEY_LOB_TIERS : SANKEY_CQN_TIERS
+  const targets = mode === 'CQN' ? SANKEY_QUEUES : SANKEY_LOBS
+  const nodes = [...sources, ...targets].map(name => ({ name }))
   const links = []
-  SANKEY_CQNS.forEach((cqn, ci) => {
-    SANKEY_LOBS.forEach((lob, li) => {
-      const value = Math.max(1, Math.round(120 * ratio * (0.4 + ((ci * 7 + li * 11) % 13) / 20)))
-      links.push({ source: ci, target: SANKEY_CQNS.length + li, value })
+  sources.forEach((src, si) => {
+    targets.forEach((tgt, ti) => {
+      const value = Math.max(1, Math.round(120 * ratio * (0.4 + ((si * 7 + ti * 11) % 13) / 20)))
+      links.push({ source: si, target: sources.length + ti, value })
     })
   })
   return { nodes, links }
-}
-
-const BASE_WORKLOAD = { FY25: 2200, FY26: 2500, FY27: 2750 }
-export const WORKLOAD_BY_FY = FISCAL_YEARS.map((fy, i) => ({
-  period: fy,
-  plan: BASE_WORKLOAD[fy],
-  actual: Math.round(BASE_WORKLOAD[fy] * (0.85 + (i * 6 % 12) / 100)),
-}))
-
-export function workloadByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
-  const ratio = lobScopeRatio(filters)
-  const fyRows = WORKLOAD_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, actual: Math.round(d.actual * ratio), plan: Math.round(d.plan * ratio) }))
-  return expandToGranularity(fyRows, granularity, ['actual', 'plan'])
 }
 
 export { LOB_LIST, GLOBAL_GROUPING_LIST }

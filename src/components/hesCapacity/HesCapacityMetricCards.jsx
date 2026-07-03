@@ -141,11 +141,24 @@ function GlobalSloByRegionChart() {
 }
 
 const MODAL_TITLES = {
-  fte: 'Total FTE — Actual vs Plan',
+  fte: 'Staffing Summary — Actual vs Plan',
   attrition: 'Headcount & Attrition Trend',
   casesPerFte: 'Cases per FTE — Actual vs Plan',
   avgCaseTime: 'Avg Case Time — Actual vs Plan',
-  globalSlo: 'Global SLO by Region',
+  globalSlo: 'SLO % by Region',
+}
+
+// Builds the "YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>" sub-message, same
+// pattern as HesMetricCards.jsx/EsgCapacityMetricCards.jsx. `lowerIsBetter` flips
+// which direction counts as "good" (green): Attrition and Avg Case Time are worse
+// when they climb YoY, unlike Staffing Summary/SLO % where growth is the good direction.
+function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
+  if (metric.yoyPct === null || metric.yoyPct === undefined) {
+    return { text: `YTD ${metric.period}: ${formattedValue} · no prior year in scope`, trend: undefined }
+  }
+  const up = metric.yoyPct >= 0
+  const good = lowerIsBetter ? !up : up
+  return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
 }
 
 function DrillDownModal({ type, filters, granularity, onClose }) {
@@ -166,21 +179,24 @@ function DrillDownModal({ type, filters, granularity, onClose }) {
 // red — see design_choice.md for why this differs from EsgCapacityMetricCards.
 export default function HesCapacityMetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
-  const d = useMemo(() => hesCapacityCardData(filters), [filters])
+  const d = useMemo(() => hesCapacityCardData(filters, granularity), [filters, granularity])
   const toggle = key => setActive(prev => prev === key ? null : key)
+
+  const staffingYtd = ytdSub(d.totalFte, d.totalFte.actual.toLocaleString())
+  const attritionYtd = ytdSub(d.attrition, `${d.attrition.actual}%`, { lowerIsBetter: true })
+  const avgCaseTimeYtd = ytdSub(d.avgCaseTime, `${d.avgCaseTime.actual}h`, { lowerIsBetter: true })
+  const sloYtd = ytdSub(d.globalSlo, `${d.globalSlo.actual}%`)
 
   return (
     <div style={{ padding: '0 16px 12px' }}>
       <div style={{ display: 'flex', gap: 10 }}>
-        <Card icon="🧑‍💼" label="Total FTE"
+        <Card icon="🧑‍💼" label="Staffing Summary"
           value={d.totalFte.actual.toLocaleString()}
-          sub={`Plan ${d.totalFte.plan.toLocaleString()} (${d.totalFte.actual - d.totalFte.plan})`}
-          trend={d.totalFte.actual >= d.totalFte.plan}
+          sub={staffingYtd.text} trend={staffingYtd.trend}
           onClick={() => toggle('fte')} active={active === 'fte'} />
         <Card icon="↩" label="Attrition %"
           value={`${d.attrition.actual}%`}
-          sub={`Bench ${d.attrition.bench}%`}
-          trend={d.attrition.actual <= d.attrition.bench}
+          sub={attritionYtd.text} trend={attritionYtd.trend}
           onClick={() => toggle('attrition')} active={active === 'attrition'} />
         <Card icon="📋" label="Cases per FTE"
           value={d.casesPerFte.actual}
@@ -189,13 +205,11 @@ export default function HesCapacityMetricCards({ filters, granularity }) {
           onClick={() => toggle('casesPerFte')} active={active === 'casesPerFte'} />
         <Card icon="⏱" label="Avg Case Time"
           value={`${d.avgCaseTime.actual}h`}
-          sub={`Plan ${d.avgCaseTime.plan}h`}
-          trend={d.avgCaseTime.actual <= d.avgCaseTime.plan}
+          sub={avgCaseTimeYtd.text} trend={avgCaseTimeYtd.trend}
           onClick={() => toggle('avgCaseTime')} active={active === 'avgCaseTime'} />
-        <Card icon="🎯" label="Global SLO"
+        <Card icon="🎯" label="SLO %"
           value={`${d.globalSlo.actual}%`}
-          sub={`Target ${d.globalSlo.target}% · ${d.globalSlo.regionsAtRisk} regions at risk`}
-          trend={d.globalSlo.actual >= d.globalSlo.target}
+          sub={sloYtd.text} trend={sloYtd.trend}
           onClick={() => toggle('globalSlo')} active={active === 'globalSlo'} />
       </div>
 

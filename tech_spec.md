@@ -47,22 +47,23 @@ SPoG/
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
 │   │   ├── Layer2ActualVsPlan.jsx  # Actual vs Plan: 3 chart visuals + stacked bar
 │   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers + summary table
-│   │   ├── capacity/
-│   │   │   └── PlanOverPlanLayer.jsx # Shared "Plan over Plan Headcount Comparison" layer — takes a
-│   │   │                               dataFn(filters, granularity) prop so ESG/HES Capacity Plan both reuse it
-│   │   ├── esgCapacity/         # ESG Capacity Plan page (all new, 2026-07-03)
-│   │   │   ├── EsgCapacityPage.jsx        # Page body: filters + cards + 4 layers (no RCA/CLCA sidebar)
+│   │   ├── esgCapacity/         # ESG Capacity Plan page (all new, 2026-07-03; revised same day)
+│   │   │   ├── EsgCapacityPage.jsx        # Page body: filters + cards + 4 layers + RCA/CLCA sidebar (added 2026-07-03)
 │   │   │   ├── EsgCapacityFilterPanel.jsx # Scope/Time/People/Geography clusters + DB/OSP pill + GranularityToggle
-│   │   │   ├── EsgCapacityMetricCards.jsx # 5 KPI cards (Staffing/Utilization/SL%/Total FTE/Attrition), Modal drill-downs
+│   │   │   ├── EsgCapacityMetricCards.jsx # 5 KPI cards (Staffing/Utilization/SL%/Cases per FTE/Attrition), Modal drill-downs
 │   │   │   ├── HeadcountLayer.jsx         # Layer 01 "Headcount and SL%" — staffing summary, attrition, actual-vs-plan+SL%+defaulters
-│   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization" — actual-vs-target trend w/ Aux tooltip, per-queue Aux ranking, leaves ranking
-│   │   │   └── EsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Country view)
-│   │   └── hesCapacity/         # HES Capacity Plan page (all new, 2026-07-03)
-│   │       ├── HesCapacityPage.jsx           # Page body: filters (reuses hes/HesFilterPanel.jsx directly) + cards + 4 layers
-│   │       ├── HesCapacityMetricCards.jsx    # 5 KPI cards (Total FTE/Attrition/Cases per FTE/Avg Case Time/Global SLO)
-│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 — staffing summary, attrition, actual-vs-plan utilization
-│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 — Sankey (CQN tiers→LOB), workload act-vs-plan, ACT trend
-│   │       └── HesCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — SLO by region
+│   │   │   ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + queue-variance ranking
+│   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization and Outage Analysis" — actual-vs-target trend w/ 3-aux tooltip, per-queue Aux ranking, leaves ranking
+│   │   │   ├── EsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Sub-region view)
+│   │   │   └── EsgCapacityRcaClcaPanel.jsx # Sticky RCA/CLCA sidebar, ESG-Capacity-specific illustrative content
+│   │   └── hesCapacity/         # HES Capacity Plan page (all new, 2026-07-03; revised same day)
+│   │       ├── HesCapacityPage.jsx           # Page body: filters (reuses hes/HesFilterPanel.jsx directly) + cards + 4 layers + RCA/CLCA sidebar
+│   │       ├── HesCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
+│   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Utilization" — staffing, region/sub-region attrition drill, utilization variance
+│   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
+│   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Average Case Time Variance, ACT trend
+│   │       ├── HesCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide SLO, Region/Sub-region toggle
+│   │       └── HesCapacityRcaClcaPanel.jsx   # Sticky RCA/CLCA sidebar, HES-Capacity-specific illustrative content
 │   │   └── hes/                # HES Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
 │   │       ├── HesForecastingPage.jsx  # Page body: filters + cards + 4 layers + RCA/CLCA sidebar
 │   │       ├── HesFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
@@ -208,30 +209,49 @@ EsgCapacityRcaClcaPanel (2026-07-03) — sticky sidebar (position: sticky) along
                   for this page's staffing/utilization/SL/attrition/cases-per-FTE metrics
 ```
 
-### HesCapacityPage
+### HesCapacityPage (revised 2026-07-03 — mirrors EsgCapacityPage's revision pass, adapted to LOBs)
 
 ```
 HesCapacityPage
 ├── HesFilterPanel(filters, onChange, granularity, onGranularityChange) — reused directly from hes/HesFilterPanel.jsx,
 │                                                                          unmodified (identical field set: LOB/FY-Qtr-
-│                                                                          Month-Week/Business Partner/Global Grouping)
-├── HesCapacityMetricCards(filters, granularity) — hesCapacityCardData(filters); 5 cards, each a Modal drill-down
+│                                                                          Month-Week/Business Partner/Global Grouping;
+│                                                                          Global Grouping options corrected 2026-07-03)
+├── HesCapacityMetricCards(filters, granularity) — hesCapacityCardData(filters, granularity); 5 cards with YTD/YoY
+│   │                          sub-messages (ytdSub, same pattern as HesMetricCards.jsx/EsgCapacityMetricCards.jsx) for
+│   │                          Staffing Summary (renamed from Total FTE)/Attrition/Avg Case Time/SLO % (renamed from
+│   │                          Global SLO); Cases per FTE unchanged. Each card a Modal drill-down
 │   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
 │                         AvgCaseTimeTrendChart (line) / GlobalSloByRegionChart (bar)
-├── HeadcountAttritionLayer(filters, granularity) — badge "01"
-│   ├── Visual1 "Actual vs Plan Summary"      — ComposedChart: fteByFY(filters, granularity)
-│   ├── Visual2 "Attrition"                    — ComposedChart: hesAttritionByFY(filters, granularity, lens), Region/Country toggle
-│   └── Visual3 "Actual vs Plan Utilization"   — ComposedChart: hesUtilByFY(filters, granularity, lens), Region/Country toggle
-├── PlanOverPlanLayer(filters, granularity, dataFn=planOverPlanFteByFY) — shared component, badge "02"
+├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Utilization", badge "01"
+│   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity); line renamed "Variation %"
+│   ├── Visual2 "Attrition"          — Region/Sub-region-level default (hesAttritionByDimension), click a bar to drill
+│   │                                   into hesAttritionTrendByDimension(filters, key, dimension, granularity);
+│   │                                   custom tooltip also shows the raw attritionCount
+│   └── Visual3 "Utilization Variance" (renamed) — ComposedChart: hesUtilByFY(filters, granularity, lens); lens toggle
+│                                                   relabeled Region/Sub-region (was Region/Country, always cosmetic)
+├── PlanOverPlanVariationLayer(filters, granularity) — HES-specific (no longer the shared component), badge "02"
+│   ├── MainChart "Plan over Plan Variation" — Region/Sub-region default view (hesPlanOverPlanByDimension), click a bar
+│   │                                          to drill into hesPlanOverPlanTrendByDimension
+│   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters),
+│                                                         worst |variance| first, value-labeled
 ├── WorkloadDistributionLayer(filters, granularity) — badge "03"
-│   ├── Visual1 "Workload Flow — CQN to LOB"  — recharts Sankey: workloadSankey(filters), custom labeled SankeyNode
-│   ├── Visual2 "Workload Act vs Plan"        — BarChart: workloadByFY(filters, granularity)
-│   └── Visual3 "ACT Trend — Actual vs Plan"  — LineChart: actHrsByFY(filters, granularity) (rate-preserving expansion)
+│   ├── Visual1 "Workload Distribution" (renamed) — recharts Sankey: workloadSankey(filters, mode), LOB/CQN BinaryToggle
+│   │                                                (LOB mode: CQN tiers→real LOBs; CQN mode: LOB tiers→real HES queues)
+│   ├── Visual2 "Average Case Time Variance" (renamed, repointed) — ComposedChart: actHrsByFY(filters, granularity)
+│   │                                                                bars + Adherence % line + actHrsDefaulterLobs list
+│   └── Visual3 "ACT Trend — Actual vs Plan" — LineChart: actHrsByFY(filters, granularity), now also with an
+│                                               Adherence % line + actHrsDefaulterLobs list
 └── HesCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
-                                                 single-metric SLO-by-region choropleth, no metric/view toggle
+                                                 Region/Sub-region BinaryToggle (was single-metric region-only),
+                                                 same fallback-to-parent-region mechanic as EsgCapacityGeoMap
 
-No RCA/CLCA sidebar — not specified in this page's mockups.
+HesCapacityRcaClcaPanel (2026-07-03) — sticky sidebar (position: sticky) alongside the 4 layers above, starting at
+                  the "Analysis Layers" divider — same layout as the other 3 pages' RCA/CLCA panels, own illustrative
+                  content written for this page's staffing/attrition/Cases-per-FTE/Average-Case-Time/SLO metrics
 ```
+
+The shared `capacity/PlanOverPlanLayer.jsx` component (and its containing `capacity/` folder) was deleted 2026-07-03 once both Capacity pages had their own specialized Plan-over-Plan layer and nothing imported it anymore.
 
 ---
 
@@ -634,39 +654,72 @@ GEO_CAPACITY_BY_SUBREGION / geoCapacityBySubRegion(filters, metric) — {subRegi
   replacing the earlier curated-14-country geoCapacityByCountry/COUNTRY_TO_WORLD_ATLAS_NAME machinery entirely
 ```
 
-Business logic: Total FTE and Attrition % invert the usual "higher actual is better" framing — an increase YoY is BAD
-(red) for both, since overstaffing/rising attrition are the problems being flagged; Utilization %/SL % keep the normal
-"growth is good" framing. Plan Name filter options now come from `mockData.js`'s `PLAN_NAMES` (ESG Forecasting's own
-list), not a page-specific plan list.
+Business logic: Attrition % inverts the usual "higher actual is better" framing — an increase YoY is BAD (red), since
+rising attrition is the problem being flagged; Staffing/Utilization/SL % keep the normal "growth is good" framing.
+Cases per FTE (replaced Total FTE 2026-07-03) is YTD-only with no YoY comparison at all — see the capacityCardData
+entry above. Plan Name filter options now come from `mockData.js`'s `PLAN_NAMES` (ESG Forecasting's own list), not a
+page-specific plan list.
 
 ---
 
-## Data Model (`src/data/hesCapacityData.js`) — HES Capacity Plan (2026-07-03)
+## Data Model (`src/data/hesCapacityData.js`) — HES Capacity Plan (2026-07-03, revised 2026-07-03)
 
-Reuses `hesData.js`'s `LOB_LIST`, `LOB_FACTS`, `filterLobs`, `hesEffectiveFiscalYears` directly — this page's filter set is identical to HES Forecasting's, so no separate fact table or filter function was built for the base LOB scoping.
+Reuses `hesData.js`'s `LOB_LIST`, `LOB_FACTS`, `LOB_QUEUES`, `filterLobs`, `hesEffectiveFiscalYears` directly — this page's filter set is identical to HES Forecasting's, so no separate fact table or filter function was built for the base LOB scoping. `subRegion` was added to `HES_CAPACITY_LOBS` (round-robin over `SUB_REGIONS`) to back the region/sub-region drills and Geo Map view added in the revision pass.
 
 ```
 lobScopeRatio(filters) — filterLobs(filters).length / LOB_FACTS.length (local copy of hesData.js's private helper)
-fteByFY(filters, granularity)             — {period, actual, plan, adherence} — Total FTE card + HeadcountAttritionLayer Visual1
-hesAttritionByFY(filters, granularity, lens) — {period, headcount, attrition} — Attrition card + HeadcountAttritionLayer Visual2
+hesShareByKey(rows, key) — deterministic {key: share} distribution of a LOB set across 'region' or 'subRegion',
+  backing the Attrition and Plan over Plan Variation region/sub-region drills — same role as esgCapacityData.js's shareByKey
+filterCapacityLobs(filters) — HES_CAPACITY_LOBS rows narrowed to filterLobs(filters)'s in-scope LOB names
+fteByFY(filters, granularity)             — {period, actual, plan, adherence} — Staffing Summary card (renamed from Total
+                                              FTE) + HeadcountAttritionLayer Visual1 ("Actual vs Plan Variation")
+hesAttritionByFY(filters, granularity, lens) — {period, headcount, attrition} — still backs the Attrition card's own
+                                              Modal popup only (unchanged); NOT used by HeadcountAttritionLayer Visual2
+                                              anymore, which uses the dimension selectors below instead
+hesAttritionByDimension(filters, dimension) — {key, headcount, attrition, attritionCount} × regions or sub-regions —
+  ('Region'|'SubRegion')                      HeadcountAttritionLayer Visual2's default view
+hesAttritionTrendByDimension(filters, key,  — {period, headcount, attrition, attritionCount} — FY/granularity trend for
+  dimension, granularity)                     one clicked region/sub-region key
 hesUtilByFY(filters, granularity, lens)   — {period, actual, target, adherence} — HeadcountAttritionLayer Visual3
-cpfByFY(filters, granularity)             — {period, actual, plan} — Cases per FTE card (rate-preserving expansion)
-actHrsByFY(filters, granularity)          — {period, actual, plan} — Avg Case Time card + WorkloadDistributionLayer Visual3
-  (rate-preserving expansion — avg case time is hours-per-case, not a summable volume)
-geoSloByRegion() / HES_GEO_SLO_BY_REGION  — {region, slo} × 4 — backs the Global SLO card's region-breakdown modal + HesCapacityGeoMap;
-  tuned so exactly 2 of 4 regions sit below the FY27 SLO target, matching the mockup's literal "2 regions at risk" card message
-hesCapacityCardData(filters)              — {totalFte, attrition, casesPerFte, avgCaseTime, globalSlo} — latest-FY snapshot,
-  globalSlo additionally carries regionsAtRisk (count of HES_GEO_SLO_BY_REGION rows below the latest FY's target)
-planOverPlanFteByFY(filters, granularity) — {period, plan1, plan2, variance} — feeds the shared PlanOverPlanLayer
-workloadSankey(filters)                   — {nodes, links} recharts Sankey shape: 3 illustrative CQN priority-tier source nodes
-  (CQN-Standard/Critical/Enterprise) → 4 real LOB target nodes (Networking/Storage/Server/PowerScale), 12 links,
-  each value scaled by lobScopeRatio(filters)
-HES_CAPACITY_LOBS                         — LOB_FACTS.map(...) + {region, workloadPlan, workloadActual, actHrsPlan, actHrsActual} —
-  per-LOB fact table backing workload/ACT figures (spreads LOB_FACTS's own businessPartner/globalGrouping tags rather than re-deriving them)
-workloadByFY(filters, granularity)        — {period, actual, plan} — WorkloadDistributionLayer Visual2
+                                              ("Utilization Variance"); lens 'Region'|'Country' internally, relabeled
+                                              Region/Sub-region in the UI (still a cosmetic nudge, not a real dimension split)
+cpfByFY(filters, granularity)             — {period, actual, plan} — Cases per FTE card (rate-preserving expansion, unchanged)
+actHrsByFY(filters, granularity)          — {period, actual, plan, adherence} — Avg Case Time card + Workload
+  Distribution Visual2/Visual3; adherence = plan/actual*100 (a "lower is better" metric, so adherence >=100 means
+  actual is at or under plan); rate-preserving expansion (avg case time is hours-per-case, not a summable volume)
+actHrsDefaulterLobs(filters, count=6)     — {lob, actual, plan, delta} sorted by delta DESCENDING — LOBs running above
+  target ACT, backing the "top LOBs above target" list under both Workload Distribution ACT visuals
+geoSloByRegion() / HES_GEO_SLO_BY_REGION  — {region, slo} × 4 — backs the SLO % card's region-breakdown modal + HesCapacityGeoMap Region view
+geoSloBySubRegion() / HES_GEO_SLO_BY_SUBREGION — {subRegion, slo} × 24 real SUB_REGIONS values — HesCapacityGeoMap Sub-region view
+hesCapacityCardData(filters, granularity) — {totalFte, attrition, casesPerFte, avgCaseTime, globalSlo}. totalFte/
+  attrition/avgCaseTime/globalSlo each carry {actual, period, prevPeriod, yoyPct} (headline drills with granularity,
+  yoyPct always FY-over-FY); globalSlo additionally carries regionsAtRisk; casesPerFte is unchanged ({actual, plan} only)
+hesPlanOverPlanByDimension(filters, dimension) — {key, plan1, plan2, variance} × regions or sub-regions — Plan over
+  Plan Variation layer's MainChart default view
+hesPlanOverPlanTrendByDimension(filters, key, dimension, granularity) — {period, plan1, plan2, variance} — FY/granularity
+  trend for one clicked key
+planOverPlanLobVariance(filters, topN=8)  — {name, plan1, plan2, variance} sorted by |variance| DESCENDING — the
+  "LOBs with Highest Variation" ranked chart (analogous to ESG's planOverPlanQueueVariance, ranking LOBs not queues)
+workloadSankey(filters, mode='LOB')       — {nodes, links} recharts Sankey shape. mode 'LOB': 3 illustrative CQN
+  priority-tier sources → 4 real LOB targets (Networking/Storage/Server/PowerScale). mode 'CQN': 3 illustrative LOB
+  priority-tier sources → 4 real HES queue targets (filtered against LOB_QUEUES['High End Storage'].active to
+  guarantee they're genuine); each link value scaled by lobScopeRatio(filters)
+HES_CAPACITY_LOBS                         — LOB_FACTS.map(...) + {region, subRegion, workloadPlan, workloadActual,
+  actHrsPlan, actHrsActual, popPlan1, popPlan2, popVariance (getter)} — per-LOB fact table (spreads LOB_FACTS's own
+  businessPartner/globalGrouping tags rather than re-deriving them); popPlan1/popPlan2 back planOverPlanLobVariance
 ```
 
-Business logic is the mirror image of ESG Capacity's: Total FTE flags `actual < plan` (understaffed) as BAD (red), while Attrition/Cases-per-FTE/Avg-Case-Time flag `actual > plan` (overload) as BAD — both distinct, page-specific conventions honored literally from each page's own mockup rather than forced to match each other.
+`workloadByFY`/`WORKLOAD_BY_FY` (the original "Workload Act vs Plan" hours-based dataset) were removed 2026-07-03 once
+Workload Distribution's Visual2 was repointed at the Average Case Time metric instead — nothing references the
+workload-hours numbers anymore. The shared `capacity/PlanOverPlanLayer.jsx` this page used to import was also deleted
+once `PlanOverPlanVariationLayer.jsx` replaced it (see design_choice.md).
+
+Business logic, now YoY-based instead of vs-plan/vs-target: Staffing Summary and SLO % both flag a YoY increase as
+GOOD (green) — for Staffing Summary this preserves the page's original "more heads is the safer direction" philosophy
+(the pre-revision Total FTE card flagged understaffing, not overstaffing, as the risk — unlike ESG's Total FTE, which
+flags overstaffing). Attrition and Avg Case Time flag a YoY increase as BAD (red) — both are genuine
+higher-is-worse metrics. Cases per FTE keeps its original actual-vs-plan (not YoY) comparison, unchanged from before
+this revision pass.
 
 ---
 
@@ -723,3 +776,6 @@ Steps:
 17. ESG Capacity's Region/Sub-region drill (Attrition, Plan over Plan Variation) scales one FY-level baseline by each key's share of in-scope queues (`shareByKey`) — not a real per-region/sub-region historical dataset
 18. The 2026-07-03 ESG Capacity revision pass (filters, YTD cards, Attrition/Plan-over-Plan drill, Utilization aux detail, Geo Map sub-region toggle) was verified via an extended Node smoke test + clean build only, same browser-automation gap as item 16
 19. ESG Capacity's Cases per FTE card carries no `prevPeriod`/`yoyPct` in `capacityCardData` (unlike every other card) — this is intentional, not a partial implementation, since the card is YTD-only by design
+20. HES Capacity's `subRegion` tag on `HES_CAPACITY_LOBS` and the resulting region/sub-region drills (Attrition, Plan over Plan Variation) and Geo Map sub-region view are all illustrative — no real per-LOB sub-region mapping exists, same convention as everywhere else in this app
+21. HES Capacity's Workload Distribution Visual2 ("Average Case Time Variance") and Visual3 ("ACT Trend — Actual vs Plan") now plot the identical `actHrsByFY` metric — intentional per direct request, not a duplication bug
+22. `hesUtilByFY`'s `lens` parameter is still internally `'Region'|'Country'` (only the UI label changed to Region/Sub-region) — the scaling itself remains a small cosmetic nudge, not a real sub-region-weighted calculation, unlike the Attrition/Plan-over-Plan drills which do use real share-weighted math

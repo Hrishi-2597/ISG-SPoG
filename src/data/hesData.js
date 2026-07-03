@@ -20,7 +20,9 @@ export const LOB_LIST = [
   'Wipro', 'XtremIO',
 ]
 
-export const GLOBAL_GROUPING_LIST = ['Consumer', 'Commercial', 'Enterprise']
+// Real business-supplied groupings (confirmed 2026-07-03 via screenshot), replacing
+// the earlier inferred ['Consumer','Commercial','Enterprise'] placeholder.
+export const GLOBAL_GROUPING_LIST = ['COMPUTE/NETWORKING', 'DPD/UDS', 'HCS', 'OTHER', 'PRIMARY/MIDRANGE']
 
 const HES_FILTER_KEYS = ['lob', 'businessPartner', 'globalGrouping']
 const HES_FIELD_BY_KEY = { lob: 'lob', businessPartner: 'businessPartner', globalGrouping: 'globalGrouping' }

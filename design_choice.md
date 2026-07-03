@@ -559,6 +559,50 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## HES Capacity Plan: Full Revision Pass (2026-07-03)
+
+### Global Grouping: correcting a shared, previously-inferred constant
+**Decision:** `GLOBAL_GROUPING_LIST` in `hesData.js` was replaced wholesale with the 5 real values from a screenshot (`COMPUTE/NETWORKING`, `DPD/UDS`, `HCS`, `OTHER`, `PRIMARY/MIDRANGE`), affecting both HES Forecasting and HES Capacity Plan since they share this one constant.
+**Why:** `tech_spec.md` had flagged this list as "inferred, not yet user-confirmed" since it was first added — the screenshot is the business confirming the real list, so replacing the placeholder is a correction, not scope creep. Both HES pages picking it up automatically (rather than needing two separate edits) is exactly why the constant was shared in the first place.
+
+### Applying ESG Capacity's exact patterns, adapted from queues to LOBs
+**Decision:** Card YTD/YoY messaging (`ytdSub`), the Attrition/Plan-over-Plan region+sub-region click-to-drill mechanic, and the diverging-bar-with-labels "highest variation" ranking were all reused structurally from ESG Capacity Plan's just-completed revision, substituting HES's LOB fact table (`HES_CAPACITY_LOBS`) wherever ESG used its queue fact table (`CAPACITY_QUEUES`).
+**Why:** The request explicitly asked to "make it similar we made it for ESG Capacity Planning" for several visuals — reusing the same mechanism (not just the same visual style) means both Capacity pages behave identically for a user switching between them, which is the whole point of "similar." A `hesShareByKey`/`shareByKey` pair (one helper per page, same logic) was kept as two small functions rather than one cross-page shared helper, since each operates on a different page's own fact table shape — sharing it would mean passing awkward field-name parameters for marginal benefit.
+
+### HES has no Sub-region filter, so a `subRegion` tag was added purely to back the new drills
+**Decision:** `HES_CAPACITY_LOBS` gained a `subRegion` field (round-robin over the real 24 `SUB_REGIONS`, same convention as `ACTIVE_QUEUES`/`CAPACITY_QUEUES`), even though HES Capacity's filter bar has no Sub-region filter field of its own (unlike ESG Capacity, which added one this same session).
+**Why:** The Geo Map request ("worldwide SLO... region and sub-region wise") and the Attrition/"make it similar to ESG" request both need a real sub-region dimension to drill into, and HES's filter set (reused unmodified from HES Forecasting) wasn't in scope to change. Adding the data-layer dimension without a matching filter field is consistent with how `hesUtilByFY`'s pre-existing Region/Country lens already worked (a real interactive toggle backed by illustrative data, with no corresponding top-bar filter) — the toggle narrows what a *chart* shows, not what rows are in scope.
+
+### Plan over Plan Variation: LOBs, not a fabricated per-queue concept
+**Decision:** The new HES-specific Plan over Plan Variation layer ranks LOBs in its "highest variation" chart, mirroring ESG's queue-ranking chart exactly except for the entity being ranked.
+**Why:** Requested directly ("Build similar to ESG Capacity planning - but show LOB's instead of CQN"). HES Capacity has no per-queue dimension anywhere else on the page (Workload Distribution's "CQN" mode queue names are the one exception, and those are explicitly illustrative-flow labels, not a fact table) — ranking real LOBs, which this page already has as its natural unit of measurement, is more honest than inventing per-queue mock data just to match ESG's chart literally.
+
+### Workload Distribution's LOB/CQN toggle: real names on both sides
+**Decision:** The Sankey's toggle swaps which illustrative tier labels feed into which real name list — LOB mode keeps the existing CQN-tier→real-LOB flow; CQN mode introduces LOB-tier→real-HES-queue flow, with the queue names filtered against `LOB_QUEUES['High End Storage'].active` to guarantee they're genuine.
+**Why:** Requested directly ("give a toggle to switch from LOB to CQN... utilize some HES LOB's and some HES Queues"). Filtering the hardcoded queue-name list against the real source array (rather than trusting the literal strings match) means a future rename or typo in either list fails loudly (fewer Sankey targets than expected, caught by the Node smoke test) instead of silently drifting from the source data.
+
+### Workload Distribution Visual2/Visual3: reinterpreting "Workload Act vs Plan" as Average Case Time
+**Decision:** "Workload Act vs Plan" (previously backed by a `workloadByFY`/`WORKLOAD_BY_FY` hours-volume dataset) was renamed "Average Case Time Variance" and repointed at the same `actHrsByFY` (Average Case Time) data that "ACT Trend — Actual vs Plan" already used — both visuals now plot the identical metric, one as bars with an Adherence % line, the other as a trend line with the same Adherence % line, and both gained a "top LOBs above target" list.
+**Why:** The request explicitly named the target metric "Average Case Time" for visual #2, then said visual #3 ("ACT Trend") should be "similar to Average Case Time Variance" — "ACT" already stands for Average Case Time (used verbatim as visual #3's own abbreviation), which strongly suggests the original "Workload Act vs Plan" name was itself a garbled reference to this same metric, not a genuine "workload volume" concept, and the request is correcting that naming confusion rather than asking for two literally-different metrics to be merged. The now-unreferenced `workloadByFY`/`WORKLOAD_BY_FY` were removed as dead code once nothing called them.
+
+### Utilization Variance's lens toggle: relabeled, not rebuilt
+**Decision:** `hesUtilByFY`'s `lens` parameter stays internally `'Region'|'Country'` with its original small cosmetic scale factor — only the UI-facing `BinaryToggle` label changed from "Country" to "Sub-region."
+**Why:** "Actual vs Plan Utilization... make it similar to ESG Capacity Planning" was read as applying to the visual's *name* (renamed "Utilization Variance") given the request's next line explicitly separately asks for Sankey/Geo Map to gain real region+sub-region treatment — a full share-weighted sub-region calculation for a rate/percentage metric (utilization %) doesn't carry the same meaning it does for headcount/attrition volumes (a percentage isn't "a share of the total" the way a headcount is), so keeping the existing nudge-factor mechanism and just fixing its stray "Country" label (which was never backed by real per-country data either) was the proportionate fix.
+
+### Geo Map: same fallback mechanic as ESG, ported directly
+**Decision:** `HesCapacityGeoMap.jsx`'s new Region/Sub-region toggle uses the identical "unmapped country falls back to parent region at 35% opacity" logic as `EsgCapacityGeoMap.jsx`/`Layer3GeoMap.jsx`, backed by a new `geoSloBySubRegion()`/`HES_GEO_SLO_BY_SUBREGION` (24 real sub-regions, rotating through the existing 4-region SLO baseline).
+**Why:** Requested directly ("It should [show] worldwide SLO likewise - region and sub-region wise"), and this exact mechanic already exists twice in the codebase (ESG Forecasting, ESG Capacity) — porting it a third time for HES Capacity is more consistent than any alternative sub-region-fallback design, and the "worldwide" framing fits naturally since the fallback ensures full map coverage regardless of view mode.
+
+### Shared `capacity/PlanOverPlanLayer.jsx` deleted once orphaned
+**Decision:** Once HES Capacity's Plan over Plan layer switched to its own `PlanOverPlanVariationLayer.jsx` (matching ESG Capacity's earlier switch), the original shared `src/components/capacity/PlanOverPlanLayer.jsx` had no remaining importers anywhere in the app — it and its now-empty `capacity/` folder were deleted rather than left as dead code.
+**Why:** The component was built specifically to be shared between the two Capacity pages' identical-at-the-time Plan-over-Plan layers; once both pages independently outgrew it in different directions, keeping the file around would just be a maintenance trap for a future reader wondering whether it's still used. Confirmed orphaned via a full-repo grep before deleting.
+
+### RCA/CLCA sidebar: same mechanism, own vocabulary, third time
+**Decision:** `HesCapacityRcaClcaPanel.jsx` follows the identical sticky-sidebar-next-to-Analysis-Layers pattern as the other three pages' RCA/CLCA panels, with illustrative content written in this page's own terms (staffing, attrition, Cases per FTE, Average Case Time, SLO).
+**Why:** Requested directly ("add RCA and RLCA section like we did for ESG Capacity") — by this point the pattern is fully established (ESG Forecasting → HES Forecasting → ESG Capacity → HES Capacity), so there was no ambiguity left to resolve: same mechanism, own words, per the standing precedent recorded earlier in this file.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |
