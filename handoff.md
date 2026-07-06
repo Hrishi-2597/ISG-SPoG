@@ -1,5 +1,9 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## Header "Live" Badge: FY26 → FY27 (2026-07-06)
+
+- The header's "Live · FY26" indicator (`App.jsx`) is shared markup rendered once above every page (landing + all 4 business pages), so updating the single hardcoded string to "Live · FY27" fixed it everywhere in one edit — verified via grep that no other file has a "Live · FYxx" occurrence to keep in sync.
+
 ## HES Capacity Plan: Full Revision Pass — Filters, YTD Cards, Drills, Workload, Geo Map, RCA/CLCA (2026-07-03)
 
 A detailed revision pass on HES Capacity Plan, largely mirroring the ESG Capacity Plan revision pass but adapted to this page's LOB-based data model. Also fixed a shared filter list used by HES Forecasting too.

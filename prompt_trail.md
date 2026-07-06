@@ -297,3 +297,12 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Verified with `npm run build` (clean, 1178 modules) and a grep sweep confirming no stale references to the deleted selectors/component remained; also caught and fixed two stale paragraphs in `tech_spec.md` left over from the ESG Capacity revision pass (still describing a "Total FTE" card and business-logic rule that no longer exists after that pass swapped it for Cases per FTE)
 - Restarted the dev server and reopened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
+## Prompt 20 — 2026-07-06
+**Input:** "change the live FY26 to FY27 for all the pages"
+
+**Action:**
+- Grepped for "Live · FY26" and found a single occurrence in `App.jsx`'s header — shared markup rendered once above every page (landing + all 4 business pages), so a one-line edit to "Live · FY27" applied everywhere without touching each page individually
+- Ran `npm run build` (clean) to confirm; updated `handoff.md`; committed and pushed to `main`

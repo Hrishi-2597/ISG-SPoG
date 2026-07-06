@@ -155,7 +155,7 @@ export default function App() {
               width: 6, height: 6, borderRadius: '50%', background: '#34d399',
               display: 'inline-block', boxShadow: '0 0 6px #34d399',
             }} className="animate-pulse-soft" />
-            Live · FY26
+            Live · FY27
           </div>
           {isBusiness && (
             <div style={{
