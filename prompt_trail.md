@@ -330,3 +330,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Renamed the modal title from "Active Queue Directory" to "Queue Directory — Active & Inactive"; removed the now-unused `filterQueues`/`structuralRows` plumbing this replaced
 - Ran `npm run build` (clean); started the dev server and opened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
+## Prompt 23 — 2026-07-08
+**Input:** "the Business partner table is good but when i hover over the count the queue names are not coming up properly -maybe a scroll required there"
+
+**Action:**
+- Root-caused: the Business Partner table's wrapper div with `overflowX: 'auto'` was clipping the `HoverCount` tooltip vertically — setting only `overflow-x` to a non-`visible` value resolves `overflow-y` to `'auto'` too per the CSS spec, so the wrapper was silently clipping the popup even though only horizontal scroll was intended
+- Removed the wrapper's overflow styling entirely (the table is 4 narrow columns, never actually needed horizontal scroll); flipped the tooltip to open below the row instead of above
+- Verified with `npm run build` (clean); dev server was already running with HMR, confirmed the fix picked up live
+- Updated `handoff.md`; committed and pushed to `main`

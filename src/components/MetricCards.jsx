@@ -263,7 +263,7 @@ function HoverCount({ value, names, color }) {
       }}>{value}</span>
       {show && (
         <div className="chart-tooltip animate-fade-in" style={{
-          position: 'absolute', bottom: '130%', right: 0, zIndex: 30,
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 30,
           width: 230, maxHeight: 190, overflowY: 'auto', textAlign: 'left',
         }}>
           {names.map((n, i) => (
@@ -286,7 +286,13 @@ function BusinessPartnerTable({ filters }) {
     <div style={{ marginTop: 14 }}>
       <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)' }}>Business Partner Breakdown</p>
       <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 8 }}>Hover a count to see the queue names</p>
-      <div style={{ overflowX: 'auto', maxHeight: 220, overflowY: 'auto' }}>
+      {/* Deliberately no overflow wrapper here (unlike the other tables in this modal):
+          setting even just overflow-x resolves overflow-y to 'auto' per the CSS spec
+          (the two can't be split when one isn't 'visible'), which was clipping the
+          HoverCount tooltip that pops out below each row. This table is only 4 narrow
+          columns (Business Partner + 3 counts), so horizontal scroll was never actually
+          needed — the Modal itself still scrolls vertically if the whole popup runs long. */}
+      <div>
         <table className="w-full" style={{ fontSize: 11, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
