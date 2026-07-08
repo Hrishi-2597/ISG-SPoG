@@ -352,6 +352,54 @@ function VolumeByFYChart({ filters, granularity }) {
   )
 }
 
+// Static reference list — real public holidays paired with real countries, illustrative
+// dates (not tied to a specific calendar year) since offered/handled volume isn't
+// broken out by holiday in the underlying data. Context for why Offered/Abandon %
+// swings around these dates, same role the RCA/CLCA panels' illustrative content
+// plays elsewhere in the app; lives beside the component that renders it rather than
+// in mockData.js since nothing filters or computes off it.
+const HOLIDAY_CALENDAR = [
+  { date: 'Jan 1', holiday: "New Year's Day", country: 'Global' },
+  { date: 'Jan 26', holiday: 'Republic Day', country: 'India' },
+  { date: 'Feb 10', holiday: 'Lunar New Year', country: 'China' },
+  { date: 'Mar 29', holiday: 'Good Friday', country: 'United Kingdom' },
+  { date: 'May 1', holiday: 'Labour Day', country: 'Germany' },
+  { date: 'Jul 4', holiday: 'Independence Day', country: 'United States' },
+  { date: 'Sep 7', holiday: 'Independence Day', country: 'Brazil' },
+  { date: 'Oct 20', holiday: 'Diwali', country: 'India' },
+  { date: 'Nov 27', holiday: 'Thanksgiving', country: 'United States' },
+  { date: 'Dec 25', holiday: 'Christmas Day', country: 'Global' },
+]
+
+function HolidayCalendar() {
+  return (
+    <div style={{ ...CHART_BOX, marginTop: 14 }}>
+      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)' }}>Holiday Calendar</p>
+      <p style={{ fontSize: 9.5, color: 'var(--text-faint)', marginBottom: 8 }}>Public holidays that can drive offered-volume swings in the affected country</p>
+      <table className="w-full" style={{ fontSize: 11, borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
+            <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</th>
+            <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Holiday</th>
+            <th style={{ textAlign: 'left', padding: '4px 0', color: 'var(--text-muted)', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Country</th>
+          </tr>
+        </thead>
+        <tbody>
+          {HOLIDAY_CALENDAR.map((h, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <td style={{ padding: '5px 12px 5px 0', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h.date}</td>
+              <td style={{ padding: '5px 12px 5px 0', color: 'var(--text-secondary)' }}>{h.holiday}</td>
+              <td style={{ padding: '5px 0', color: 'var(--text-secondary)' }}>{h.country}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function DbOspByFYChart({ filters, granularity }) {
   const data = useMemo(() => dbOspVolumeByFY(filters, granularity), [filters, granularity])
   return (
@@ -483,7 +531,7 @@ function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
     <Modal title={MODAL_TITLES[type]} onClose={onClose}>
       {type === 'queues' && <QueuesSection filters={filters} />}
-      {type === 'volume' && <VolumeByFYChart filters={filters} granularity={granularity} />}
+      {type === 'volume' && <><VolumeByFYChart filters={filters} granularity={granularity} /><HolidayCalendar /></>}
       {type === 'dbOsp' && <DbOspByFYChart filters={filters} granularity={granularity} />}
       {type === 'forecast' && <ForecastByRegionChart filters={filters} />}
       {type === 'variance' && <VarianceByFYChart filters={filters} onSelectYear={setSelectedYear} />}

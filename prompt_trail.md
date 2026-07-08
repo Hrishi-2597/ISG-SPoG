@@ -354,6 +354,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 ---
 
+## Prompt 26 — 2026-07-08
+**Input:** "also add a holiday list with country in this card.."
+
+**Action:**
+- Added a static `HOLIDAY_CALENDAR` reference list to `MetricCards.jsx` (real holidays + real countries, illustrative dates) and a new `HolidayCalendar` table component, rendered below the chart in the Call Volume card's drill-down modal
+- Kept the data in the component file rather than `mockData.js`, matching the RCA/CLCA panels' precedent for static illustrative content that nothing filters or computes off of
+- Verified with `npm run build` (clean); updated `handoff.md`; committed and pushed to `main`
+
+---
+
 ## Prompt 25 — 2026-07-08
 **Input:** Screenshot of the Call Volume card's default face ("177.2K handled · 94.1%") with the request "on the default view replace handled % with abandoned %"
 

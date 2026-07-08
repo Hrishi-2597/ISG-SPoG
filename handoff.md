@@ -1,5 +1,10 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## Call Volume Drill-Down: Holiday Calendar Added (2026-07-08)
+
+- New "Holiday Calendar" table added below the Offered/Handled/Abandon % chart in the Call Volume card's popup — real public holidays (New Year's Day, Republic Day, Lunar New Year, Good Friday, Labour Day, Independence Day ×2, Diwali, Thanksgiving, Christmas) paired with their real country, illustrative dates (not tied to a specific calendar year, since offered/handled volume isn't broken out by holiday in the underlying mock data). Context for why offered volume/abandon rate swings around these dates.
+- `HOLIDAY_CALENDAR` lives directly in `MetricCards.jsx` (not `mockData.js`) since it's static reference content nothing filters or computes off of — same placement convention as the RCA/CLCA panels' own illustrative content.
+
 ## Call Volume Card Face + Drill-Down: Handled % Replaced With Abandon % Everywhere (2026-07-08)
 
 - `MetricCards.jsx`'s `VolumeByFYChart` (the Call Volume card's popup) plots **Abandon %** — `(offered - handled) / offered * 100` — instead of Handled %, on the same second axis/line role.
