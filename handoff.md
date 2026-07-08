@@ -1,5 +1,9 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## DB/OSP Split Drill-Down: Column Chart → Line Chart (2026-07-08)
+
+- `MetricCards.jsx`'s `DbOspByFYChart` (DB/OSP Split card's popup) changed from grouped columns to a line chart — same two series (DB Offered / OSP Offered), same colors, now plotted as trend lines.
+
 ## Call Volume Drill-Down: Holiday Calendar Added (2026-07-08)
 
 - New "Holiday Calendar" table added below the Offered/Handled/Abandon % chart in the Call Volume card's popup — real public holidays (New Year's Day, Republic Day, Lunar New Year, Good Friday, Labour Day, Independence Day ×2, Diwali, Thanksgiving, Christmas) paired with their real country, illustrative dates (not tied to a specific calendar year, since offered/handled volume isn't broken out by holiday in the underlying mock data). Context for why offered volume/abandon rate swings around these dates.

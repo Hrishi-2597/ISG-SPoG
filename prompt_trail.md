@@ -354,6 +354,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 ---
 
+## Prompt 27 — 2026-07-08
+**Input:** "also add line chart for DB/OSP instead of column chart"
+
+**Action:**
+- `MetricCards.jsx`'s `DbOspByFYChart`: swapped `BarChart`+`Bar` for `LineChart`+`Line` (added the `LineChart` import), keeping the same two series (DB Offered / OSP Offered) and colors
+- Verified with `npm run build` (clean); updated `handoff.md`; committed and pushed to `main`
+
+---
+
 ## Prompt 26 — 2026-07-08
 **Input:** "also add a holiday list with country in this card.."
 

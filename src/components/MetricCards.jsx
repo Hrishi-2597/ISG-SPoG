@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import {
-  BarChart, ComposedChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, LineChart, ComposedChart, PieChart, Pie, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
@@ -400,21 +400,23 @@ function HolidayCalendar() {
   )
 }
 
+// Changed from grouped columns to a line chart per direct request — same two series
+// (DB Offered / OSP Offered), same colors, just plotted as trend lines instead of bars.
 function DbOspByFYChart({ filters, granularity }) {
   const data = useMemo(() => dbOspVolumeByFY(filters, granularity), [filters, granularity])
   return (
     <div style={CHART_BOX}>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }} {...BAR_GAPS}>
+        <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
           <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false}
             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v} />
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="db"  name="DB Offered"  fill={C.db}  opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Bar dataKey="osp" name="OSP Offered" fill={C.osp} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-        </BarChart>
+          <Line type="monotone" dataKey="db"  name="DB Offered"  stroke={C.db}  strokeWidth={2.5} dot={{ r: 3, fill: C.db, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          <Line type="monotone" dataKey="osp" name="OSP Offered" stroke={C.osp} strokeWidth={2.5} dot={{ r: 3, fill: C.osp, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   )
