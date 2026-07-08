@@ -1,5 +1,9 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## Call Volume Drill-Down: Handled % Line Replaced With Abandon % (2026-07-08)
+
+- `MetricCards.jsx`'s `VolumeByFYChart` (the Call Volume card's popup) now plots **Abandon %** — `(offered - handled) / offered * 100` — instead of Handled %, on the same second axis/line role. The Call Volume card's own face text (`"{handled} handled · {handlePct}%"`) is unchanged; only the drill-down chart's line was in scope, per the request.
+
 ## Fix: Business Partner Breakdown Hover Tooltip Was Clipped (2026-07-08)
 
 - **The `HoverCount` queue-name popup (added earlier the same day) was being clipped** by its own table's wrapper `<div>`, which had `overflowX: 'auto'` — per the CSS spec, setting only one of `overflow-x`/`overflow-y` to a non-`visible` value silently resolves the other to `'auto'` too (they can't be split when either isn't `visible`), so that div was clipping vertical overflow even though only horizontal scroll was intended. Fixed by dropping the wrapper's overflow styling entirely — the table is only 4 narrow columns, so horizontal scroll was never actually needed, and the Modal itself already scrolls vertically if the popup runs long.

@@ -324,9 +324,11 @@ function BusinessPartnerTable({ filters }) {
   )
 }
 
+// Abandon % (calls offered but not handled) replaced Handled % on the trend line —
+// same second-axis "neutral rate" role, just a different percentage.
 function VolumeByFYChart({ filters, granularity }) {
   const data = useMemo(() => callVolumeByFY(filters, granularity).map(d => ({
-    ...d, handledPct: d.offered ? +(d.handled / d.offered * 100).toFixed(1) : 0,
+    ...d, abandonPct: d.offered ? +((d.offered - d.handled) / d.offered * 100).toFixed(1) : 0,
   })), [filters, granularity])
   return (
     <div style={CHART_BOX}>
@@ -342,7 +344,7 @@ function VolumeByFYChart({ filters, granularity }) {
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <Bar yAxisId="l" dataKey="offered" name="Offered" fill={C.offered} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
           <Bar yAxisId="l" dataKey="handled" name="Handled" fill={C.handled} opacity={0.85} radius={[3,3,0,0]} maxBarSize={54} />
-          <Line yAxisId="r" type="monotone" dataKey="handledPct" name="Handled %" stroke={C.pct}
+          <Line yAxisId="r" type="monotone" dataKey="abandonPct" name="Abandon %" stroke={C.pct}
             strokeWidth={2} dot={{ r: 3, fill: C.pct, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>

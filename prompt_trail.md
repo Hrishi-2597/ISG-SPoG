@@ -341,3 +341,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Removed the wrapper's overflow styling entirely (the table is 4 narrow columns, never actually needed horizontal scroll); flipped the tooltip to open below the row instead of above
 - Verified with `npm run build` (clean); dev server was already running with HMR, confirmed the fix picked up live
 - Updated `handoff.md`; committed and pushed to `main`
+
+---
+
+## Prompt 24 — 2026-07-08
+**Input:** "Also call volume card - instead of handled % add abandon % line - logic % of calls abandoned"
+
+**Action:**
+- `MetricCards.jsx`'s `VolumeByFYChart` (Call Volume card's drill-down chart): replaced the `handledPct` line with `abandonPct = (offered - handled) / offered * 100`, renamed to "Abandon %"; kept the same axis/color role since it's still a neutral supplementary rate line, not a variance metric
+- Left the Call Volume card's own face text untouched (still shows handled volume + handle rate) since the request specifically named "a line," i.e. the drill-down chart
+- Verified with `npm run build` (clean); updated `handoff.md`; committed and pushed to `main`
