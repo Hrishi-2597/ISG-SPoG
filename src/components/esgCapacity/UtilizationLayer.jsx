@@ -40,7 +40,9 @@ function UtilFyTip({ active, payload, label }) {
 function Visual1({ filters, granularity }) {
   const data = useMemo(() => utilizationByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Target Utilization" subtitle="Hover a bar to see the Aux codes driving the gap">
+    <Visual title="Actual vs Target Utilization" subtitle="Hover a bar to see the Aux codes driving the gap"
+      rca="Utilization shortfalls trace back to a handful of recurring Aux codes."
+      clca="Add an Aux-code contingency buffer for queues with recurring exposure.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -97,7 +99,9 @@ function QueueBarChart({ data, actualLabel, targetLabel, actualColor, targetColo
 function Visual2({ filters }) {
   const data = useMemo(() => utilizationByQueue(filters), [filters])
   return (
-    <Visual title="Utilization Defaulter Queues" subtitle="Worst utilization gap first">
+    <Visual title="Utilization Defaulter Queues" subtitle="Worst utilization gap first"
+      rca="These queues share the same 2-3 Aux codes as their main driver."
+      clca="Target training/system-downtime fixes at the Aux codes shown here first.">
       <QueueBarChart
         data={data} actualLabel="Actual %" targetLabel="Target %" actualColor={C.metric1} targetColor={C.metric2}
         tooltipExtra={row => (
@@ -116,7 +120,9 @@ function Visual2({ filters }) {
 function Visual3({ filters }) {
   const data = useMemo(() => leavesByQueue(filters), [filters])
   return (
-    <Visual title="Leave Impact — Actual vs Target" subtitle="Highest delta, ascending">
+    <Visual title="Leave Impact — Actual vs Target" subtitle="Highest delta, ascending"
+      rca="Leave overages cluster in a few queues rather than spreading evenly."
+      clca="Add contingent staffing coverage for the queues with the largest leave gap.">
       <QueueBarChart
         data={data} actualLabel="Actual Leaves" targetLabel="Target Leaves" actualColor={C.behind} targetColor={C.metric2}
         tooltipExtra={row => (

@@ -36,7 +36,9 @@ function MainChart({ filters, granularity }) {
     <Visual title="Plan over Plan Variation"
       subtitle={selectedKey ? `${selectedKey} — headcount trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
-      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}>
+      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      rca="Headcount plan variance is widest for LOBs with the newest onboarding."
+      clca="Re-baseline those LOBs' plans using actual ramp data before the next lock.">
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -79,7 +81,9 @@ function LobVarianceChart({ filters }) {
   }
 
   return (
-    <Visual title="LOBs with Highest Variation" subtitle="Plan A vs Plan B, worst variance first">
+    <Visual title="LOBs with Highest Variation" subtitle="Plan A vs Plan B, worst variance first"
+      rca="A small number of LOBs account for most of the plan-to-plan swing."
+      clca="Review these LOBs' plans first — they carry the most headcount risk.">
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />

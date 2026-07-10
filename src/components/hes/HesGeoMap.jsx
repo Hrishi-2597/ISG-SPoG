@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoAdherenceByRegion, regionForCountry } from '../../data/hesData'
+import { GraphInsightButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -40,7 +41,12 @@ export default function HesGeoMap({ filters }) {
       </div>
 
       {open && (
-        <div style={{ padding: 14 }}>
+        <div style={{ padding: 14, position: 'relative' }}>
+          <div style={{ position: 'absolute', top: 12, left: 14, zIndex: 2 }}>
+            <GraphInsightButton
+              rca="Adherence is weakest in regions with the newest onboarded queues."
+              clca="Prioritize ramp-up support for recently onboarded queues in low-adherence regions." />
+          </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Global LOB Adherence Heatmap</p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Adherence % · {filters.lob?.length ? `${filters.lob.length} LOB${filters.lob.length === 1 ? '' : 's'} selected` : 'All LOBs (avg)'}

@@ -52,7 +52,9 @@ function Visual1({ filters }) {
   return (
     <Visual title="Workload Distribution"
       subtitle={mode === 'LOB' ? 'Illustrative CQN priority tiers routed to real LOBs' : 'Illustrative LOB priority tiers routed to real queues'}
-      cornerControls={<BinaryToggle leftLabel="LOB" rightLabel="CQN" value={mode} onChange={setMode} />}>
+      cornerControls={<BinaryToggle leftLabel="LOB" rightLabel="CQN" value={mode} onChange={setMode} />}
+      rca="Flow concentrates into a small number of LOBs/queues rather than spreading evenly."
+      clca="Balance routing rules to reduce concentration in the top-loaded nodes.">
       <ResponsiveContainer width="100%" height={260}>
         <Sankey
           data={data}
@@ -97,7 +99,9 @@ function DefaulterLobList({ filters }) {
 function Visual2({ filters, granularity }) {
   const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Average Case Time Variance">
+    <Visual title="Average Case Time Variance"
+      rca="A handful of LOBs are driving most of the above-plan case time."
+      clca="Prioritize a case-time review for the LOBs topping this list.">
       <ResponsiveContainer width="100%" height={190}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -121,7 +125,9 @@ function Visual2({ filters, granularity }) {
 function Visual3({ filters, granularity }) {
   const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="ACT Trend — Actual vs Plan">
+    <Visual title="ACT Trend — Actual vs Plan"
+      rca="Average Case Time has trended above plan for two consecutive years."
+      clca="Re-baseline the ACT plan using the latest two quarters before the next lock.">
       <ResponsiveContainer width="100%" height={190}>
         <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

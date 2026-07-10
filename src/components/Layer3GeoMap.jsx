@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoRegionData, geoSubRegionRows, regionForCountry, subRegionForCountry, GEO_REGION_DATA } from '../data/mockData'
+import { GraphInsightButton } from './ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -53,18 +54,23 @@ export default function Layer3GeoMap({ filters }) {
 
       {open && (
         <div style={{ padding: 14 }}>
-          {/* Toggle, floated right so the title below can be centered on the panel */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 7, fontSize: 10, marginBottom: 2 }}>
-            <span style={{ color: viewMode === 'Sub-region' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>Sub-region</span>
-            <button onClick={() => setViewMode(v => v === 'Region' ? 'Sub-region' : 'Region')}
-              style={{ position: 'relative', display: 'inline-flex', alignItems: 'center',
-                width: 36, height: 19, borderRadius: 10,
-                background: viewMode === 'Region' ? 'var(--accent)' : 'var(--bg-inset)',
-                border: 'none', cursor: 'pointer', transition: 'background 0.2s', padding: 0 }}>
-              <span style={{ position: 'absolute', top: 3, left: viewMode === 'Region' ? 19 : 3,
-                width: 13, height: 13, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
-            </button>
-            <span style={{ color: viewMode === 'Region' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>Region</span>
+          {/* Insight button on the left, Region/Sub-region toggle floated right so the title below can be centered on the panel */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+            <GraphInsightButton
+              rca="Adherence is weakest in the EMEA and LATAM sub-regions."
+              clca="Target forecasting model updates at the lowest-adherence sub-regions first." />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 10 }}>
+              <span style={{ color: viewMode === 'Sub-region' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>Sub-region</span>
+              <button onClick={() => setViewMode(v => v === 'Region' ? 'Sub-region' : 'Region')}
+                style={{ position: 'relative', display: 'inline-flex', alignItems: 'center',
+                  width: 36, height: 19, borderRadius: 10,
+                  background: viewMode === 'Region' ? 'var(--accent)' : 'var(--bg-inset)',
+                  border: 'none', cursor: 'pointer', transition: 'background 0.2s', padding: 0 }}>
+                <span style={{ position: 'absolute', top: 3, left: viewMode === 'Region' ? 19 : 3,
+                  width: 13, height: 13, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
+              </button>
+              <span style={{ color: viewMode === 'Region' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 500 }}>Region</span>
+            </div>
           </div>
 
           {/* Centered title */}

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 // Shared chart primitives used across every page (Forecasting, HES Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
@@ -15,10 +15,54 @@ export const C = {
   grid: 'var(--chart-grid)', tick: '#4a6a85',
 }
 
-export function Visual({ title, subtitle, children, controls, cornerControls }) {
+// Small per-graph RCA/CLCA popup (2026-07-10) — a lightweight "i" button, deliberately
+// not a full sidebar-style panel: one RCA sentence + one CLCA sentence, since the
+// request was explicit about keeping this small ("don't exaggerate it"). Lives in its
+// own corner (top-left) so it never collides with cornerControls (top-right), which
+// most Region/Sub-region toggles already occupy.
+export function GraphInsightButton({ rca, clca }) {
+  const [open, setOpen] = useState(false)
+  if (!rca && !clca) return null
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="RCA / CLCA for this graph"
+        aria-label="RCA / CLCA for this graph"
+        style={{
+          width: 17, height: 17, borderRadius: '50%', border: '1px solid rgba(56,189,248,0.35)',
+          background: open ? 'var(--accent)' : 'var(--bg-inset)', color: open ? 'var(--accent-contrast)' : 'var(--accent)',
+          fontSize: 9, fontWeight: 700, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', padding: 0, fontStyle: 'italic',
+        }}
+      >i</button>
+      {open && (
+        <div className="chart-tooltip animate-fade-in" style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20, width: 220, textAlign: 'left',
+        }}>
+          {rca && (
+            <>
+              <p style={{ fontSize: 8.5, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.04em' }}>RCA</p>
+              <p style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.35, marginTop: 1, marginBottom: clca ? 6 : 0 }}>{rca}</p>
+            </>
+          )}
+          {clca && (
+            <>
+              <p style={{ fontSize: 8.5, fontWeight: 700, color: '#34d399', letterSpacing: '0.04em' }}>CLCA</p>
+              <p style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.35, marginTop: 1 }}>{clca}</p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
+      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}

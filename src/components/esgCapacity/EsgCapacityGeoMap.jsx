@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoCapacityByRegion, geoCapacityBySubRegion, regionForCountry, subRegionForCountry } from '../../data/esgCapacityData'
-import { BinaryToggle } from '../ChartKit'
+import { BinaryToggle, GraphInsightButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -55,7 +55,12 @@ export default function EsgCapacityGeoMap({ filters }) {
       {open && (
         <div style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <BinaryToggle leftLabel="Headcount" rightLabel="SL%" value={metric} onChange={setMetric} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GraphInsightButton
+                rca="Headcount fulfillment and SL% both lag in the same sub-regions."
+                clca="Prioritize hiring in the sub-regions where both metrics are weak together." />
+              <BinaryToggle leftLabel="Headcount" rightLabel="SL%" value={metric} onChange={setMetric} />
+            </div>
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1 }}>Global Region Performance Overview</p>
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={setViewMode} />
           </div>

@@ -40,8 +40,13 @@ SPoG/
 │   │   ├── Modal.jsx           # Shared popup modal — used by every page's Key Metrics card drill-downs
 │   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by every filter bar
 │   │   ├── ChartKit.jsx        # Shared chart primitives (Visual, Tip, PlanDropdowns, PlanSelect, CategoryTick,
-│   │   │                         truncate, BinaryToggle) — promoted from hes/HesChartKit.jsx (2026-07-03) so both
-│   │   │                         Capacity pages and both Forecasting pages share one implementation
+│   │   │                         truncate, BinaryToggle, GraphInsightButton) — promoted from hes/HesChartKit.jsx
+│   │   │                         (2026-07-03) so both Capacity pages and both Forecasting pages share one
+│   │   │                         implementation. GraphInsightButton (2026-07-10) is the small per-graph RCA/CLCA
+│   │   │                         popup — Visual takes optional rca/clca string props and renders the button
+│   │   │                         for free; ESG Forecasting's Layer1PlanOverPlan.jsx/Layer2ActualVsPlan.jsx (which
+│   │   │                         predate this file and keep their own local Visual) import just the button and
+│   │   │                         wire the same two props into their own local Visual instead
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
@@ -254,6 +259,19 @@ HesCapacityRcaClcaPanel (2026-07-03) — sticky sidebar (position: sticky) along
 The shared `capacity/PlanOverPlanLayer.jsx` component (and its containing `capacity/` folder) was deleted 2026-07-03 once both Capacity pages had their own specialized Plan-over-Plan layer and nothing imported it anymore.
 
 ---
+
+## Per-Graph RCA/CLCA Popup (2026-07-10)
+
+Every chart-level visual on all 4 pages (31 `Visual`-wrapped charts + the 4 Geo Maps, which have their own
+custom layout) carries a small "i" button (`GraphInsightButton`, `ChartKit.jsx`) in its top-left corner. Clicking
+it shows one RCA sentence and one CLCA sentence specific to that graph — separate from, and much shorter than,
+each page's existing RCA/CLCA sidebar (`RcaClcaPanel.jsx`/`HesRcaClcaPanel.jsx`/`EsgCapacityRcaClcaPanel.jsx`/
+`HesCapacityRcaClcaPanel.jsx`), which stays a page-level, multi-bullet panel. `Visual` takes two new optional
+props, `rca`/`clca` (plain strings) — passing them renders the button; omitting both renders nothing, so every
+other `Visual` call site in the app that hasn't been touched continues to work unchanged. The button always sits
+top-left, opposite `cornerControls` (top-right), which many visuals already use for Region/Sub-region-style
+toggles, so the two never collide. Content is illustrative (same convention as the sidebars), one sentence each,
+per the explicit "don't exaggerate it, just a small pop-up" request.
 
 ## Theming (2026-07-02)
 

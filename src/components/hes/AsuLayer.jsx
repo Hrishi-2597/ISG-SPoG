@@ -12,7 +12,9 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      rca="ASU actuals are trending below plan in the most recent fiscal year."
+      clca="Re-forecast ASU using the latest onboarding velocity before the next lock.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -37,7 +39,9 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
 function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => asuPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      rca="Plan B consistently understates ASU relative to Plan A."
+      clca="Reconcile the two plans against actuals before selecting a primary.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -69,7 +73,9 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
+      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      rca="A few LOBs drive most of each region's ASU impact."
+      clca="Focus region reviews on the top-contributing LOBs shown here.">
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

@@ -11,7 +11,9 @@ import { C, Visual, Tip, BinaryToggle, PillButton } from '../ChartKit'
 function Visual1({ filters, granularity }) {
   const data = useMemo(() => fteByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Plan Variation">
+    <Visual title="Actual vs Plan Variation"
+      rca="Staffing variation widens in quarters right after a hiring freeze."
+      clca="Smooth headcount ramp-up across quarters instead of freeze/unfreeze cycles.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -76,7 +78,9 @@ function Visual2({ filters, granularity }) {
     <Visual title="Attrition"
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
-      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}>
+      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      rca="Attrition is highest in sub-regions with the longest backfill lead time."
+      clca="Shorten the backfill pipeline for the sub-regions driving attrition.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -101,7 +105,9 @@ function Visual3({ filters, granularity }) {
   const [lens, setLens] = useState('Region')
   const data = useMemo(() => hesUtilByFY(filters, granularity, lens), [filters, granularity, lens])
   return (
-    <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}>
+    <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}
+      rca="Utilization gaps persist even where headcount is at or above plan."
+      clca="Investigate routing/skill-mix before adding further headcount.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

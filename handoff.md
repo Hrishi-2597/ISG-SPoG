@@ -1,5 +1,13 @@
 # Project Handoff — ISG SPoG ESG Forecasting Dashboard
 
+## Per-Graph RCA/CLCA Popup — Every Chart on All 4 Pages (2026-07-10)
+
+- **New small "i" button on every graph** (35 charts total: 31 chart-panel visuals + 4 Geo Maps), across all 4 pages — ESG Forecasting, HES Forecasting, ESG Capacity Plan, HES Capacity Plan. Clicking it opens a compact popup with one RCA sentence and one CLCA sentence specific to that graph's own metric — deliberately small ("don't exaggerate it"), not a repeat of the page-level RCA/CLCA sidebar's paragraph-length bullets.
+- **New shared `GraphInsightButton` component** (`src/components/ChartKit.jsx`) — a 17px circular "i" toggle + popup, reusing the existing `.chart-tooltip` styling. Wired into the shared `Visual` wrapper via two new optional props (`rca`, `clca`); any chart using `Visual` gets the button for free just by passing those two strings. Sits in the visual's top-left corner, deliberately opposite `cornerControls` (top-right), which many visuals already use for Region/Sub-region toggles.
+- **ESG Forecasting's `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx` predate the shared `ChartKit.jsx` promotion** and still keep their own local `Visual` definitions — rather than migrating them to the shared component (riskier, given each has its own local color-role constants and `Tip` formatting), the same `rca`/`clca` prop handling was added directly to their own local `Visual`, importing only `GraphInsightButton` from `ChartKit.jsx`.
+- **The 4 Geo Maps** (`Layer3GeoMap.jsx`, `HesGeoMap.jsx`, `EsgCapacityGeoMap.jsx`, `HesCapacityGeoMap.jsx`) don't use `Visual` at all (custom layer-header layout) — `GraphInsightButton` was placed directly in each one's own toggle row, positioned via `justify-content: space-between` so it never collides with the existing Region/Sub-region (or dual metric+view) toggles.
+- **Verified**: `npm run build` clean; grep sweep confirming exactly 35 `rca=`/`clca=` pairs (one per graph, no chart missed, no orphaned prop without its pair).
+
 ## Forecast Accuracy Drill-Down: Year-Wise Default, Click-to-Region Pop-Up (2026-07-08)
 
 - **Default view flipped from region to fiscal year.** `ForecastByFYChart` (Actual/Forecast bars + Accuracy% line, by FY) replaces the old always-region view as the Forecast Accuracy card's default drill-down chart.

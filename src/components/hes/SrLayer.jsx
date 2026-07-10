@@ -12,7 +12,9 @@ const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => srByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      rca="SR actuals are outpacing plan as case complexity rises."
+      clca="Add a complexity-adjusted buffer to the SR plan.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -37,7 +39,9 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
 function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => srPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      rca="Plan variance for SR is widest in the most recent quarter."
+      clca="Reconcile plans against the latest actuals before the next AOP cycle.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -66,7 +70,9 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
 
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
-      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}>
+      controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      rca="SR impact concentrates in a small number of LOBs per region."
+      clca="Prioritize staffing reviews for the top LOBs in the highest-impact region.">
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

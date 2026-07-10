@@ -627,6 +627,30 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
+## Per-Graph RCA/CLCA Popup (2026-07-10)
+
+### Small "i" button + one-sentence popup, not a repeat of the sidebar
+**Decision:** `GraphInsightButton` shows exactly one RCA sentence and one CLCA sentence per graph, in a small popup — not a multi-bullet panel like the page-level RCA/CLCA sidebars.
+**Why:** Requested directly and explicitly ("dont exhaugarete it just a small pop up is fine"). The page-level sidebar already covers page-wide findings; a per-graph popup answering "what does *this specific chart* suggest" is a different, narrower question, and keeping it to one sentence each stops 35 new popups from turning into 35 more sidebars' worth of content to author and maintain.
+
+### One shared `Visual`-level prop pair (`rca`/`clca`), not a wrapper component per chart
+**Decision:** The button is wired into the existing shared `Visual` component itself (two new optional string props), rather than asking every chart file to import and manually place a separate `<GraphInsightButton>` element.
+**Why:** With ~35 charts across 4 pages, doing this at the `Visual` level means each individual chart only needed a 2-line prop addition, not a structural change to its JSX. Making the props optional (button renders nothing if both are omitted) meant every existing `Visual` call site elsewhere in the app kept working unchanged during the rollout — the change was purely additive.
+
+### Positioned top-left, opposite `cornerControls`
+**Decision:** The button always sits in the visual's top-left corner; `cornerControls` (Region/Sub-region toggles, Plan selectors, etc.) keeps its existing top-right slot.
+**Why:** Several visuals already place a toggle in the top-right via `cornerControls` — reusing that same slot for the insight button would force a choice between the two on crowded charts. A fixed, dedicated corner for each concern (data-scope controls on the right, this new "why" popup on the left) avoids collisions across all 35 charts without needing to special-case any of them.
+
+### ESG Forecasting's Layer1/Layer2 kept their own local `Visual`, not migrated to the shared one
+**Decision:** `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx` (which predate `ChartKit.jsx`'s promotion and still define their own local `Visual`/`Tip`/color-role constants) got the `rca`/`clca` prop handling added to their *own* local `Visual`, importing only the shared `GraphInsightButton` — they were not migrated to import the shared `Visual` wholesale.
+**Why:** Migrating them would mean reconciling two independently-evolved local `C` color-role objects and `Tip` tooltip formatters against the shared ones — a bigger, riskier change than what was asked for. Extending their local `Visual` with the same two props achieves the same visible feature with much less blast radius; the two files' near-duplicate `Visual` definitions were an accepted, pre-existing state of the codebase (see the ChartKit.jsx promotion entry above), not something this request needed to resolve.
+
+### Geo Maps: button placed directly in each map's own toggle row
+**Decision:** The 4 Geo Maps (which use a custom `layer-header` + content layout, not `Visual`) each got `GraphInsightButton` inserted directly into their existing toggle row, using `justify-content: space-between` so it sits opposite whatever Region/Sub-region (or dual metric+view, for ESG Capacity) toggle already lives there.
+**Why:** These 4 components never adopted `Visual`'s layout, so the prop-based approach didn't apply — but the same "small button, opposite the existing toggle" placement rule was still followed for visual consistency with the other 31 charts, rather than inventing a different treatment for maps.
+
+---
+
 ## What Was Deliberately NOT Done
 
 | Thing skipped | Reason |

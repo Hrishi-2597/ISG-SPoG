@@ -4,6 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance, filterQueues } from '../data/mockData'
+import { GraphInsightButton } from './ChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 const C = { actual: '#38bdf8', plan: '#fb923c', line: '#34d399', ahead: '#34d399', behind: '#f87171', grid: 'var(--chart-grid)', tick: '#4a6a85' }
@@ -34,9 +35,10 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, subtitle, children, controls }) {
+function Visual({ title, subtitle, children, controls, rca, clca }) {
   return (
-    <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2">
+    <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
+      {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
       <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>{title}</p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
@@ -72,7 +74,9 @@ function QueueTick({ x, y, payload }) {
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => actualVsPlanByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
+      rca="Adherence dips concentrate in quarters with seasonal call spikes."
+      clca="Build a seasonal overlay into the forecast model for those quarters.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -117,7 +121,9 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
     )
   }
   return (
-    <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}>
+    <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
+      rca="The >30% variance band has been growing year over year."
+      clca="Audit queues in the >30% band first — they disproportionately hurt overall accuracy.">
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
         {STACK_META.map(({ key, label }) => (
           <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'var(--text-dim)' }}>
@@ -158,7 +164,9 @@ function Visual3({ filters }) {
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
   return (
-    <Visual title="Top Queues by Variance">
+    <Visual title="Top Queues by Variance"
+      rca="Actual-vs-plan misses cluster in a handful of high-volume queues."
+      clca="Re-baseline those queues' plans using the last two quarters of actuals.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={sorted} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />

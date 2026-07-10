@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoSloByRegion, geoSloBySubRegion } from '../../data/hesCapacityData'
 import { regionForCountry, subRegionForCountry } from '../../data/mockData'
-import { BinaryToggle } from '../ChartKit'
+import { BinaryToggle, GraphInsightButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -48,7 +48,10 @@ export default function HesCapacityGeoMap({ filters }) {
 
       {open && (
         <div style={{ padding: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <GraphInsightButton
+              rca="SLO lags in the same regions/sub-regions that also show above-plan ACT."
+              clca="Tie SLO recovery plans to Average Case Time improvement first in those regions." />
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={setViewMode} />
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Worldwide SLO Heatmap</p>

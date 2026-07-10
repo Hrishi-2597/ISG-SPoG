@@ -14,7 +14,9 @@ const PLANS = PLAN_NAMES
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => hcStaffingByFY(filters, granularity), [filters, granularity])
   return (
-    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}>
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      rca="Staffing variation is largest in quarters right after a hiring freeze."
+      clca="Smooth headcount ramp-up across quarters instead of a single freeze/unfreeze cycle.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -82,7 +84,9 @@ function Visual2({ filters, granularity }) {
     <Visual title="Attrition"
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
-      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}>
+      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      rca="Attrition is concentrated in regions with the longest backfill lead time."
+      clca="Shorten the backfill pipeline for the regions driving attrition.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -108,7 +112,9 @@ function Visual3({ filters, granularity }) {
   const data = useMemo(() => slTrendByFY(filters, granularity), [filters, granularity])
   const defaulters = useMemo(() => slDefaulterQueues(filters), [filters])
   return (
-    <Visual title="Headcount Impact on SL">
+    <Visual title="Headcount Impact on SL"
+      rca="Extra headcount alone hasn't closed the SL gap for these defaulter queues."
+      clca="Prioritize a skill-mix/routing review for those queues over further hiring.">
       <ResponsiveContainer width="100%" height={175}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />

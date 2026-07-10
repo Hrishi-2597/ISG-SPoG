@@ -354,6 +354,20 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 ---
 
+## Prompt 29 — 2026-07-10
+**Input:** "i want a extra drill down for RCA and CLCA for each and every graph not cards - for ESG and HES pages...dont exhaugarete it just a small pop up is fine" — asked a scope-clarifying question first (all 4 pages vs. just the 2 Forecasting pages); user confirmed all 4.
+
+**Action:**
+- Added a new shared `GraphInsightButton` component to `ChartKit.jsx` — a small circular "i" toggle that opens a compact popup with one RCA sentence + one CLCA sentence, reusing the existing `.chart-tooltip` styling
+- Wired it into the shared `Visual` component via two new optional props (`rca`/`clca`); passing them renders the button in the visual's top-left corner (opposite `cornerControls`, which many visuals use for Region/Sub-region toggles); omitting both renders nothing, so every untouched `Visual` call site elsewhere kept working
+- Added `rca`/`clca` one-liners to all 31 chart-panel visuals across all 4 pages: ESG Forecasting (`Layer1PlanOverPlan.jsx` ×3, `Layer2ActualVsPlan.jsx` ×3 — both predate the shared `ChartKit.jsx` and got the same prop handling added to their own local `Visual` instead of being migrated), HES Forecasting (`AsuLayer.jsx` ×3, `SrLayer.jsx` ×3, `AsuSrTrendLayer.jsx` ×3), ESG Capacity Plan (`HeadcountLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `UtilizationLayer.jsx` ×3), HES Capacity Plan (`HeadcountAttritionLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `WorkloadDistributionLayer.jsx` ×3)
+- Added the same button directly (not via `Visual`, since these use a custom layout) to all 4 Geo Maps — `Layer3GeoMap.jsx`, `HesGeoMap.jsx`, `EsgCapacityGeoMap.jsx`, `HesCapacityGeoMap.jsx` — positioned in each map's existing toggle row via `justify-content: space-between`
+- Verified with `npm run build` (clean) and a grep sweep confirming exactly 35 matching `rca=`/`clca=` pairs (one per graph, none missing, none orphaned)
+- Started the dev server and opened it in the user's browser for manual verification (no browser-automation tool available this session)
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
 ## Prompt 28 — 2026-07-08
 **Input:** "for forecast accuracy dropdown instead of showing region as default..show year wise accuracy as default and when user clicks on a particular year it should open a pop up again to show region wise"
 
