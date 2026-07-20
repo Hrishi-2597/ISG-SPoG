@@ -5,14 +5,14 @@ import React from 'react'
 // instead of this static list.
 const RCA = [
   'EMEA queues consistently under-forecast in Q2, driven by regional public-holiday call spikes the AOP baseline doesn’t reflect.',
-  'APJ Symmetrix queues show forecast drift correlated with recent SKU launches — the seasonality model underweights new-product ramp volume.',
+  'APJ ApexArray queues show forecast drift correlated with recent SKU launches — the seasonality model underweights new-product ramp volume.',
   'LATAM adherence dip traces back to bilingual-support attrition outpacing planned backfill hiring velocity.',
   'DB-routed NAMER queues track tighter to plan than OSP-routed queues — OSP demand signals appear to lag DB by roughly one fiscal week.',
 ]
 
 const CLCA = [
   'Rebaseline the EMEA holiday calendar into the FY27 forecast model; validate against FY26 actuals before Q3 lock.',
-  'Add a 4-week product-launch overlay for APJ Symmetrix queues to capture ramp volume the standard seasonality curve misses.',
+  'Add a 4-week product-launch overlay for APJ ApexArray queues to capture ramp volume the standard seasonality curve misses.',
   'Pull the LATAM bilingual hiring pipeline forward by 3 weeks and add an 8% contingent-staffing buffer through Q4.',
   'Move OSP demand sensing to a rolling 2-week lookahead so DB/OSP forecasts converge earlier in the cycle.',
 ]

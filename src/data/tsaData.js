@@ -1,8 +1,8 @@
-// Mock data + selectors for the HES Forecasting page (ASU / SR / UCR).
+// Mock data + selectors for the TSA Forecasting page (ASU / SR / UCR).
 // Structurally mirrors mockData.js (multi-select filters as arrays, FY-level charts
 // narrowed by the most specific time filter, real names paired with illustrative
-// numbers) but is a fully separate module — HES Forecasting has its own filter set
-// and metrics, and keeping it decoupled avoids any risk to the ESG Forecasting page.
+// numbers) but is a fully separate module — TSA Forecasting has its own filter set
+// and metrics, and keeping it decoupled avoids any risk to the MSG Forecasting page.
 import {
   FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, FISCAL_MONTH_LIST, BUSINESS_PARTNERS, REGIONS,
   regionForCountry, matchesMulti, inferRegion, periodsForGranularity, expandToGranularity, expandRateToGranularity,
@@ -10,26 +10,26 @@ import {
 
 export { FISCAL_MONTH_LIST }
 
-// Real Dell ISG product/technology lines (business-supplied).
+// Real Enterprise TSG product/technology lines (business-supplied).
 export const LOB_LIST = [
-  'Avamar', 'BSAFE', 'Connectivity', 'DataDomain', 'DLM', 'DPA', 'DPSolutions',
-  'E2E Connectivity', 'Enterprise', 'GIST', 'Global Solutions', 'High End Storage',
-  'Hyperconverged', 'Integrated_Software', 'Mainframe', 'Midrange', 'Networker',
-  'Networking', 'OBJ', 'Powerflex', 'PowerProtect', 'PowerProtect Cyber', 'PowerScale',
-  'RecoverPoint', 'RPS', 'Server', 'Storage', 'Symmetrix', 'SymmSW', 'VCF', 'Vplex',
-  'Wipro', 'XtremIO',
+  'BackupWave', 'CryptoGuard', 'Connectivity', 'DataVault', 'DLX', 'DPQ', 'CoreSolutions',
+  'E2E Connectivity', 'Enterprise', 'NEXUS', 'Global Solutions', 'High End Storage',
+  'Hyperconverged', 'Integrated_Software', 'Mainframe', 'Midrange', 'BackupLink',
+  'Networking', 'OBJ', 'FlexCore', 'ProtectCore', 'ProtectCore Cyber', 'ScaleVault',
+  'GuardPoint', 'RPX', 'Server', 'Storage', 'ApexArray', 'ApexSW', 'CloudBase', 'MeshLink',
+  'NovaTech Partners', 'FlashCore',
 ]
 
 // Real business-supplied groupings (confirmed 2026-07-03 via screenshot), replacing
 // the earlier inferred ['Consumer','Commercial','Enterprise'] placeholder.
-export const GLOBAL_GROUPING_LIST = ['COMPUTE/NETWORKING', 'DPD/UDS', 'HCS', 'OTHER', 'PRIMARY/MIDRANGE']
+export const GLOBAL_GROUPING_LIST = ['COMPUTE/NETWORKING', 'DPU/UDX', 'HCX', 'OTHER', 'PRIMARY/MIDRANGE']
 
-const HES_FILTER_KEYS = ['lob', 'businessPartner', 'globalGrouping']
-const HES_FIELD_BY_KEY = { lob: 'lob', businessPartner: 'businessPartner', globalGrouping: 'globalGrouping' }
+const TSA_FILTER_KEYS = ['lob', 'businessPartner', 'globalGrouping']
+const TSA_FIELD_BY_KEY = { lob: 'lob', businessPartner: 'businessPartner', globalGrouping: 'globalGrouping' }
 
 // Week > Month > Quarter > Year precedence, same idea as Forecasting's effectiveFiscalYears,
 // extended with the extra Month granularity this page's filter bar has.
-export function hesEffectiveFiscalYears(filters = {}) {
+export function tsaEffectiveFiscalYears(filters = {}) {
   const picked = (filters.fiscalWeek?.length && filters.fiscalWeek)
     || (filters.fiscalMonth?.length && filters.fiscalMonth)
     || (filters.fiscalQuarter?.length && filters.fiscalQuarter)
@@ -50,7 +50,7 @@ export const LOB_FACTS = LOB_LIST.map((lob, i) => ({
 
 export function filterLobs(filters = {}) {
   return LOB_FACTS.filter(l =>
-    HES_FILTER_KEYS.every(key => matchesMulti(filters[key], l[HES_FIELD_BY_KEY[key]]))
+    TSA_FILTER_KEYS.every(key => matchesMulti(filters[key], l[TSA_FIELD_BY_KEY[key]]))
   )
 }
 
@@ -95,7 +95,7 @@ export const SR_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map(fy => ({
 }))
 
 export function asuByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
   const fyRows = ASU_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
@@ -104,7 +104,7 @@ export function asuByFY(filters = {}, granularity) {
 }
 
 export function srByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
   const fyRows = SR_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, plan: Math.round(d.plan * ratio), actual: Math.round(d.actual * ratio) }))
@@ -113,7 +113,7 @@ export function srByFY(filters = {}, granularity) {
 }
 
 export function asuPlanVsPlanByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
   const fyRows = ASU_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
@@ -122,7 +122,7 @@ export function asuPlanVsPlanByFY(filters = {}, granularity) {
 }
 
 export function srPlanVsPlanByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const ratio = lobScopeRatio(filters)
   const fyRows = SR_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * ratio), plan2: Math.round(d.plan2 * ratio) }))
@@ -155,7 +155,7 @@ export const UCR_BY_FY = FISCAL_YEARS.map(fy => ({
 // (see design_choice.md), since the toggle is meant to make every time-axis chart
 // interactive, not just some of them.
 export function ucrByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const fyRows = UCR_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, target: d.target, current: d.current }))
   return expandRateToGranularity(fyRows, granularity, ['target', 'current'])
@@ -207,64 +207,64 @@ export function topNonAdherentLobsByYear(filters = {}, period, count = 5) {
 export const LOB_QUEUES = {
   'High End Storage': {
     active: [
-      'APJ DPD AVAMAR', 'APJ DPD AVAMAR Chinese', 'APJ DPD DataDomain', 'APJ DPD DataDomain Chinese',
-      'APJ DPD Networker', 'APJ DPD Networker Chinese', 'APJ HES Connectivity Chinese', 'APJ HES CST Chinese',
-      'APJ HES Integrated_Software Chinese', 'APJ HES MIDRANGE Chinese', 'APJ HES MIDRANGE Japanese',
-      'APJ HES Symmetrix Chinese', 'APJ HES Symmetrix Japanese', 'APJ HES Symmetrix Korean',
-      'APJ HES SymmSW Chinese', 'APJ HES Vplex Chinese', 'APJ HES XtremIO', 'APJ UDS PowerScale Chinese',
-      'APJ UDS PowerScale Japanese', 'EMEA DPD AVAMAR', 'EMEA DPD DataDomain', 'EMEA DPD Networker',
-      'EMEA UDS PowerScale', 'Global Compute Hardware', 'Global Connectivity Backline', 'Global Connectivity FL',
-      'Global DLM Backline', 'GLOBAL DPD AVAMAR', 'GLOBAL DPD DataDomain', 'GLOBAL DPD DPA',
-      'GLOBAL DPD DPSolutions', 'GLOBAL DPD Networker', 'GLOBAL DPD PowerProtect', 'Global DPD PowerProtect Cyber',
-      'GLOBAL DPD RecoverPoint', 'Global ESG Midrange Backline', 'GLOBAL HES Integrated_Software',
-      'GLOBAL HES MIDRANGE Backline', 'Global HES Midrange FL', 'Global Integrated Software FL',
-      'Global Mainframe Backline', 'Global Networking', 'Global PowerEdge DSE', 'Global Solutions HCI DE',
-      'Global Solutions MS DE', 'Global Symmetrix Backline', 'Global Symmetrix FL', 'Global Symmetrix SW FL',
-      'Global SymmSW Backline', 'Global TELCO', 'GLOBAL UDS OBJ', 'GLOBAL UDS PowerScale',
-      'Global Vplex Backline', 'Global Vplex FL', 'Global VxRail', 'Global VxRail Domain Engineer',
-      'HCS APJ VxRail Chinese', 'HCS APJ VxRail Japanese', 'HCS APJ VxRail Korean', 'HCS LATAM BRZ VxRail',
-      'HCS LATAM MMCLA VxRail', 'LATAM Avamar Portuguese', 'LATAM Avamar Spanish', 'LATAM DataDomain Portuguese',
-      'LATAM DataDomain Spanish', 'LATAM ECS Portuguese', 'LATAM ECS Spanish', 'LATAM Networker Portuguese',
-      'LATAM Networker Spanish', 'LATAM PowerScale Portuguese', 'LATAM PowerScale Spanish',
-      'LATAM Primary Storage Portuguese', 'LATAM Primary Storage Spanish', 'NAMER DPD AVAMAR',
-      'NAMER DPD DataDomain', 'NAMER DPD Networker', 'NAMER UDS PowerScale', 'RPS Remote Proactive Services',
+      'APJ DPU BACKUPWAVE', 'APJ DPU BACKUPWAVE Chinese', 'APJ DPU DataVault', 'APJ DPU DataVault Chinese',
+      'APJ DPU BackupLink', 'APJ DPU BackupLink Chinese', 'APJ TSA Connectivity Chinese', 'APJ TSA CSX Chinese',
+      'APJ TSA Integrated_Software Chinese', 'APJ TSA MIDRANGE Chinese', 'APJ TSA MIDRANGE Japanese',
+      'APJ TSA ApexArray Chinese', 'APJ TSA ApexArray Japanese', 'APJ TSA ApexArray Korean',
+      'APJ TSA ApexSW Chinese', 'APJ TSA MeshLink Chinese', 'APJ TSA FlashCore', 'APJ UDX ScaleVault Chinese',
+      'APJ UDX ScaleVault Japanese', 'EMEA DPU BACKUPWAVE', 'EMEA DPU DataVault', 'EMEA DPU BackupLink',
+      'EMEA UDX ScaleVault', 'Global Compute Hardware', 'Global Connectivity Backline', 'Global Connectivity FL',
+      'Global DLX Backline', 'GLOBAL DPU BACKUPWAVE', 'GLOBAL DPU DataVault', 'GLOBAL DPU DPQ',
+      'GLOBAL DPU CoreSolutions', 'GLOBAL DPU BackupLink', 'GLOBAL DPU ProtectCore', 'Global DPU ProtectCore Cyber',
+      'GLOBAL DPU GuardPoint', 'Global MSG Midrange Backline', 'GLOBAL TSA Integrated_Software',
+      'GLOBAL TSA MIDRANGE Backline', 'Global TSA Midrange FL', 'Global Integrated Software FL',
+      'Global Mainframe Backline', 'Global Networking', 'Global EdgeCore DSE', 'Global Solutions HCI DE',
+      'Global Solutions MS DE', 'Global ApexArray Backline', 'Global ApexArray FL', 'Global ApexArray SW FL',
+      'Global ApexSW Backline', 'Global TELCO', 'GLOBAL UDX OBJ', 'GLOBAL UDX ScaleVault',
+      'Global MeshLink Backline', 'Global MeshLink FL', 'Global RailFlex', 'Global RailFlex Domain Engineer',
+      'HCX APJ RailFlex Chinese', 'HCX APJ RailFlex Japanese', 'HCX APJ RailFlex Korean', 'HCX LATAM BRZ RailFlex',
+      'HCX LATAM MMCLA RailFlex', 'LATAM BackupWave Portuguese', 'LATAM BackupWave Spanish', 'LATAM DataVault Portuguese',
+      'LATAM DataVault Spanish', 'LATAM ElastiStore Portuguese', 'LATAM ElastiStore Spanish', 'LATAM BackupLink Portuguese',
+      'LATAM BackupLink Spanish', 'LATAM ScaleVault Portuguese', 'LATAM ScaleVault Spanish',
+      'LATAM Primary Storage Portuguese', 'LATAM Primary Storage Spanish', 'NAMER DPU BACKUPWAVE',
+      'NAMER DPU DataVault', 'NAMER DPU BackupLink', 'NAMER UDX ScaleVault', 'RPX Remote Proactive Services',
     ],
     inactive: [
-      'AMER English Avamar', 'AMER English Connectivity', 'AMER English DataDomain',
-      'AMER English Integrated Software', 'AMER English Networker', 'AMER English OBJ',
-      'AMER English PowerScale', 'AMER English VMAX', 'AMER English Vplex', 'AMER English XtremIO',
-      'ANZ Midrange Storage VNX/e', 'ANZ VX Rail Storage', 'APJ DPD DPSolutions', 'APJ DPD DPSolutions Chinese',
-      'APJ English Midrange', 'APJ English PowerScale', 'APJ English VXRail', 'APJ HES Connectivity',
-      'APJ HES Integrated_Software', 'APJ HES MIDRANGE', 'APJ HES Symmetrix', 'APJ HES SymmSW',
-      'APJ HES Vplex', 'APJ UDS OBJ', 'APJ UDS PowerScale', 'CCC HES VXRail Hyperconverged',
-      'CCC Midrange Storage VNX/e', 'CCC VX Rail Storage', 'EMEA English Avamar', 'EMEA English Connectivity',
-      'EMEA English DataDomain', 'EMEA English Integrated Software', 'EMEA English Networker',
-      'EMEA English OBJ', 'EMEA English PowerScale', 'EMEA English VMAX', 'EMEA English Vplex',
-      'EMEA English XtremIO', 'EMEA HES Connectivity', 'EMEA HES Integrated_Software', 'EMEA HES MIDRANGE',
-      'EMEA HES Symmetrix', 'EMEA HES SymmSW', 'EMEA HES Vplex', 'EMEA HES XtremIO', 'EMEA PowerScale CTE',
-      'EMEA UDS OBJ', 'French Midrange', 'French VXRail', 'German Midrange', 'German VXRail',
-      'GLOBAL DPD Cloudboost', 'GLOBAL DPD DPADSRT', 'GLOBAL DPD SOURCEONE', 'GLOBAL HES MIDRANGE',
-      'GLOBAL HES XtremIO', 'Global VxRail CTE', 'HCS APJ VxRail', 'HCS APJ VxRail English NAMER AOH',
-      'HCS EMEA VxRail', 'HCS Global APEX', 'HCS Global Cloud Solutions', 'HCS Global Converged',
-      'HCS Global PowerFlex', 'HCS Global Solutions', 'HCS Global Vmware', 'HCS Global VxRail',
-      'HCS INDIA VxRail', 'HCS LATAM VxRail', 'HCS NAMER VxRail', 'HES Global AVAMAR', 'HES Global Cloudboost',
-      'HES Global Connectivity', 'HES Global CST Chat', 'HES Global DataDomain', 'HES Global DLM',
-      'HES Global DPA', 'HES Global DPADSRT', 'HES Global DPSolutions', 'HES Global DPSolutions WIPRO',
-      'HES Global E2E CONNECTIVITY', 'HES Global Hyperconverged', 'HES Global Mainframe',
-      'HES Global Networker', 'HES Global OBJ', 'HES Global PowerScale', 'HES Global PowerScale Support',
-      'HES Global RecoverPoint', 'HES Global RecoverPoint WIPRO', 'HES Global Solutions',
-      'HES Global SOURCEONE', 'HES Global SSG', 'HES Global SymmSW', 'HES Global VMAX', 'HES Global Vplex',
-      'HES Global XtremIO', 'IND Midrange Storage VNX/e', 'India DPD AVAMAR', 'India DPD DataDomain',
-      'India DPD Networker', 'India HES Connectivity', 'India HES Integrated_Software', 'INDIA HES MIDRANGE',
-      'India HES SymmSW', 'India HES Vplex', 'India HES XtremIO', 'India UDS OBJ', 'India UDS PowerScale',
-      'Italian Midrange', 'JP Midrange Storage VNX/e', 'JP VX Rail Storage', 'LATAM DPD AVAMAR',
-      'LATAM DPD DataDomain', 'LATAM DPD DPA', 'LATAM DPD Networker', 'LATAM HES MIDRANGE',
-      'LATAM HES Symmetrix', 'LATAM HES SymmSW', 'LATAM UDS OBJ', 'LATAM UDS PowerScale',
-      'Midrange Storage VNX/e', 'MMCLA Midrange Storage VNX/e', 'MMCLA Midrange Storage VNX/e Spanish',
-      'MMCLA VXRail Spanish', 'NA Midrange Storage VNX/e', 'NA PowerScale HE Storage Voice',
-      'NA VX Rail Storage', 'NAMER HES Connectivity', 'NAMER HES Integrated_Software', 'NAMER HES MIDRANGE',
-      'NAMER HES Symmetrix', 'NAMER HES SymmSW', 'NAMER HES Vplex', 'NAMER HES XtremIO', 'NAMER UDS OBJ',
-      'POR Midrange Storage VNX/e', 'Spanish Midrange', 'Spanish VXRail', 'UKI Midrange', 'UKI VXRail', 'VXRail',
+      'AMER English BackupWave', 'AMER English Connectivity', 'AMER English DataVault',
+      'AMER English Integrated Software', 'AMER English BackupLink', 'AMER English OBJ',
+      'AMER English ScaleVault', 'AMER English ApexMax', 'AMER English MeshLink', 'AMER English FlashCore',
+      'ANZ Midrange Storage NexaVault', 'ANZ RailFlex Storage', 'APJ DPU CoreSolutions', 'APJ DPU CoreSolutions Chinese',
+      'APJ English Midrange', 'APJ English ScaleVault', 'APJ English RailFlex', 'APJ TSA Connectivity',
+      'APJ TSA Integrated_Software', 'APJ TSA MIDRANGE', 'APJ TSA ApexArray', 'APJ TSA ApexSW',
+      'APJ TSA MeshLink', 'APJ UDX OBJ', 'APJ UDX ScaleVault', 'CCC TSA RailFlex Hyperconverged',
+      'CCC Midrange Storage NexaVault', 'CCC RailFlex Storage', 'EMEA English BackupWave', 'EMEA English Connectivity',
+      'EMEA English DataVault', 'EMEA English Integrated Software', 'EMEA English BackupLink',
+      'EMEA English OBJ', 'EMEA English ScaleVault', 'EMEA English ApexMax', 'EMEA English MeshLink',
+      'EMEA English FlashCore', 'EMEA TSA Connectivity', 'EMEA TSA Integrated_Software', 'EMEA TSA MIDRANGE',
+      'EMEA TSA ApexArray', 'EMEA TSA ApexSW', 'EMEA TSA MeshLink', 'EMEA TSA FlashCore', 'EMEA ScaleVault CTE',
+      'EMEA UDX OBJ', 'French Midrange', 'French RailFlex', 'German Midrange', 'German RailFlex',
+      'GLOBAL DPU CloudLift', 'GLOBAL DPU DPADSRT', 'GLOBAL DPU ArchiveOne', 'GLOBAL TSA MIDRANGE',
+      'GLOBAL TSA FlashCore', 'Global RailFlex CTE', 'HCX APJ RailFlex', 'HCX APJ RailFlex English NAMER AOH',
+      'HCX EMEA RailFlex', 'HCX Global SummitLine', 'HCX Global Cloud Solutions', 'HCX Global Converged',
+      'HCX Global FlexCore', 'HCX Global Solutions', 'HCX Global VirtuStack', 'HCX Global RailFlex',
+      'HCX INDIA RailFlex', 'HCX LATAM RailFlex', 'HCX NAMER RailFlex', 'TSA Global BACKUPWAVE', 'TSA Global CloudLift',
+      'TSA Global Connectivity', 'TSA Global CSX Chat', 'TSA Global DataVault', 'TSA Global DLX',
+      'TSA Global DPQ', 'TSA Global DPADSRT', 'TSA Global CoreSolutions', 'TSA Global CoreSolutions NOVATECH PARTNERS',
+      'TSA Global E2E CONNECTIVITY', 'TSA Global Hyperconverged', 'TSA Global Mainframe',
+      'TSA Global BackupLink', 'TSA Global OBJ', 'TSA Global ScaleVault', 'TSA Global ScaleVault Support',
+      'TSA Global GuardPoint', 'TSA Global GuardPoint NOVATECH PARTNERS', 'TSA Global Solutions',
+      'TSA Global ArchiveOne', 'TSA Global SSG', 'TSA Global ApexSW', 'TSA Global ApexMax', 'TSA Global MeshLink',
+      'TSA Global FlashCore', 'IND Midrange Storage NexaVault', 'India DPU BACKUPWAVE', 'India DPU DataVault',
+      'India DPU BackupLink', 'India TSA Connectivity', 'India TSA Integrated_Software', 'INDIA TSA MIDRANGE',
+      'India TSA ApexSW', 'India TSA MeshLink', 'India TSA FlashCore', 'India UDX OBJ', 'India UDX ScaleVault',
+      'Italian Midrange', 'JP Midrange Storage NexaVault', 'JP RailFlex Storage', 'LATAM DPU BACKUPWAVE',
+      'LATAM DPU DataVault', 'LATAM DPU DPQ', 'LATAM DPU BackupLink', 'LATAM TSA MIDRANGE',
+      'LATAM TSA ApexArray', 'LATAM TSA ApexSW', 'LATAM UDX OBJ', 'LATAM UDX ScaleVault',
+      'Midrange Storage NexaVault', 'MMCLA Midrange Storage NexaVault', 'MMCLA Midrange Storage NexaVault Spanish',
+      'MMCLA RailFlex Spanish', 'NA Midrange Storage NexaVault', 'NA ScaleVault HE Storage Voice',
+      'NA RailFlex Storage', 'NAMER TSA Connectivity', 'NAMER TSA Integrated_Software', 'NAMER TSA MIDRANGE',
+      'NAMER TSA ApexArray', 'NAMER TSA ApexSW', 'NAMER TSA MeshLink', 'NAMER TSA FlashCore', 'NAMER UDX OBJ',
+      'POR Midrange Storage NexaVault', 'Spanish Midrange', 'Spanish RailFlex', 'UKI Midrange', 'UKI RailFlex', 'RailFlex',
     ],
   },
 }
@@ -275,19 +275,19 @@ export const LOB_QUEUES = {
 // year-click modal of top-5 non-adherent LOBs. LOB_QUEUES's real names are now
 // used by the Total Queues card below instead.
 
-// ── HES Total Queues (Key Metrics card) ────────────────────────────────────────
+// ── TSA Total Queues (Key Metrics card) ────────────────────────────────────────
 // The business-supplied active/inactive queue lists for this page — same role
 // ACTIVE_QUEUE_NAMES/INACTIVE_QUEUE_NAMES play for the Forecasting page's Total
 // Queues card. Sourced from LOB_QUEUES['High End Storage'], the only per-queue
-// list supplied so far; treated as the page-level HES queue roster rather than
+// list supplied so far; treated as the page-level TSA queue roster rather than
 // scoped to one LOB, since it's the only real queue-name data this page has.
-export const HES_ACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].active
-export const HES_INACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].inactive
+export const TSA_ACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].active
+export const TSA_INACTIVE_QUEUE_NAMES = LOB_QUEUES['High End Storage'].inactive
 
 // Region tagged via the same name-prefix inference mockData.js uses for its own
 // queue fact table (APJ/EMEA/LATAM/NAMER prefixes, else 'Global') — reused rather
 // than duplicated, since the naming convention is identical across both queue lists.
-export const HES_ACTIVE_QUEUES = HES_ACTIVE_QUEUE_NAMES.map(name => ({
+export const TSA_ACTIVE_QUEUES = TSA_ACTIVE_QUEUE_NAMES.map(name => ({
   name, region: inferRegion(name),
 }))
 
@@ -340,7 +340,7 @@ export function srLobImpact(region, count = 6) {
 // ── CPASU Trend (Layer 3, Visual 1) — regions shown by default, click a region ─
 // to drill into its own trend at whatever time granularity is most specific in
 // the top filter bar (Week > Quarter > Year), same precedence idea as
-// hesEffectiveFiscalYears but exposed as real distinct periods, not collapsed years.
+// tsaEffectiveFiscalYears but exposed as real distinct periods, not collapsed years.
 const REGION_SHARE = { AMER: 0.38, EMEA: 0.27, APJ: 0.22, Global: 0.13 }
 
 export function cpasuByRegion(filters = {}) {
@@ -360,7 +360,7 @@ export function cpasuByRegion(filters = {}) {
 // A falsy/'Year' value (the toggle's default, nothing selected) means plain fiscal
 // years, same as every other chart's untouched default — not "fall back to Quarter."
 export function regionTrendGranularity(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   if (!granularity || granularity === 'Year') return { granularity: 'Year', periods: years }
   return { granularity, periods: periodsForGranularity(granularity, years) }
 }
@@ -411,10 +411,10 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // Latest in-scope fiscal year's snapshot for each of the 5 KPI cards, plus a
 // YTD-vs-prior-year delta for the 3 cards that show a YTD message (ASU/SR/CPASU).
-// totalQueues doesn't depend on filters — the HES queue roster has no per-queue
+// totalQueues doesn't depend on filters — the TSA queue roster has no per-queue
 // lob/businessPartner/globalGrouping tags to narrow by, same reasoning as why
 // "UCR Runrate with Target" ignores Quarter/Week filters.
-export function hesCardData(filters = {}) {
+export function tsaCardData(filters = {}) {
   const asu = asuByFY(filters)
   const sr = srByFY(filters)
   const ucr = ucrByFY(filters)
@@ -427,7 +427,7 @@ export function hesCardData(filters = {}) {
   const latestCpasu = cpasu[cpasu.length - 1]
   const prevCpasu = cpasu[cpasu.length - 2]
   return {
-    totalQueues: { active: HES_ACTIVE_QUEUE_NAMES.length, inactive: HES_INACTIVE_QUEUE_NAMES.length },
+    totalQueues: { active: TSA_ACTIVE_QUEUE_NAMES.length, inactive: TSA_INACTIVE_QUEUE_NAMES.length },
     asuActuals: {
       value: latestAsu?.actual ?? 0, plan: latestAsu?.plan ?? 0, adherence: latestAsu?.adherence ?? 0,
       period: latestAsu?.period, prevPeriod: prevAsu?.period, yoyPct: yoyPct(latestAsu?.actual, prevAsu?.actual),

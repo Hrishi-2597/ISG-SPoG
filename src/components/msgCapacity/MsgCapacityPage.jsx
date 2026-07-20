@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import EsgCapacityFilterPanel from './EsgCapacityFilterPanel'
-import EsgCapacityMetricCards from './EsgCapacityMetricCards'
+import MsgCapacityFilterPanel from './MsgCapacityFilterPanel'
+import MsgCapacityMetricCards from './MsgCapacityMetricCards'
 import HeadcountLayer from './HeadcountLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import UtilizationLayer from './UtilizationLayer'
-import EsgCapacityGeoMap from './EsgCapacityGeoMap'
-import EsgCapacityRcaClcaPanel from './EsgCapacityRcaClcaPanel'
+import MsgCapacityGeoMap from './MsgCapacityGeoMap'
+import MsgCapacityRcaClcaPanel from './MsgCapacityRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 const DEFAULT_FILTERS = {
@@ -22,16 +22,16 @@ const DEFAULT_FILTERS = {
   dbOsp: 'DB',
 }
 
-export default function EsgCapacityPage() {
+export default function MsgCapacityPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [granularity, setGranularity] = useState(null)
 
   return (
     <>
-      <EsgCapacityFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
+      <MsgCapacityFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
 
       <SectionDivider label="Key Metrics" />
-      <EsgCapacityMetricCards filters={filters} granularity={granularity} />
+      <MsgCapacityMetricCards filters={filters} granularity={granularity} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
         <div className="flex-1 min-w-0">
@@ -40,12 +40,12 @@ export default function EsgCapacityPage() {
             <HeadcountLayer filters={filters} granularity={granularity} />
             <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
             <UtilizationLayer filters={filters} granularity={granularity} />
-            <EsgCapacityGeoMap filters={filters} />
+            <MsgCapacityGeoMap filters={filters} />
           </div>
         </div>
 
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <EsgCapacityRcaClcaPanel />
+          <MsgCapacityRcaClcaPanel />
         </div>
       </div>
     </>

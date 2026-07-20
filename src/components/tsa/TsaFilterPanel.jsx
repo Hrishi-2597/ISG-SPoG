@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   LOB_LIST, GLOBAL_GROUPING_LIST, FISCAL_MONTH_LIST,
-} from '../../data/hesData'
+} from '../../data/tsaData'
 import { FISCAL_YEARS, FISCAL_QUARTERS, FISCAL_WEEK_LIST, BUSINESS_PARTNERS } from '../../data/mockData'
 import MultiSelectField from '../MultiSelectField'
 import GranularityToggle from '../GranularityToggle'
@@ -35,7 +35,7 @@ function ClusterDivider() {
   return <div style={{ width: 1, alignSelf: 'stretch', background: 'linear-gradient(180deg, transparent, rgba(56,189,248,0.18) 30%, rgba(56,189,248,0.18) 70%, transparent)', margin: '0 14px' }} />
 }
 
-export default function HesFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
+export default function TsaFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
   const defs = {

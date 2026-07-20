@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import HesFilterPanel from './HesFilterPanel'
-import HesMetricCards from './HesMetricCards'
+import TsaFilterPanel from './TsaFilterPanel'
+import TsaMetricCards from './TsaMetricCards'
 import AsuLayer from './AsuLayer'
 import SrLayer from './SrLayer'
 import AsuSrTrendLayer from './AsuSrTrendLayer'
-import HesGeoMap from './HesGeoMap'
-import HesRcaClcaPanel from './HesRcaClcaPanel'
+import TsaGeoMap from './TsaGeoMap'
+import TsaRcaClcaPanel from './TsaRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 // Every filter is multi-select: [] means "no selection = All" — same convention as
@@ -20,7 +20,7 @@ const DEFAULT_FILTERS = {
   globalGrouping: [],
 }
 
-export default function HesForecastingPage() {
+export default function TsaForecastingPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   // Page-wide "view by" granularity — Quarter/Month/Week — separate from the value
   // filters above: it changes what axis every time-series chart renders at, not
@@ -31,10 +31,10 @@ export default function HesForecastingPage() {
 
   return (
     <>
-      <HesFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
+      <TsaFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
 
       <SectionDivider label="Key Metrics" />
-      <HesMetricCards filters={filters} granularity={granularity} />
+      <TsaMetricCards filters={filters} granularity={granularity} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
         <div className="flex-1 min-w-0">
@@ -43,12 +43,12 @@ export default function HesForecastingPage() {
             <AsuLayer filters={filters} granularity={granularity} />
             <SrLayer filters={filters} granularity={granularity} />
             <AsuSrTrendLayer filters={filters} granularity={granularity} />
-            <HesGeoMap filters={filters} />
+            <TsaGeoMap filters={filters} />
           </div>
         </div>
 
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <HesRcaClcaPanel />
+          <TsaRcaClcaPanel />
         </div>
       </div>
     </>

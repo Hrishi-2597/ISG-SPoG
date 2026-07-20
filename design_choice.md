@@ -1,4 +1,4 @@
-# Design Choices — ISG SPoG ESG Forecasting Dashboard
+# Design Choices — TSG SPoG MSG Forecasting Dashboard
 
 A record of every significant design decision made, with the reasoning behind it.
 
@@ -20,7 +20,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### Typography
 **Decision:** `'Segoe UI', system-ui, sans-serif` — no custom font loaded.
-**Why:** Avoids a network request, matches Windows/Dell corporate environments, and renders crisply at small sizes (10–12px labels in chart axes).
+**Why:** Avoids a network request, matches Windows/Enterprise corporate environments, and renders crisply at small sizes (10–12px labels in chart axes).
 
 ### Text Size Strategy
 - Filter labels: 10px uppercase tracking-wide
@@ -62,7 +62,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Decision:** Clicking a KPI card opens a panel directly below the cards row, not a modal overlay.
 **Why:** Modals interrupt workflow. An inline panel lets the user see both the card value and the detail table simultaneously without losing context of other cards.
 **One deliberate exception (2026-07-01):** Clicking a year's bar inside the CQN Variance drill-down opens an actual modal (backdrop + centered card) listing that year's example queues. This is a second level of drill nested inside the first — by the time you're two levels deep, "context of the other cards" isn't the thing you're trying to preserve; a floating overlay reads more clearly than squeezing another chart into an already-open panel.
-**Superseded (2026-07-02):** Requested directly for both pages — card drill-downs now open in the shared `Modal` (`src/components/Modal.jsx`), same as HES Forecasting. See "Card drill-downs: modal popups on the Forecasting page too" below. The CQN Variance year-click modal is unaffected (still its own nested overlay), it's just nested one level deeper now (a modal inside a modal) instead of a modal inside an inline panel.
+**Superseded (2026-07-02):** Requested directly for both pages — card drill-downs now open in the shared `Modal` (`src/components/Modal.jsx`), same as TSA Forecasting. See "Card drill-downs: modal popups on the Forecasting page too" below. The CQN Variance year-click modal is unaffected (still its own nested overlay), it's just nested one level deeper now (a modal inside a modal) instead of a modal inside an inline panel.
 
 ### Drill toggle (FY / Quarter / Week) as segmented control (removed 2026-07-01)
 **Decision:** Three-button segmented control per visual instead of a dropdown.
@@ -79,7 +79,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### CQN chart orientation — horizontal bars
 **Decision:** Visual 3 in both Layer 1 and Layer 2 uses a horizontal (layout="vertical") bar chart.
-**Why:** Real queue names (e.g. `EMEA DPD AVAMAR`, `NAMER DPD DataDomain`) are long strings — they fit naturally on the Y axis. Vertical bars with queue names on the X axis would require angled labels and wasted space. YAxis width was widened to 130px (from the original CQN-code-era 58–60px) once real names replaced short placeholder codes.
+**Why:** Real queue names (e.g. `EMEA DPU BACKUPWAVE`, `NAMER DPU DataVault`) are long strings — they fit naturally on the Y axis. Vertical bars with queue names on the X axis would require angled labels and wasted space. YAxis width was widened to 130px (from the original CQN-code-era 58–60px) once real names replaced short placeholder codes.
 
 ---
 
@@ -129,8 +129,8 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 - `peaceiris/actions-gh-pages` pushes the `dist/` output to a `gh-pages` branch, which works with the classic "Deploy from branch" Pages setup
 - More predictable — the `gh-pages` branch is visible in the repo, easy to inspect and debug
 
-### vite base = '/ISG-SPoG/'
-**Decision:** Set `base: '/ISG-SPoG/'` in `vite.config.js`.
+### vite base = '/TSG-SPoG/'
+**Decision:** Set `base: '/TSG-SPoG/'` in `vite.config.js`.
 **Why:** GitHub Pages serves project sites (non-org/non-custom-domain) under `/<repo-name>/`. Without this base, all asset paths (`/assets/index.js`) resolve to the root domain and return 404.
 
 ---
@@ -195,7 +195,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### Monospace font for Queue Name & Capacity Code values
 **Decision:** Those two fields render in a system monospace stack; every other filter stays in Space Grotesk.
-**Why:** They're literal system codes (`AM02`, `EMEA DPD AVAMAR`), not prose — the drill-down table already used monospace for queue names (see Layer 3 CQN tables). Extending that convention to the filter itself makes "this is a code" legible at a glance, and costs no extra font request since it's a system stack, not a webfont.
+**Why:** They're literal system codes (`AM02`, `EMEA DPU BACKUPWAVE`), not prose — the drill-down table already used monospace for queue names (see Layer 3 CQN tables). Extending that convention to the filter itself makes "this is a code" legible at a glance, and costs no extra font request since it's a system stack, not a webfont.
 
 ### DB/OSP as a segmented pill, not a third binary dropdown
 **Decision:** Reused the existing `.drill-toggle`/`.drill-btn` pill pattern (freed up once the per-chart FY/Quarter/Week toggle was removed) for DB/OSP/All.
@@ -253,28 +253,28 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
-## HES Forecasting: New Page via Header Toggle (2026-07-02)
+## TSA Forecasting: New Page via Header Toggle (2026-07-02)
 
 ### Page toggle, not a route
-**Decision:** `App.jsx` holds a single `page` state ('forecasting'|'hes') and renders `ForecastingPage` or `HesForecastingPage` — no router, no URL change.
+**Decision:** `App.jsx` holds a single `page` state ('forecasting'|'tsa') and renders `ForecastingPage` or `TsaForecastingPage` — no router, no URL change.
 **Why:** The app has always been a single internal tool with no need for shareable/bookmarkable URLs per page, and adding React Router for two pages would be new infrastructure for no real benefit. The existing `.drill-toggle`/`.drill-btn` pill pattern already reads as "switch between two views" everywhere else in the app, so reusing it for page-level navigation is more consistent than introducing a new nav pattern.
 
 ### ForecastingPage extracted verbatim, not rewritten
 **Decision:** The entire pre-existing `App.jsx` body (filters through footer-adjacent content) moved into `ForecastingPage.jsx` unchanged; `App.jsx` became a shell with just the header, toggle, and footer.
-**Why:** The Forecasting page was just declared "done" — extracting it verbatim guarantees zero visual or behavioral regression while making room for a second page. Splitting `SectionDivider` out separately (rather than duplicating it into `hes/`) means both pages share one implementation of the "KEY METRICS" / "ANALYSIS LAYERS" label.
+**Why:** The Forecasting page was just declared "done" — extracting it verbatim guarantees zero visual or behavioral regression while making room for a second page. Splitting `SectionDivider` out separately (rather than duplicating it into `tsa/`) means both pages share one implementation of the "KEY METRICS" / "ANALYSIS LAYERS" label.
 
 ### Built directly from confirmed slides, no further data requests mid-build
 **Decision:** Once the user said "just build the page over these two slides" (slides 5–6, ASU/SR/UCR), the page was built with reasonable illustrative choices for anything not explicitly supplied (LOB→region-plan mapping, UCR targets, ASU/SR base volumes), rather than pausing again to ask for every missing number.
-**Why:** The user explicitly asked to proceed rather than wait — matching the same "real names + illustrative structure" principle already established for the ESG Forecasting page (see below), just applied to a new dataset. Real data supplied mid-build (the 33 LOB names, the HES queue lists) was integrated immediately rather than deferred.
+**Why:** The user explicitly asked to proceed rather than wait — matching the same "real names + illustrative structure" principle already established for the MSG Forecasting page (see below), just applied to a new dataset. Real data supplied mid-build (the 33 LOB names, the TSA queue lists) was integrated immediately rather than deferred.
 
-### No RCA/CLCA sidebar on HES Forecasting
-**Decision:** `RcaClcaPanel` only renders on the ESG Forecasting page; HES Forecasting's 4 layers run full-width with no sidebar.
-**Why:** The sidebar's actual content (RCA/CLCA findings) is ESG-Forecasting-specific illustrative copy tied to that page's metrics — copying it verbatim onto a page about ASU/SR/UCR would be visibly wrong content, and the ASU/SR/UCR slides never showed an equivalent panel. If the user wants an HES-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy.
-**Update (2026-07-02):** Requested directly — see "HES-specific RCA/CLCA sidebar content" below. `HesRcaClcaPanel.jsx` now provides that page-specific content, following exactly the plan already laid out in this entry.
+### No RCA/CLCA sidebar on TSA Forecasting
+**Decision:** `RcaClcaPanel` only renders on the MSG Forecasting page; TSA Forecasting's 4 layers run full-width with no sidebar.
+**Why:** The sidebar's actual content (RCA/CLCA findings) is MSG-Forecasting-specific illustrative copy tied to that page's metrics — copying it verbatim onto a page about ASU/SR/UCR would be visibly wrong content, and the ASU/SR/UCR slides never showed an equivalent panel. If the user wants an TSA-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy.
+**Update (2026-07-02):** Requested directly — see "TSA-specific RCA/CLCA sidebar content" below. `TsaRcaClcaPanel.jsx` now provides that page-specific content, following exactly the plan already laid out in this entry.
 
-### Renamed "ESG Capacity Planning" → "HES Forecasting" (2026-07-02, same day)
-**Decision:** Renamed the page label, every component/file/folder (`capacity/` → `hes/`, `CapacityPlanningPage.jsx` → `HesForecastingPage.jsx`, `CapacityFilterPanel.jsx` → `HesFilterPanel.jsx`, `CapacityChartKit.jsx` → `HesChartKit.jsx`, `CapacityMetricCards.jsx` → `HesMetricCards.jsx`, `CapacityGeoMap.jsx` → `HesGeoMap.jsx`, `capacityData.js` → `hesData.js`), and every internal identifier that carried "capacity" in its name (`capacityCardData` → `hesCardData`, `capacityEffectiveFiscalYears` → `hesEffectiveFiscalYears`), via `git mv` to preserve file history.
-**Why:** Requested directly. The page is fundamentally about HES (High End Storage) service-unit tracking, not a general capacity-planning concept — "HES Forecasting" names what the page actually is. Renamed identifiers and files along with the label, not just the visible string, so the codebase doesn't end up with a page called "HES Forecasting" built out of files and functions still named "Capacity" — that mismatch would confuse the next person (or agent) who opens the folder. The pre-existing "Capacity Code" filter field on the *ESG Forecasting* page (a real queue attribute, unrelated to this page) was deliberately left untouched — it's a different concept that happens to share a word.
+### Renamed "MSG Capacity Planning" → "TSA Forecasting" (2026-07-02, same day)
+**Decision:** Renamed the page label, every component/file/folder (`capacity/` → `tsa/`, `CapacityPlanningPage.jsx` → `TsaForecastingPage.jsx`, `CapacityFilterPanel.jsx` → `TsaFilterPanel.jsx`, `CapacityChartKit.jsx` → `TsaChartKit.jsx`, `CapacityMetricCards.jsx` → `TsaMetricCards.jsx`, `CapacityGeoMap.jsx` → `TsaGeoMap.jsx`, `capacityData.js` → `tsaData.js`), and every internal identifier that carried "capacity" in its name (`capacityCardData` → `tsaCardData`, `capacityEffectiveFiscalYears` → `tsaEffectiveFiscalYears`), via `git mv` to preserve file history.
+**Why:** Requested directly. The page is fundamentally about TSA (High End Storage) service-unit tracking, not a general capacity-planning concept — "TSA Forecasting" names what the page actually is. Renamed identifiers and files along with the label, not just the visible string, so the codebase doesn't end up with a page called "TSA Forecasting" built out of files and functions still named "Capacity" — that mismatch would confuse the next person (or agent) who opens the folder. The pre-existing "Capacity Code" filter field on the *MSG Forecasting* page (a real queue attribute, unrelated to this page) was deliberately left untouched — it's a different concept that happens to share a word.
 
 ### LOB filter reuses the Queue Name filter's real-data-swap pattern
 **Decision:** `ucrNonAdherentQueues(filters)` checks whether the selected LOB has a `LOB_QUEUES` entry (currently only "High End Storage") and swaps to its real active-queue list when so, exactly like `cqnPlanVariance`/`cqnActualVariance` on the Forecasting page swap to genuinely filtered real queues rather than fabricating a new number per filter state.
@@ -286,38 +286,38 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
-## HES Forecasting: Total Queues Card + RCA/CLCA Sidebar (2026-07-02)
+## TSA Forecasting: Total Queues Card + RCA/CLCA Sidebar (2026-07-02)
 
 ### Total Queues card replaces UCR Impacted SR, front of the row
 **Decision:** Removed the "UCR Impacted SR" card (previously last) and added a "Total Queues" card at the front of the Key Metrics row, styled and worded identically to the Forecasting page's Total Queues card (`⬡` icon, "Active / Inactive" sublabel, `active / total` value, "N inactive queues" sub-line).
-**Why:** Requested directly ("remove the UCR card from the last and the front add the total queues card similarly we did for ESG Forecasting"). Matching the Forecasting page's exact wording/format makes the two pages read as the same product rather than two dashboards with similar-but-different conventions for the same concept.
+**Why:** Requested directly ("remove the UCR card from the last and the front add the total queues card similarly we did for MSG Forecasting"). Matching the Forecasting page's exact wording/format makes the two pages read as the same product rather than two dashboards with similar-but-different conventions for the same concept.
 
 ### `LOB_QUEUES['High End Storage']` reused as the page-level queue roster, not one LOB's sample
-**Decision:** `HES_ACTIVE_QUEUE_NAMES`/`HES_INACTIVE_QUEUE_NAMES` (new in `hesData.js`) point at the same real 71 active / ~150 inactive names already in `LOB_QUEUES['High End Storage']`, but the Total Queues card treats them as the whole page's queue count, not filtered to that one LOB.
-**Why:** The user said "I have already given you a list of active and inactive queues for HES" — referring to the only real per-queue name lists this page has. Treating them as LOB-scoped (the original framing when they were first added, for the UCR non-adherent-queue drill-down) would leave the Total Queues card with no real numbers to show for the other 32 LOBs; treating them as the page's queue roster uses real, business-supplied data honestly instead of inventing placeholder counts for LOBs with no real queue data. Flagged in `handoff.md`/`tech_spec.md` as a decision to revisit if real per-LOB queue lists arrive later.
+**Decision:** `TSA_ACTIVE_QUEUE_NAMES`/`TSA_INACTIVE_QUEUE_NAMES` (new in `tsaData.js`) point at the same real 71 active / ~150 inactive names already in `LOB_QUEUES['High End Storage']`, but the Total Queues card treats them as the whole page's queue count, not filtered to that one LOB.
+**Why:** The user said "I have already given you a list of active and inactive queues for TSA" — referring to the only real per-queue name lists this page has. Treating them as LOB-scoped (the original framing when they were first added, for the UCR non-adherent-queue drill-down) would leave the Total Queues card with no real numbers to show for the other 32 LOBs; treating them as the page's queue roster uses real, business-supplied data honestly instead of inventing placeholder counts for LOBs with no real queue data. Flagged in `handoff.md`/`tech_spec.md` as a decision to revisit if real per-LOB queue lists arrive later.
 
 ### Region tagging via `inferRegion()`, reused rather than re-implemented
-**Decision:** Exported `inferRegion()` from `mockData.js` (was file-local) and reused it in `hesData.js` to tag each HES active queue name with a region for the Total Queues donut.
-**Why:** The HES queue names follow the exact same prefix convention (`APJ …`, `EMEA …`, `NAMER …`, `LATAM …`, else `Global`) as the Forecasting page's queue names — writing a second, near-identical region-inference function would just be the same regex copy-pasted under a new name.
+**Decision:** Exported `inferRegion()` from `mockData.js` (was file-local) and reused it in `tsaData.js` to tag each TSA active queue name with a region for the Total Queues donut.
+**Why:** The TSA queue names follow the exact same prefix convention (`APJ …`, `EMEA …`, `NAMER …`, `LATAM …`, else `Global`) as the Forecasting page's queue names — writing a second, near-identical region-inference function would just be the same regex copy-pasted under a new name.
 
 ### Total Queues drill-down: same donut-then-table mechanic, minus the Accuracy column
 **Decision:** Mirrored the Forecasting page's `QueuesByRegionChart` + `QueueTable` almost verbatim (click a slice or legend entry to filter the table to that region, "Clear" to reset) but dropped the Accuracy column from the table.
-**Why:** Requested directly ("drilldown should be similar pie chart we did for ESG Forecasting"). Accuracy is a forecast-quality concept tied to ESG Forecasting's plan/actual data; HES queues in this list have no equivalent real metric, so showing a column here would mean fabricating a number just to look consistent — Queue + Region is the honest subset of that pattern.
+**Why:** Requested directly ("drilldown should be similar pie chart we did for MSG Forecasting"). Accuracy is a forecast-quality concept tied to MSG Forecasting's plan/actual data; TSA queues in this list have no equivalent real metric, so showing a column here would mean fabricating a number just to look consistent — Queue + Region is the honest subset of that pattern.
 
-### HES-specific RCA/CLCA sidebar content, not a copy of the Forecasting page's
-**Decision:** New `HesRcaClcaPanel.jsx`, wired into `HesForecastingPage.jsx` with the identical sticky-sidebar-next-to-Analysis-Layers layout as `RcaClcaPanel`/`ForecastingPage.jsx`, but with its own illustrative findings written in this page's own vocabulary (ASU/SR/CPASU/UCR/LOB) instead of reusing the Forecasting page's queue/call-volume-themed copy.
-**Why:** Requested directly ("add RCA and CLCA section similarly we did for ESG Forecasting") — "similarly" was read as *same mechanism and layout*, not *same words*, consistent with the standing decision already on record in this file ("No RCA/CLCA sidebar on HES Forecasting... If the user wants an HES-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy").
+### TSA-specific RCA/CLCA sidebar content, not a copy of the Forecasting page's
+**Decision:** New `TsaRcaClcaPanel.jsx`, wired into `TsaForecastingPage.jsx` with the identical sticky-sidebar-next-to-Analysis-Layers layout as `RcaClcaPanel`/`ForecastingPage.jsx`, but with its own illustrative findings written in this page's own vocabulary (ASU/SR/CPASU/UCR/LOB) instead of reusing the Forecasting page's queue/call-volume-themed copy.
+**Why:** Requested directly ("add RCA and CLCA section similarly we did for MSG Forecasting") — "similarly" was read as *same mechanism and layout*, not *same words*, consistent with the standing decision already on record in this file ("No RCA/CLCA sidebar on TSA Forecasting... If the user wants an TSA-specific RCA/CLCA sidebar later, it should get its own content, not a reused copy").
 
 ---
 
-## HES Forecasting: Card Modals, Renames, Layer 3 Redesign (2026-07-02)
+## TSA Forecasting: Card Modals, Renames, Layer 3 Redesign (2026-07-02)
 
-### Card drill-downs: modal popups, not inline panels (HES Forecasting only)
-**Decision:** `HesMetricCards.jsx`'s 5 card drill-downs moved from an inline panel below the cards row to a centered modal (new `Modal` in `HesChartKit.jsx`), closable via backdrop click or ✕.
-**Why:** Requested directly — "display the detailed view as a popup modal instead of navigating to a new page... allow users to close it and return to the dashboard without losing their current filter selections." This deliberately diverges from the Forecasting page's "no modals except the CQN Variance year-click" rule (see "Drill-down as inline panel" above) — that rule described an established pattern for *that* page; this request is explicit and scoped to HES Forecasting's cards, so it doesn't retroactively apply elsewhere. Filters live one level up in `HesForecastingPage`, so opening/closing the modal never touches them — closing always returns to the dashboard exactly as filtered.
+### Card drill-downs: modal popups, not inline panels (TSA Forecasting only)
+**Decision:** `TsaMetricCards.jsx`'s 5 card drill-downs moved from an inline panel below the cards row to a centered modal (new `Modal` in `TsaChartKit.jsx`), closable via backdrop click or ✕.
+**Why:** Requested directly — "display the detailed view as a popup modal instead of navigating to a new page... allow users to close it and return to the dashboard without losing their current filter selections." This deliberately diverges from the Forecasting page's "no modals except the CQN Variance year-click" rule (see "Drill-down as inline panel" above) — that rule described an established pattern for *that* page; this request is explicit and scoped to TSA Forecasting's cards, so it doesn't retroactively apply elsewhere. Filters live one level up in `TsaForecastingPage`, so opening/closing the modal never touches them — closing always returns to the dashboard exactly as filtered.
 
 ### YTD message replaces "Plan X · Y% adherence" on ASU/SR/CPASU cards
-**Decision:** `hesCardData()` now computes a year-over-year % delta (`yoyPct`) for ASU, SR, and CPASU — latest in-scope FY vs the one before it. The card sub-line reads `YTD <FY>: <value> · ▲/▼ X% vs <prior FY>`, with a colored status pip.
+**Decision:** `tsaCardData()` now computes a year-over-year % delta (`yoyPct`) for ASU, SR, and CPASU — latest in-scope FY vs the one before it. The card sub-line reads `YTD <FY>: <value> · ▲/▼ X% vs <prior FY>`, with a colored status pip.
 **Why:** Requested directly ("add a YTD message... show increase/decrease as per your wish"). CPASU inverts the color logic (`lowerIsBetter`) since a falling CPASU is the desirable direction, consistent with the card's existing "lower is more efficient" framing — ASU/SR keep growth-is-good coloring. When filters narrow to a single FY there's no prior year to compare, so the message falls back to "no prior year in scope" rather than a misleading 0%.
 
 ### SR Actuals popup: grouped columns instead of stacked bar
@@ -330,14 +330,14 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### Plan Impact: 4-region set (AMER/APJ/EMEA/Global) replaces the deck's 3-region set
 **Decision:** `IMPACT_REGIONS` changed from `['NAMER','EMEA','APJ']` to `['AMER','APJ','EMEA','Global']`.
-**Why:** Requested directly for both ASU Layer's and SR Layer's Plan Impact visuals. Reused the same constant for CPASU Trend's region breakdown (below) instead of introducing a second region list — one 4-region set for every region-scoped HES visual is more coherent than two overlapping ones.
+**Why:** Requested directly for both ASU Layer's and SR Layer's Plan Impact visuals. Reused the same constant for CPASU Trend's region breakdown (below) instead of introducing a second region list — one 4-region set for every region-scoped TSA visual is more coherent than two overlapping ones.
 
 ### CPASU Trend: regions-by-default, click-to-drill into time granularity
 **Decision:** Replaced the Region/Country toggle on "ASU Impact on SR Trend with CPASU" (renamed **CPASU Trend**) with a region-default view — grouped ASU/SR bars + CPASU line, one group per `IMPACT_REGIONS` entry. Clicking a region's bar drills into that region's own trend, rendered at whichever of Week/Quarter/Year is most specific in the top filter bar (`regionTrendGranularity()`), with a "← All Regions" pill to back out.
 **Why:** Requested directly — "show the regions as default and when we click any particular region it should show up the year or quarter or week when selected from the filters at the top." No real per-region/per-quarter/per-week dataset exists, so `cpasuTrendByRegion()` synthesizes it deterministically from the same FY baselines used everywhere else on this page (documented as illustrative in `tech_spec.md`) — dividing each FY's baseline across the periods within it, rather than inventing an unrelated dataset or silently ignoring the requested drill.
 
 ### UCR Impact on SR: renamed series, added a (cosmetic) Plan selector in the corner
-**Decision:** "SR (Human)" → **SR's**, "SR (Bots)" → **UCR Handled SR's**. Added a `PlanSelect` in the visual's top-right corner via a new `cornerControls` slot on `Visual` (`HesChartKit.jsx`), positioned absolutely instead of the usual centered-below-title `controls` row.
+**Decision:** "SR (Human)" → **SR's**, "SR (Bots)" → **UCR Handled SR's**. Added a `PlanSelect` in the visual's top-right corner via a new `cornerControls` slot on `Visual` (`TsaChartKit.jsx`), positioned absolutely instead of the usual centered-below-title `controls` row.
 **Why:** Both requested directly, including the specific "top right corner" placement — a deliberate one-off exception to the page's usual centered-controls convention (see "Centered chart titles" above) because the request was explicit about the corner rather than a stylistic default. The selector doesn't yet feed into `srBotsByFY()`'s output, matching the existing precedent of AsuLayer/SrLayer Visual1's Plan dropdown, which is also not yet wired to the underlying numbers.
 
 ### UCR Runrate with Target: fixed at fiscal-year granularity, top-5-LOB modal replaces the queue list
@@ -349,20 +349,20 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 ## Card Drill-Downs: Modal Popups on the Forecasting Page Too (2026-07-02)
 
 ### Shared `Modal` component, extracted to `src/components/Modal.jsx`
-**Decision:** The `Modal` popup originally built for HES Forecasting's cards (`src/components/hes/HesChartKit.jsx`) moved to a top-level `src/components/Modal.jsx`; `HesChartKit.jsx` now re-exports it (`export { Modal } from '../Modal'`) so every existing HES import keeps working unchanged. `MetricCards.jsx` imports it directly.
-**Why:** The request was to give the Forecasting page's cards the exact same modal behavior HES Forecasting already has — reusing the one implementation both pages now need is more honest than copy-pasting the same ~30 lines of overlay markup into a second file, and guarantees the two pages' modals stay visually identical as either evolves.
+**Decision:** The `Modal` popup originally built for TSA Forecasting's cards (`src/components/tsa/TsaChartKit.jsx`) moved to a top-level `src/components/Modal.jsx`; `TsaChartKit.jsx` now re-exports it (`export { Modal } from '../Modal'`) so every existing TSA import keeps working unchanged. `MetricCards.jsx` imports it directly.
+**Why:** The request was to give the Forecasting page's cards the exact same modal behavior TSA Forecasting already has — reusing the one implementation both pages now need is more honest than copy-pasting the same ~30 lines of overlay markup into a second file, and guarantees the two pages' modals stay visually identical as either evolves.
 
 ### Forecasting page's card drill-downs: inline panel → modal
 **Decision:** `MetricCards.jsx`'s `DrillDownPanel` (rendered inline below the cards row) became `DrillDownModal`, wrapped in the shared `Modal`. The nested `YearQueueModal` (CQN Variance's year-click drill) is unchanged — it's now a modal nested inside a modal instead of a modal nested inside an inline panel, but its own implementation and behavior didn't need to change.
-**Why:** Requested directly, explicitly extended to "do this for ESG Forecasting as well" after HES Forecasting got the same treatment. This supersedes the page's original "Drill-down as inline panel (not modal)" decision (see above) — closing the modal only clears `MetricCards`' local `active` state, so `filters` (owned by `ForecastingPage`) is never touched, meaning the dashboard is exactly as filtered when the modal closes, matching the "without losing current filter selections" requirement.
+**Why:** Requested directly, explicitly extended to "do this for MSG Forecasting as well" after TSA Forecasting got the same treatment. This supersedes the page's original "Drill-down as inline panel (not modal)" decision (see above) — closing the modal only clears `MetricCards`' local `active` state, so `filters` (owned by `ForecastingPage`) is never touched, meaning the dashboard is exactly as filtered when the modal closes, matching the "without losing current filter selections" requirement.
 
 ---
 
-## ESG Forecasting: Corrected Queue Roster (2026-07-02)
+## MSG Forecasting: Corrected Queue Roster (2026-07-02)
 
 ### Replace the arrays wholesale, not merge/append
 **Decision:** `ACTIVE_QUEUE_NAMES` and `INACTIVE_QUEUE_NAMES` in `mockData.js` were fully replaced with the newly business-supplied lists (47 active, 146 inactive), rather than merged with the prior 199/406 names.
-**Why:** The new lists were explicitly labeled "for ESG Forecasting... update accordingly," and cross-checking showed every name in both new lists already existed somewhere in the old lists (the new active list is a subset of the old active list; the new inactive list is a subset of the old inactive list, plus `'CCC MidRange Mandarin'` moved over from active) — this reads as a corrected, pruned roster the business wants reflected exactly, not an addition to what was already there. Merging would have kept ~350+ names the correction was meant to drop.
+**Why:** The new lists were explicitly labeled "for MSG Forecasting... update accordingly," and cross-checking showed every name in both new lists already existed somewhere in the old lists (the new active list is a subset of the old active list; the new inactive list is a subset of the old inactive list, plus `'CCC MidRange Mandarin'` moved over from active) — this reads as a corrected, pruned roster the business wants reflected exactly, not an addition to what was already there. Merging would have kept ~350+ names the correction was meant to drop.
 **Verified before applying:** scripted checks (not manual eyeballing) confirmed no duplicate names within either new list and no overlap between the two new lists, since a name appearing in both would silently break `filterQueues`'s assumption that a queue is either active or inactive, never both.
 
 ### No code changes needed — the pipeline was already count-agnostic
@@ -373,9 +373,9 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ## Filter Bar Gap Fix + Light/Dark Theme Toggle (2026-07-02)
 
-### HES filter bar gap: match the Forecasting page's already-correct flex pattern
-**Decision:** Added `flex-1 min-w-0` to `HesFilterPanel.jsx`'s `Cluster` grid div, mirroring `FilterPanel.jsx`'s `Cluster` (`className="grid grid-cols-3 gap-x-3 flex-1 min-w-0"`).
-**Why:** The Time cluster's outer wrapper correctly received extra width via `flex: 4 4 0`, but the grid div inside it — a plain flex child with no `flex-grow` of its own — doesn't inherit that width automatically; it sizes to its own content and leaves the parent's allocated-but-unclaimed space as a visible gap before the next cluster. The Forecasting page's filter bar never had this bug because its `Cluster` already included the class; HES's was written slightly differently when the page was first built and missed it.
+### TSA filter bar gap: match the Forecasting page's already-correct flex pattern
+**Decision:** Added `flex-1 min-w-0` to `TsaFilterPanel.jsx`'s `Cluster` grid div, mirroring `FilterPanel.jsx`'s `Cluster` (`className="grid grid-cols-3 gap-x-3 flex-1 min-w-0"`).
+**Why:** The Time cluster's outer wrapper correctly received extra width via `flex: 4 4 0`, but the grid div inside it — a plain flex child with no `flex-grow` of its own — doesn't inherit that width automatically; it sizes to its own content and leaves the parent's allocated-but-unclaimed space as a visible gap before the next cluster. The Forecasting page's filter bar never had this bug because its `Cluster` already included the class; TSA's was written slightly differently when the page was first built and missed it.
 
 ### CSS custom properties, not a second stylesheet or a CSS-in-JS library
 **Decision:** Theme values live as CSS custom properties in `:root` (dark) and `[data-theme='light']` (`src/index.css`), toggled by setting a `data-theme` attribute on `<html>`. No new dependency, no duplicated stylesheet, no per-component theme prop drilling.
@@ -386,7 +386,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Why:** These are meaningful data-encoding colors, not decoration — the same convention most ops dashboards (Grafana, Datadog) use: light/dark mode changes the canvas, not what a color *means*. Re-deriving the whole data palette per theme would risk breaking the "if it's red, something is behind plan" vocabulary established across both pages' design history, for a benefit (perfect light-mode chart hues) that doesn't materially help readability — every one of these colors already has enough contrast against both a near-white and a navy background.
 
 ### Geo maps keep an always-dark canvas regardless of theme
-**Decision:** `Layer3GeoMap.jsx` and `HesGeoMap.jsx`'s map container (background, `DEFAULT_FILL`, country stroke/fill, the bottom accuracy-scale gradient, and the "no data" empty-state text) stay hardcoded dark in both themes. Only the chrome *around* the map (layer header, legend, summary table, the floating hover tooltip) follows the theme.
+**Decision:** `Layer3GeoMap.jsx` and `TsaGeoMap.jsx`'s map container (background, `DEFAULT_FILL`, country stroke/fill, the bottom accuracy-scale gradient, and the "no data" empty-state text) stay hardcoded dark in both themes. Only the chrome *around* the map (layer header, legend, summary table, the floating hover tooltip) follows the theme.
 **Why:** A choropleth's fill colors are calibrated against a specific backdrop — flipping the canvas to white would wash out `DEFAULT_FILL` (the "no data" gray) and change how the accuracy colors read, without a proportional benefit. Keeping the map itself a dark "instrument panel" is a common pattern for embedded map/geo visuals regardless of host UI theme (weather widgets, ops dashboards). The floating hover tooltip is a separate element using the shared `.chart-tooltip` class, so it still re-themes correctly even though it sits visually on top of the fixed-dark map.
 
 ### `--accent` itself changes value between themes, with a paired `--accent-contrast`
@@ -399,10 +399,10 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### Placement: inside the filter bar, top-right, not a separate control or the header
 **Decision:** The View By pill sits in the filter bar itself — same row as the value-filter clusters, after a divider, right-aligned (it ends up there naturally: the clusters' `flex-grow` consumes whatever width the fixed-size pill doesn't need, so no extra positioning trick was required).
-**Why:** Researched before building (per the request) — dashboard UX guidance on filter placement says page-wide filters belong in a horizontal filter bar or toolbar rather than scattered per-widget, and time-granularity/date-range controls specifically are conventionally placed prominently and persistently near the other filters, often paired with a date-range picker. That argued against two alternatives considered: the app header (reserved for page-level chrome like the ESG/HES toggle and the light/dark switch — a different category of setting, not a data view control) and a brand-new toolbar row of its own (adds UI surface for one control when the existing filter bar already is the page's "toolbar"). Sources: [Pencil & Paper — Filter UX Design Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-enterprise-filtering), [Pencil & Paper — Dashboard Design UX Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-data-dashboards), [Evolving Web — Date Filter UI Patterns](https://evolvingweb.com/blog/most-popular-date-filter-ui-patterns-and-how-decide-each-one).
+**Why:** Researched before building (per the request) — dashboard UX guidance on filter placement says page-wide filters belong in a horizontal filter bar or toolbar rather than scattered per-widget, and time-granularity/date-range controls specifically are conventionally placed prominently and persistently near the other filters, often paired with a date-range picker. That argued against two alternatives considered: the app header (reserved for page-level chrome like the MSG/TSA toggle and the light/dark switch — a different category of setting, not a data view control) and a brand-new toolbar row of its own (adds UI surface for one control when the existing filter bar already is the page's "toolbar"). Sources: [Pencil & Paper — Filter UX Design Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-enterprise-filtering), [Pencil & Paper — Dashboard Design UX Patterns](https://www.pencilandpaper.io/articles/ux-pattern-analysis-data-dashboards), [Evolving Web — Date Filter UI Patterns](https://evolvingweb.com/blog/most-popular-date-filter-ui-patterns-and-how-decide-each-one).
 
 ### A view setting, not a value filter — visually distinct despite sharing the bar
-**Decision:** The toggle uses the existing `.drill-toggle`/`.drill-btn` pill styling (already established for DB/OSP, the ESG/HES page switch, and the light/dark toggle) rather than a `MultiSelectField`, and is labeled "View By" rather than "Granularity" or a plain filter name.
+**Decision:** The toggle uses the existing `.drill-toggle`/`.drill-btn` pill styling (already established for DB/OSP, the MSG/TSA page switch, and the light/dark toggle) rather than a `MultiSelectField`, and is labeled "View By" rather than "Granularity" or a plain filter name.
 **Why:** It changes *how* every time-axis chart renders (what granularity its x-axis uses), not *which rows are in scope* — a fundamentally different kind of control than the other 7-12 filters in the bar, even though it lives in the same row. Reusing the pill pattern (rather than a new widget) keeps it visually consistent with the app's other pill toggles instead of introducing a fourth control style.
 
 ### No option selected by default (corrected same day)
@@ -414,11 +414,11 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Why:** An FY plan of 24,000 ASUs genuinely represents ~6,000 per quarter (additive — the whole year's total is the sum of its quarters), but a UCR target of 88% doesn't represent "22% per quarter" (a rate is the same kind of number regardless of the window you measure it over). Applying the additive divide to a rate field was an actual bug caught during verification — the first pass divided UCR target/current by 4/12/52 the same way as volumes, which would have shown target percentages in the low single digits at Week granularity. Caught by writing a throwaway Node script that exercised every changed selector at all three granularities before calling this done, not by inspection.
 
 ### Stacked percentage distribution doesn't reuse either helper
-**Decision:** ESG's "Forecast Variance Distribution" (a 4-bucket stacked % chart) gets its own expansion: each sub-period keeps the parent FY's bucket *mix* with a wobble, renormalized so the 4 buckets still sum to ~100%.
+**Decision:** MSG's "Forecast Variance Distribution" (a 4-bucket stacked % chart) gets its own expansion: each sub-period keeps the parent FY's bucket *mix* with a wobble, renormalized so the 4 buckets still sum to ~100%.
 **Why:** Neither generic helper fit — dividing the buckets (like a volume) would make them stop summing to 100%; leaving them completely untouched (like a rate) would make every sub-period within a year look identical, which is less useful for a granularity toggle whose entire point is to show variation across the finer time window.
 
 ### The global toggle supersedes two decisions made earlier the same day
-**Decision:** HES's "UCR Runrate with Target" chart, fixed to always render at Fiscal Year in the previous change ("keep it at fiscal year default"), now responds to the global granularity toggle like every other time-axis chart. The CPASU Trend region-drill's granularity, previously inferred from which of the top filter bar's Quarter/Week filters happened to be selected, is now driven directly by the global toggle instead.
+**Decision:** TSA's "UCR Runrate with Target" chart, fixed to always render at Fiscal Year in the previous change ("keep it at fiscal year default"), now responds to the global granularity toggle like every other time-axis chart. The CPASU Trend region-drill's granularity, previously inferred from which of the top filter bar's Quarter/Week filters happened to be selected, is now driven directly by the global toggle instead.
 **Why:** The request was explicit that "all the graphs should interact with" the new control — a page-wide granularity setting that silently exempts two charts (one of which had *just* been hardcoded to ignore time filters, for unrelated reasons at the time) would be a confusing inconsistency. Superseding an same-day decision this quickly is unusual, but the new instruction is more specific and directly contradicts the old one for these two charts specifically.
 
 ### Region/queue/LOB-axis charts are exempt by nature, not by omission
@@ -427,39 +427,39 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ---
 
-## Landing Page + ESG/HES Capacity Plan Pages (2026-07-03)
+## Landing Page + MSG/TSA Capacity Plan Pages (2026-07-03)
 
 ### Landing tiles + per-business sub-toggle, not a 4-way top-level toggle
-**Decision:** Instead of extending the existing header pill to 4 options (ESG Forecasting/ESG Capacity/HES Forecasting/HES Capacity), the app now opens on a dedicated "ISG SPoG" landing screen with two tiles (ESG/HES); picking one opens that business section, which has its own 2-way Forecasting/Capacity Plan toggle scoped to it.
-**Why:** Requested directly and explicitly explained by the user before any screenshots were sent — "front page where there will be two business... clicking on ESG tile it should open the ESG page with toggle between ESG Forecasting and ESG Capacity Plan." A flat 4-way pill would bury the business-level distinction (ESG vs HES) inside a single row of similarly-styled buttons; a landing page makes "pick your business first" a real, separate decision, and the header toggle only ever needs to express one binary choice (which sub-page) once a business is chosen.
+**Decision:** Instead of extending the existing header pill to 4 options (MSG Forecasting/MSG Capacity/TSA Forecasting/TSA Capacity), the app now opens on a dedicated "TSG SPoG" landing screen with two tiles (MSG/TSA); picking one opens that business section, which has its own 2-way Forecasting/Capacity Plan toggle scoped to it.
+**Why:** Requested directly and explicitly explained by the user before any screenshots were sent — "front page where there will be two business... clicking on MSG tile it should open the MSG page with toggle between MSG Forecasting and MSG Capacity Plan." A flat 4-way pill would bury the business-level distinction (MSG vs TSA) inside a single row of similarly-styled buttons; a landing page makes "pick your business first" a real, separate decision, and the header toggle only ever needs to express one binary choice (which sub-page) once a business is chosen.
 
 ### Home button next to the logo, not a tab or breadcrumb
 **Decision:** A single icon button (house glyph) sits immediately left of the logo, only rendered when a business section is open; clicking it returns to `view: 'landing'`.
 **Why:** Asked directly ("A home button would be fine") after being offered as an option for "how do I get back to the tiles." Placing it at the logo (the conventional "go home" spot in web apps) needed no new UI real estate and reads as an obvious affordance without a label.
 
 ### Each business remembers its own last-viewed sub-page independently
-**Decision:** `esgSubPage` and `hesSubPage` are two separate `useState` values in `App.jsx`, not one shared `subPage` reset whenever `view` changes.
-**Why:** Not explicitly requested, but the alternative (a single shared sub-page that resets to Forecasting every time you go home and pick a business again) would silently discard the user's position if they're bouncing between ESG and HES Capacity Plan mid-session — a small persistence a user would expect from an app framed around "hopping between businesses," and cheap to provide since it's just a second `useState`.
+**Decision:** `msgSubPage` and `tsaSubPage` are two separate `useState` values in `App.jsx`, not one shared `subPage` reset whenever `view` changes.
+**Why:** Not explicitly requested, but the alternative (a single shared sub-page that resets to Forecasting every time you go home and pick a business again) would silently discard the user's position if they're bouncing between MSG and TSA Capacity Plan mid-session — a small persistence a user would expect from an app framed around "hopping between businesses," and cheap to provide since it's just a second `useState`.
 
 ### Two data-only clarifying-question round trips before building
-**Decision:** Asked the same clarifying question about ESG Capacity Layer 3's two near-identical visual descriptions ("Actual vs Target Utilization" vs "Queues with Aux culprit") via `AskUserQuestion` twice, at the user's explicit request ("wait" → "ask again" → "ask the same question again you asked me earlier"), rather than assuming the first answer stood or silently re-asking with different wording.
-**Why:** The user explicitly asked to see the exact same question repeated, not a rephrased one — re-issuing it verbatim (same options, same framing) respected that literally rather than guessing they wanted something reworded. Confirmed answer both times: Visual 1 is a time-axis trend chart with an Aux-code tooltip; Visual 2 is a per-queue ranking chart, mirroring the existing "Top Queues by Variance" convention already established on ESG Forecasting.
+**Decision:** Asked the same clarifying question about MSG Capacity Layer 3's two near-identical visual descriptions ("Actual vs Target Utilization" vs "Queues with Aux culprit") via `AskUserQuestion` twice, at the user's explicit request ("wait" → "ask again" → "ask the same question again you asked me earlier"), rather than assuming the first answer stood or silently re-asking with different wording.
+**Why:** The user explicitly asked to see the exact same question repeated, not a rephrased one — re-issuing it verbatim (same options, same framing) respected that literally rather than guessing they wanted something reworded. Confirmed answer both times: Visual 1 is a time-axis trend chart with an Aux-code tooltip; Visual 2 is a per-queue ranking chart, mirroring the existing "Top Queues by Variance" convention already established on MSG Forecasting.
 
-### `ChartKit.jsx` promoted out of `HesChartKit.jsx`, not duplicated a third time
-**Decision:** Moved `Visual`/`Tip`/`PlanDropdowns`/`PlanSelect`/`CategoryTick`/`truncate`/`PillButton` from `hes/HesChartKit.jsx` into a new top-level `src/components/ChartKit.jsx`; `HesChartKit.jsx` became a two-line re-export shim (`export { Modal } from '../Modal'; export * from '../ChartKit'`) so no existing HES import had to change. Added `BinaryToggle` (generic two-state pill switch) to the same new file.
-**Why:** Both Capacity pages need the exact same chart-panel/tooltip/plan-picker primitives HES Forecasting already had — copying them a third time (ESG Forecasting already has its own near-duplicate) would mean three implementations of the same `Visual` wrapper to keep in sync forever. Promoting once, with a compatibility shim for the existing import path, cost nothing existing and let every subsequent Region/Country toggle (there are six across the two new pages) share one `BinaryToggle` instead of a bespoke switch per file.
+### `ChartKit.jsx` promoted out of `TsaChartKit.jsx`, not duplicated a third time
+**Decision:** Moved `Visual`/`Tip`/`PlanDropdowns`/`PlanSelect`/`CategoryTick`/`truncate`/`PillButton` from `tsa/TsaChartKit.jsx` into a new top-level `src/components/ChartKit.jsx`; `TsaChartKit.jsx` became a two-line re-export shim (`export { Modal } from '../Modal'; export * from '../ChartKit'`) so no existing TSA import had to change. Added `BinaryToggle` (generic two-state pill switch) to the same new file.
+**Why:** Both Capacity pages need the exact same chart-panel/tooltip/plan-picker primitives TSA Forecasting already had — copying them a third time (MSG Forecasting already has its own near-duplicate) would mean three implementations of the same `Visual` wrapper to keep in sync forever. Promoting once, with a compatibility shim for the existing import path, cost nothing existing and let every subsequent Region/Country toggle (there are six across the two new pages) share one `BinaryToggle` instead of a bespoke switch per file.
 
 ### Shared `PlanOverPlanLayer`, parameterized by a `dataFn` prop
-**Decision:** Built ESG Capacity's "Plan over Plan Comparison" layer once as `src/components/capacity/PlanOverPlanLayer.jsx`, taking `dataFn(filters, granularity)` as a prop; HES Capacity Plan reuses the identical component, just passing its own `planOverPlanFteByFY` selector.
-**Why:** Both mockups specify the literal same layer — one full-width chart, Plan A/B dropdowns, a variance % line — differing only in which numbers back it. Building an ESG-specific copy first and then noticing HES needed the identical thing (caught before HES Capacity was started) made the "parameterize by data source" refactor an easy call rather than a late one.
+**Decision:** Built MSG Capacity's "Plan over Plan Comparison" layer once as `src/components/capacity/PlanOverPlanLayer.jsx`, taking `dataFn(filters, granularity)` as a prop; TSA Capacity Plan reuses the identical component, just passing its own `planOverPlanFteByFY` selector.
+**Why:** Both mockups specify the literal same layer — one full-width chart, Plan A/B dropdowns, a variance % line — differing only in which numbers back it. Building an MSG-specific copy first and then noticing TSA needed the identical thing (caught before TSA Capacity was started) made the "parameterize by data source" refactor an easy call rather than a late one.
 
-### HES Capacity reuses `hes/HesFilterPanel.jsx` directly, unmodified
-**Decision:** `HesCapacityPage.jsx` imports `HesFilterPanel` from `../hes/HesFilterPanel` as-is, rather than building a new `HesCapacityFilterPanel.jsx`.
-**Why:** The mockup's filter list for HES Capacity Plan (LOB, Fiscal Year/Quarter/Month/Week, Business Partner, Global Grouping) is field-for-field identical to HES Forecasting's, and `HesFilterPanel` is already a stateless controlled component with no page-specific hardcoding (filters/onChange/granularity/onGranularityChange props only) — building a byte-identical second copy would be pure duplication for zero behavioral difference. ESG Capacity Plan, by contrast, has a genuinely different filter set (Combined Queue Name/Capacity Code/Plan Name/Business Org/Country, no LOB) from ESG Forecasting, so it got its own `EsgCapacityFilterPanel.jsx`.
+### TSA Capacity reuses `tsa/TsaFilterPanel.jsx` directly, unmodified
+**Decision:** `TsaCapacityPage.jsx` imports `TsaFilterPanel` from `../tsa/TsaFilterPanel` as-is, rather than building a new `TsaCapacityFilterPanel.jsx`.
+**Why:** The mockup's filter list for TSA Capacity Plan (LOB, Fiscal Year/Quarter/Month/Week, Business Partner, Global Grouping) is field-for-field identical to TSA Forecasting's, and `TsaFilterPanel` is already a stateless controlled component with no page-specific hardcoding (filters/onChange/granularity/onGranularityChange props only) — building a byte-identical second copy would be pure duplication for zero behavioral difference. MSG Capacity Plan, by contrast, has a genuinely different filter set (Combined Queue Name/Capacity Code/Plan Name/Business Org/Country, no LOB) from MSG Forecasting, so it got its own `MsgCapacityFilterPanel.jsx`.
 
-### ESG Capacity Utilization Layer: two visuals with near-identical descriptions, disambiguated by axis
+### MSG Capacity Utilization Layer: two visuals with near-identical descriptions, disambiguated by axis
 **Decision:** "Actual vs Target Utilization" (Visual 1) is a time-axis (Fiscal Year/Quarter/Week) trend with a custom tooltip surfacing which Aux code drove any shortfall; "Queues with Aux Culprit" (Visual 2) is a queue-axis horizontal-bar ranking of which specific queues have the worst Aux-driven utilization gap, worst-first.
-**Why:** The mockup's text for both visuals read almost identically, which is why this was the one thing asked about before building (see the clarifying-question entry above). Resolving it by axis — one chart answers "how are we trending over time," the other answers "which queues are the problem" — reuses the exact "diverging/ranking queue chart" pattern already established for Top Queues by Variance on ESG Forecasting, rather than inventing a third chart shape for a page that's supposed to feel like the same product.
+**Why:** The mockup's text for both visuals read almost identically, which is why this was the one thing asked about before building (see the clarifying-question entry above). Resolving it by axis — one chart answers "how are we trending over time," the other answers "which queues are the problem" — reuses the exact "diverging/ranking queue chart" pattern already established for Top Queues by Variance on MSG Forecasting, rather than inventing a third chart shape for a page that's supposed to feel like the same product.
 
 ### Aux-culprit fields attached after granularity expansion, not passed through it
 **Decision:** `utilizationByFY()` computes `auxCulprit`/`auxImpactPct` per output row by array index, after calling `expandRateToGranularity()` on the numeric `actual`/`target` fields, rather than trying to pass the categorical Aux-code field through the expansion helper itself.
@@ -469,33 +469,33 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Decision:** `utilizationByQueue()` was fixed from sorting ascending by `|utilGap|` (which surfaced the *best*-adhering queues) to descending (worst first); `leavesByQueue()` was fixed from sorting ascending by raw delta only (which missed large positive-delta outliers, biasing toward queues with fewer-than-planned leaves) to selecting the top-N by `|delta|` descending first, then re-sorting that shortlist ascending for display.
 **Why:** Both bugs were invisible from reading the code — the sort call looked reasonable in isolation. Writing a Node smoke-test script that actually printed the resulting rows for a representative filter set (before any UI was built on top of the data module) surfaced both immediately: the "worst queues" list was showing near-perfect adherence, and the "outage" list was all negative deltas. This is the same "verify with real output, not just a clean build" discipline used for every granularity-toggle change earlier in this project.
 
-### `HES_GEO_SLO_BY_REGION` values tuned to hit the mockup's literal "2 regions at risk" text
+### `TSA_GEO_SLO_BY_REGION` values tuned to hit the mockup's literal "2 regions at risk" text
 **Decision:** The 4 illustrative region SLO values were chosen (97/88/96/79) so that exactly 2 sit below the FY27 SLO target (95), rather than picking arbitrary-looking numbers that happened to produce 1 or 3.
 **Why:** The mockup's card sub-message is a specific, literal number ("2 regions at risk") — since this is illustrative mock data anyway (no real per-region SLO dataset exists), there was no reason not to tune it to match the one concrete detail the mockup specified, rather than let an arbitrary formula produce a number that visibly contradicts the mockup's own text.
 
-### HES Capacity's Sankey: illustrative CQN tiers as sources, real LOB names as targets
-**Decision:** `workloadSankey()` uses 3 fixed illustrative source-node labels (`CQN-Standard`/`CQN-Critical`/`CQN-Enterprise`) flowing into 4 real LOB names (`Networking`/`Storage`/`Server`/`PowerScale`, all genuine entries from `LOB_LIST`).
-**Why:** HES Capacity Plan's filter set has no per-queue (CQN) dimension of its own — LOB is the only real categorical axis this page's filters expose. Rather than fabricate fake per-queue names to match the mockup's "CQN to LOB" framing literally, the source tiers are clearly-illustrative priority-band labels while the target nodes use real business names, following the same "real names + illustrative structure" principle as every other mock dataset in this app.
+### TSA Capacity's Sankey: illustrative CQN tiers as sources, real LOB names as targets
+**Decision:** `workloadSankey()` uses 3 fixed illustrative source-node labels (`CQN-Standard`/`CQN-Critical`/`CQN-Enterprise`) flowing into 4 real LOB names (`Networking`/`Storage`/`Server`/`ScaleVault`, all genuine entries from `LOB_LIST`).
+**Why:** TSA Capacity Plan's filter set has no per-queue (CQN) dimension of its own — LOB is the only real categorical axis this page's filters expose. Rather than fabricate fake per-queue names to match the mockup's "CQN to LOB" framing literally, the source tiers are clearly-illustrative priority-band labels while the target nodes use real business names, following the same "real names + illustrative structure" principle as every other mock dataset in this app.
 
-### HES Capacity Geo Map renumbered from the mockup's "Layer 5" to badge 04
+### TSA Capacity Geo Map renumbered from the mockup's "Layer 5" to badge 04
 **Decision:** The mockup's screenshots show Layer 1 → Layer 2 → Layer 3 → Layer 5 for this page's geo map, with no Layer 4 shown anywhere. The shipped UI labels it **04**.
-**Why:** A visible gap in sequential badge numbering (01, 02, 03, 05) would read as a bug or a missing section to anyone looking at the page, not as a faithful reproduction of the source deck's own typo/gap. Every other layer-badged section in this app (both Forecasting pages, ESG Capacity) uses strictly sequential 01-04 numbering; matching that convention here is more consistent than preserving an apparent numbering mistake from the mockup.
+**Why:** A visible gap in sequential badge numbering (01, 02, 03, 05) would read as a bug or a missing section to anyone looking at the page, not as a faithful reproduction of the source deck's own typo/gap. Every other layer-badged section in this app (both Forecasting pages, MSG Capacity) uses strictly sequential 01-04 numbering; matching that convention here is more consistent than preserving an apparent numbering mistake from the mockup.
 
 ---
 
-## ESG Capacity Plan: Revision Pass — Filters, Cards, Drills, Aux Detail (2026-07-03)
+## MSG Capacity Plan: Revision Pass — Filters, Cards, Drills, Aux Detail (2026-07-03)
 
-### Filters: reuse ESG Forecasting's own lists instead of page-specific ones
-**Decision:** Plan Name now uses `mockData.js`'s `PLAN_NAMES` (was a page-specific `CAPACITY_PLAN_NAMES`), Sub-region uses the same `SUB_REGIONS` list as ESG Forecasting; Business Org and Country were removed entirely rather than kept as unused/decorative fields.
-**Why:** Requested directly ("Use same plan name for ESG Capacity used for ESG Forecasting," "remove this filter completely" for Business Org, "remove this completely and add sub-region instead"). Neither `businessOrg` nor `country` was ever consumed by a data selector on this page beyond narrowing the queue fact table — removing them outright (rather than leaving inert filter chips) is honest about what actually drives the page's numbers, and reusing Forecasting's own lists keeps a queue's Plan Name/Sub-region options identical whichever ESG page you're on.
+### Filters: reuse MSG Forecasting's own lists instead of page-specific ones
+**Decision:** Plan Name now uses `mockData.js`'s `PLAN_NAMES` (was a page-specific `CAPACITY_PLAN_NAMES`), Sub-region uses the same `SUB_REGIONS` list as MSG Forecasting; Business Org and Country were removed entirely rather than kept as unused/decorative fields.
+**Why:** Requested directly ("Use same plan name for MSG Capacity used for MSG Forecasting," "remove this filter completely" for Business Org, "remove this completely and add sub-region instead"). Neither `businessOrg` nor `country` was ever consumed by a data selector on this page beyond narrowing the queue fact table — removing them outright (rather than leaving inert filter chips) is honest about what actually drives the page's numbers, and reusing Forecasting's own lists keeps a queue's Plan Name/Sub-region options identical whichever MSG page you're on.
 
 ### Sub-region tag reused from ACTIVE_QUEUES, not re-derived
 **Decision:** `CAPACITY_QUEUES`'s `subRegion` field reads `ACTIVE_QUEUES[i]?.subRegion` (same index, same source array) instead of building an independent round-robin assignment.
-**Why:** Both fact tables are built from the identical `ACTIVE_QUEUE_NAMES` array in the same order — reusing the existing tag guarantees a queue shows the same sub-region on ESG Forecasting and ESG Capacity, whereas two independently-computed round-robins (even both deterministic) would drift apart the moment their modulo arithmetic differed even slightly. One source of truth for a fact that's supposed to be the same fact everywhere.
+**Why:** Both fact tables are built from the identical `ACTIVE_QUEUE_NAMES` array in the same order — reusing the existing tag guarantees a queue shows the same sub-region on MSG Forecasting and MSG Capacity, whereas two independently-computed round-robins (even both deterministic) would drift apart the moment their modulo arithmetic differed even slightly. One source of truth for a fact that's supposed to be the same fact everywhere.
 
-### Cards: YTD/YoY sub-message, reusing HES Forecasting's own pattern verbatim
-**Decision:** All 5 ESG Capacity cards now show `YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>` via a `ytdSub` helper copied structurally from `HesMetricCards.jsx`, replacing each card's static "Target ..."/"Plan ..." sub-line. The headline value drills with the page-wide granularity toggle (`capacityCardData(filters, granularity)`); the YoY comparison itself stays FY-over-FY regardless of granularity.
-**Why:** Requested directly for all 5 cards, plus "cards should change according to the quarter, month and week slicer." Reusing the exact pattern already proven on HES Forecasting (rather than inventing a new sub-line format) keeps every card across the app speaking the same "YTD vs prior year" language. FY-over-FY YoY regardless of granularity mirrors `hesCardData`'s own reasoning: the sub-year numbers are synthesized from the FY total via a deterministic wobble, so a "quarter vs same quarter last year" comparison would be comparing two synthetic numbers with no real independent basis — the FY comparison is the only one with an actual signal behind it.
+### Cards: YTD/YoY sub-message, reusing TSA Forecasting's own pattern verbatim
+**Decision:** All 5 MSG Capacity cards now show `YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>` via a `ytdSub` helper copied structurally from `TsaMetricCards.jsx`, replacing each card's static "Target ..."/"Plan ..." sub-line. The headline value drills with the page-wide granularity toggle (`capacityCardData(filters, granularity)`); the YoY comparison itself stays FY-over-FY regardless of granularity.
+**Why:** Requested directly for all 5 cards, plus "cards should change according to the quarter, month and week slicer." Reusing the exact pattern already proven on TSA Forecasting (rather than inventing a new sub-line format) keeps every card across the app speaking the same "YTD vs prior year" language. FY-over-FY YoY regardless of granularity mirrors `tsaCardData`'s own reasoning: the sub-year numbers are synthesized from the FY total via a deterministic wobble, so a "quarter vs same quarter last year" comparison would be comparing two synthetic numbers with no real independent basis — the FY comparison is the only one with an actual signal behind it.
 
 ### Total FTE / Attrition: inverted color logic now compares YoY, not vs plan/target
 **Decision:** Both cards' green/red status now reflects the YoY direction (`yoyPct`) rather than actual-vs-plan/target — an increase is red (bad) for both, a decrease is green (good).
@@ -503,7 +503,7 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 
 ### Attrition and Plan over Plan Variation: region/sub-region drill, not a flat lens toggle
 **Decision:** Both visuals moved from a cosmetic "Region/Country lens" (a small multiplier that barely changed the numbers) to a real click-to-drill mechanic: a default view with one bar per region or sub-region key (sized by `shareByKey` — each key's share of currently in-scope queues), and clicking a bar drills into that key's own FY/granularity trend via `attritionTrendByDimension`/`planOverPlanTrendByDimension`.
-**Why:** Requested directly and specifically ("the region and sub-region toggle should work like keep the graph at region level and when user clicks on particular region the Fiscal year graph should open and should be able to change according to the filters above"). This is the exact same "region-level default, click to drill into time trend" mechanic already proven on HES Forecasting's CPASU Trend (`AsuSrTrendLayer.jsx` Visual1) — reusing a pattern the codebase already has, rather than inventing a new interaction, for a request that describes that pattern almost verbatim.
+**Why:** Requested directly and specifically ("the region and sub-region toggle should work like keep the graph at region level and when user clicks on particular region the Fiscal year graph should open and should be able to change according to the filters above"). This is the exact same "region-level default, click to drill into time trend" mechanic already proven on TSA Forecasting's CPASU Trend (`AsuSrTrendLayer.jsx` Visual1) — reusing a pattern the codebase already has, rather than inventing a new interaction, for a request that describes that pattern almost verbatim.
 
 ### `shareByKey` extracted as a shared helper, not duplicated per visual
 **Decision:** A single `shareByKey(rows, key)` function computes a `{key: share}` distribution for either `'region'` or `'subRegion'`, used by both `attritionByDimension` and `planOverPlanByDimension` (and their trend-drill counterparts).
@@ -518,12 +518,12 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Why:** Requested directly and explicitly: "if the actuals are more than plan and still SL% dropped below 90 then those queues should be shown." The old logic (over-plan headcount alone) answered a different, less actionable question — "who's overstaffed" — the new rule specifically surfaces "who's overstaffed AND still failing," which is the genuinely alarming case worth a manager's attention (extra heads didn't fix the problem).
 
 ### Plan over Plan Variation: split into its own component instead of extending the shared layer
-**Decision:** Built a new ESG-only `PlanOverPlanVariationLayer.jsx` rather than adding Region/Sub-region toggle + queue-variance-ranking branches to the shared `capacity/PlanOverPlanLayer.jsx` that HES Capacity also uses.
-**Why:** None of these new capabilities were requested for HES Capacity's Plan-over-Plan layer, and HES doesn't have an equivalent per-queue variance concept (it has LOBs, not queues) to rank in the first place. Branching the shared component on a page-specific feature set (`if (page === 'esg') {...}`) would make it neither simple nor truly shared — splitting cleanly here, while leaving HES's usage of the original shared component completely untouched, keeps both call sites simple. The now-unused `planOverPlanHCByFY` selector and its `CAPACITY_PLAN_VS_PLAN_BY_FY`-consuming function were removed from `esgCapacityData.js` as dead code once nothing called them anymore.
+**Decision:** Built a new MSG-only `PlanOverPlanVariationLayer.jsx` rather than adding Region/Sub-region toggle + queue-variance-ranking branches to the shared `capacity/PlanOverPlanLayer.jsx` that TSA Capacity also uses.
+**Why:** None of these new capabilities were requested for TSA Capacity's Plan-over-Plan layer, and TSA doesn't have an equivalent per-queue variance concept (it has LOBs, not queues) to rank in the first place. Branching the shared component on a page-specific feature set (`if (page === 'msg') {...}`) would make it neither simple nor truly shared — splitting cleanly here, while leaving TSA's usage of the original shared component completely untouched, keeps both call sites simple. The now-unused `planOverPlanHCByFY` selector and its `CAPACITY_PLAN_VS_PLAN_BY_FY`-consuming function were removed from `msgCapacityData.js` as dead code once nothing called them anymore.
 
 ### "Queues with Highest Variation" reuses the polished diverging-bar convention, not a plain list
 **Decision:** The new queue-variance ranking is a diverging horizontal bar chart with a zero `ReferenceLine`, rounded axis ticks, and `+X%`/`-X%` value labels printed at each bar's end via two sign-split `LabelList`s — the exact same construction as Forecasting's "Top Queues by Variance" charts (`Layer1PlanOverPlan.jsx` Visual3), not the simple text-list format used by HeadcountLayer's SL-defaulter list or Utilization's leaves list.
-**Why:** Explicitly called out as "the most important graph in ESG Capacity planning... make it worth" — the diverging-bar-with-labels treatment is this codebase's most visually resolved pattern for "which of these things is furthest off," reserved until now for the Forecasting page's own headline variance charts. Giving this visual the same treatment (rather than a plain sorted list, which several other defaulter/outage lists on this page already use) signals it's meant to carry the same weight.
+**Why:** Explicitly called out as "the most important graph in MSG Capacity planning... make it worth" — the diverging-bar-with-labels treatment is this codebase's most visually resolved pattern for "which of these things is furthest off," reserved until now for the Forecasting page's own headline variance charts. Giving this visual the same treatment (rather than a plain sorted list, which several other defaulter/outage lists on this page already use) signals it's meant to carry the same weight.
 
 ### Utilization: 3-Aux breakdown instead of a single culprit, everywhere a culprit was shown
 **Decision:** `utilizationByFY` now returns a sorted `auxBreakdown` array (top 3 by impact) instead of a single `auxCulprit`/`auxImpactPct` pair (kept as `auxBreakdown[0]` for anything still expecting the old shape); `utilizationByQueue` similarly returns 3 distinct `auxes` per queue. Visual1 also gained an Adherence % trend line.
@@ -533,13 +533,13 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Decision:** The user asked for a better name but didn't supply one ("I am not getting any name rn"); picked "Leave Impact — Actual vs Target."
 **Why:** The visual shows which queues are burning more leave-days than planned and by how much — "impact" better captures "this is a contributing factor to a problem" than "outage" (which implies the leaves themselves are the failure, when really they're a driver of understaffing/SL risk elsewhere on the page). Matches the "Actual vs Target" phrasing pattern already used by Visual1's title on the same layer, for naming consistency within the layer.
 
-### Geo Map: Sub-region replaces Country, mirroring ESG Forecasting's own fallback mechanic exactly
+### Geo Map: Sub-region replaces Country, mirroring MSG Forecasting's own fallback mechanic exactly
 **Decision:** The Region/Country `BinaryToggle` became Region/Sub-region, using `subRegionForCountry`/`SUB_REGIONS` and the identical "unmapped countries fall back to their parent region's shade at 35% opacity, suppressed once Region/Sub-region filters already narrow the view" logic as `Layer3GeoMap.jsx`.
-**Why:** Directly requested, and once Country was removed as a filter dimension entirely (see above), keeping a Country-based map view would have been the one place on the page still referencing a retired concept. Sub-region is also the correct replacement dimension precisely because it's now a real filter on this page's own filter bar (unlike the old curated 14-country list, which had no matching filter) — map view and filter dimension now agree, matching how the region/sub-region relationship already works on ESG Forecasting's own Geo Map.
+**Why:** Directly requested, and once Country was removed as a filter dimension entirely (see above), keeping a Country-based map view would have been the one place on the page still referencing a retired concept. Sub-region is also the correct replacement dimension precisely because it's now a real filter on this page's own filter bar (unlike the old curated 14-country list, which had no matching filter) — map view and filter dimension now agree, matching how the region/sub-region relationship already works on MSG Forecasting's own Geo Map.
 
 ---
 
-## ESG Capacity Plan: Cases per FTE Card + RCA/CLCA Sidebar (2026-07-03)
+## MSG Capacity Plan: Cases per FTE Card + RCA/CLCA Sidebar (2026-07-03)
 
 ### Total FTE → Cases per FTE, not an additional 6th card
 **Decision:** The "Total FTE" card was replaced outright by "Cases per FTE" rather than adding Cases per FTE as a new sixth card.
@@ -554,56 +554,56 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Why:** Every other single-metric popup on this page's cards (SL%, Attrition) plots one line because there's genuinely one number to show; Cases per FTE explicitly has two (an actual and a plan), so the chart follows the same "one line per real distinct series" rule rather than picking one arbitrarily.
 
 ### RCA/CLCA sidebar: same mechanism, page-specific content
-**Decision:** New `EsgCapacityRcaClcaPanel.jsx`, wired into `EsgCapacityPage.jsx` with the identical sticky-sidebar-next-to-Analysis-Layers layout as `RcaClcaPanel`/`HesRcaClcaPanel`, with its own illustrative findings written in this page's vocabulary (staffing, utilization, SL%, attrition, Cases per FTE) instead of reusing either Forecasting page's copy.
-**Why:** Requested directly ("add a RCA and RLCA section as we did for ESG Forecasting") — "as we did" was read as *same mechanism and layout*, not *same words*, consistent with the identical precedent already established when HES Forecasting got its own RCA/CLCA sidebar (see "HES-specific RCA/CLCA sidebar content" above). ESG Capacity Plan didn't have this sidebar originally because the mockups it was built from never showed one; adding it now is a direct, explicit request rather than a gap being filled in retroactively.
+**Decision:** New `MsgCapacityRcaClcaPanel.jsx`, wired into `MsgCapacityPage.jsx` with the identical sticky-sidebar-next-to-Analysis-Layers layout as `RcaClcaPanel`/`TsaRcaClcaPanel`, with its own illustrative findings written in this page's vocabulary (staffing, utilization, SL%, attrition, Cases per FTE) instead of reusing either Forecasting page's copy.
+**Why:** Requested directly ("add a RCA and RLCA section as we did for MSG Forecasting") — "as we did" was read as *same mechanism and layout*, not *same words*, consistent with the identical precedent already established when TSA Forecasting got its own RCA/CLCA sidebar (see "TSA-specific RCA/CLCA sidebar content" above). MSG Capacity Plan didn't have this sidebar originally because the mockups it was built from never showed one; adding it now is a direct, explicit request rather than a gap being filled in retroactively.
 
 ---
 
-## HES Capacity Plan: Full Revision Pass (2026-07-03)
+## TSA Capacity Plan: Full Revision Pass (2026-07-03)
 
 ### Global Grouping: correcting a shared, previously-inferred constant
-**Decision:** `GLOBAL_GROUPING_LIST` in `hesData.js` was replaced wholesale with the 5 real values from a screenshot (`COMPUTE/NETWORKING`, `DPD/UDS`, `HCS`, `OTHER`, `PRIMARY/MIDRANGE`), affecting both HES Forecasting and HES Capacity Plan since they share this one constant.
-**Why:** `tech_spec.md` had flagged this list as "inferred, not yet user-confirmed" since it was first added — the screenshot is the business confirming the real list, so replacing the placeholder is a correction, not scope creep. Both HES pages picking it up automatically (rather than needing two separate edits) is exactly why the constant was shared in the first place.
+**Decision:** `GLOBAL_GROUPING_LIST` in `tsaData.js` was replaced wholesale with the 5 real values from a screenshot (`COMPUTE/NETWORKING`, `DPU/UDX`, `HCX`, `OTHER`, `PRIMARY/MIDRANGE`), affecting both TSA Forecasting and TSA Capacity Plan since they share this one constant.
+**Why:** `tech_spec.md` had flagged this list as "inferred, not yet user-confirmed" since it was first added — the screenshot is the business confirming the real list, so replacing the placeholder is a correction, not scope creep. Both TSA pages picking it up automatically (rather than needing two separate edits) is exactly why the constant was shared in the first place.
 
-### Applying ESG Capacity's exact patterns, adapted from queues to LOBs
-**Decision:** Card YTD/YoY messaging (`ytdSub`), the Attrition/Plan-over-Plan region+sub-region click-to-drill mechanic, and the diverging-bar-with-labels "highest variation" ranking were all reused structurally from ESG Capacity Plan's just-completed revision, substituting HES's LOB fact table (`HES_CAPACITY_LOBS`) wherever ESG used its queue fact table (`CAPACITY_QUEUES`).
-**Why:** The request explicitly asked to "make it similar we made it for ESG Capacity Planning" for several visuals — reusing the same mechanism (not just the same visual style) means both Capacity pages behave identically for a user switching between them, which is the whole point of "similar." A `hesShareByKey`/`shareByKey` pair (one helper per page, same logic) was kept as two small functions rather than one cross-page shared helper, since each operates on a different page's own fact table shape — sharing it would mean passing awkward field-name parameters for marginal benefit.
+### Applying MSG Capacity's exact patterns, adapted from queues to LOBs
+**Decision:** Card YTD/YoY messaging (`ytdSub`), the Attrition/Plan-over-Plan region+sub-region click-to-drill mechanic, and the diverging-bar-with-labels "highest variation" ranking were all reused structurally from MSG Capacity Plan's just-completed revision, substituting TSA's LOB fact table (`TSA_CAPACITY_LOBS`) wherever MSG used its queue fact table (`CAPACITY_QUEUES`).
+**Why:** The request explicitly asked to "make it similar we made it for MSG Capacity Planning" for several visuals — reusing the same mechanism (not just the same visual style) means both Capacity pages behave identically for a user switching between them, which is the whole point of "similar." A `tsaShareByKey`/`shareByKey` pair (one helper per page, same logic) was kept as two small functions rather than one cross-page shared helper, since each operates on a different page's own fact table shape — sharing it would mean passing awkward field-name parameters for marginal benefit.
 
-### HES has no Sub-region filter, so a `subRegion` tag was added purely to back the new drills
-**Decision:** `HES_CAPACITY_LOBS` gained a `subRegion` field (round-robin over the real 24 `SUB_REGIONS`, same convention as `ACTIVE_QUEUES`/`CAPACITY_QUEUES`), even though HES Capacity's filter bar has no Sub-region filter field of its own (unlike ESG Capacity, which added one this same session).
-**Why:** The Geo Map request ("worldwide SLO... region and sub-region wise") and the Attrition/"make it similar to ESG" request both need a real sub-region dimension to drill into, and HES's filter set (reused unmodified from HES Forecasting) wasn't in scope to change. Adding the data-layer dimension without a matching filter field is consistent with how `hesUtilByFY`'s pre-existing Region/Country lens already worked (a real interactive toggle backed by illustrative data, with no corresponding top-bar filter) — the toggle narrows what a *chart* shows, not what rows are in scope.
+### TSA has no Sub-region filter, so a `subRegion` tag was added purely to back the new drills
+**Decision:** `TSA_CAPACITY_LOBS` gained a `subRegion` field (round-robin over the real 24 `SUB_REGIONS`, same convention as `ACTIVE_QUEUES`/`CAPACITY_QUEUES`), even though TSA Capacity's filter bar has no Sub-region filter field of its own (unlike MSG Capacity, which added one this same session).
+**Why:** The Geo Map request ("worldwide SLO... region and sub-region wise") and the Attrition/"make it similar to MSG" request both need a real sub-region dimension to drill into, and TSA's filter set (reused unmodified from TSA Forecasting) wasn't in scope to change. Adding the data-layer dimension without a matching filter field is consistent with how `tsaUtilByFY`'s pre-existing Region/Country lens already worked (a real interactive toggle backed by illustrative data, with no corresponding top-bar filter) — the toggle narrows what a *chart* shows, not what rows are in scope.
 
 ### Plan over Plan Variation: LOBs, not a fabricated per-queue concept
-**Decision:** The new HES-specific Plan over Plan Variation layer ranks LOBs in its "highest variation" chart, mirroring ESG's queue-ranking chart exactly except for the entity being ranked.
-**Why:** Requested directly ("Build similar to ESG Capacity planning - but show LOB's instead of CQN"). HES Capacity has no per-queue dimension anywhere else on the page (Workload Distribution's "CQN" mode queue names are the one exception, and those are explicitly illustrative-flow labels, not a fact table) — ranking real LOBs, which this page already has as its natural unit of measurement, is more honest than inventing per-queue mock data just to match ESG's chart literally.
+**Decision:** The new TSA-specific Plan over Plan Variation layer ranks LOBs in its "highest variation" chart, mirroring MSG's queue-ranking chart exactly except for the entity being ranked.
+**Why:** Requested directly ("Build similar to MSG Capacity planning - but show LOB's instead of CQN"). TSA Capacity has no per-queue dimension anywhere else on the page (Workload Distribution's "CQN" mode queue names are the one exception, and those are explicitly illustrative-flow labels, not a fact table) — ranking real LOBs, which this page already has as its natural unit of measurement, is more honest than inventing per-queue mock data just to match MSG's chart literally.
 
 ### Workload Distribution's LOB/CQN toggle: real names on both sides
-**Decision:** The Sankey's toggle swaps which illustrative tier labels feed into which real name list — LOB mode keeps the existing CQN-tier→real-LOB flow; CQN mode introduces LOB-tier→real-HES-queue flow, with the queue names filtered against `LOB_QUEUES['High End Storage'].active` to guarantee they're genuine.
-**Why:** Requested directly ("give a toggle to switch from LOB to CQN... utilize some HES LOB's and some HES Queues"). Filtering the hardcoded queue-name list against the real source array (rather than trusting the literal strings match) means a future rename or typo in either list fails loudly (fewer Sankey targets than expected, caught by the Node smoke test) instead of silently drifting from the source data.
+**Decision:** The Sankey's toggle swaps which illustrative tier labels feed into which real name list — LOB mode keeps the existing CQN-tier→real-LOB flow; CQN mode introduces LOB-tier→real-TSA-queue flow, with the queue names filtered against `LOB_QUEUES['High End Storage'].active` to guarantee they're genuine.
+**Why:** Requested directly ("give a toggle to switch from LOB to CQN... utilize some TSA LOB's and some TSA Queues"). Filtering the hardcoded queue-name list against the real source array (rather than trusting the literal strings match) means a future rename or typo in either list fails loudly (fewer Sankey targets than expected, caught by the Node smoke test) instead of silently drifting from the source data.
 
 ### Workload Distribution Visual2/Visual3: reinterpreting "Workload Act vs Plan" as Average Case Time
 **Decision:** "Workload Act vs Plan" (previously backed by a `workloadByFY`/`WORKLOAD_BY_FY` hours-volume dataset) was renamed "Average Case Time Variance" and repointed at the same `actHrsByFY` (Average Case Time) data that "ACT Trend — Actual vs Plan" already used — both visuals now plot the identical metric, one as bars with an Adherence % line, the other as a trend line with the same Adherence % line, and both gained a "top LOBs above target" list.
 **Why:** The request explicitly named the target metric "Average Case Time" for visual #2, then said visual #3 ("ACT Trend") should be "similar to Average Case Time Variance" — "ACT" already stands for Average Case Time (used verbatim as visual #3's own abbreviation), which strongly suggests the original "Workload Act vs Plan" name was itself a garbled reference to this same metric, not a genuine "workload volume" concept, and the request is correcting that naming confusion rather than asking for two literally-different metrics to be merged. The now-unreferenced `workloadByFY`/`WORKLOAD_BY_FY` were removed as dead code once nothing called them.
 
 ### Utilization Variance's lens toggle: relabeled, not rebuilt
-**Decision:** `hesUtilByFY`'s `lens` parameter stays internally `'Region'|'Country'` with its original small cosmetic scale factor — only the UI-facing `BinaryToggle` label changed from "Country" to "Sub-region."
-**Why:** "Actual vs Plan Utilization... make it similar to ESG Capacity Planning" was read as applying to the visual's *name* (renamed "Utilization Variance") given the request's next line explicitly separately asks for Sankey/Geo Map to gain real region+sub-region treatment — a full share-weighted sub-region calculation for a rate/percentage metric (utilization %) doesn't carry the same meaning it does for headcount/attrition volumes (a percentage isn't "a share of the total" the way a headcount is), so keeping the existing nudge-factor mechanism and just fixing its stray "Country" label (which was never backed by real per-country data either) was the proportionate fix.
+**Decision:** `tsaUtilByFY`'s `lens` parameter stays internally `'Region'|'Country'` with its original small cosmetic scale factor — only the UI-facing `BinaryToggle` label changed from "Country" to "Sub-region."
+**Why:** "Actual vs Plan Utilization... make it similar to MSG Capacity Planning" was read as applying to the visual's *name* (renamed "Utilization Variance") given the request's next line explicitly separately asks for Sankey/Geo Map to gain real region+sub-region treatment — a full share-weighted sub-region calculation for a rate/percentage metric (utilization %) doesn't carry the same meaning it does for headcount/attrition volumes (a percentage isn't "a share of the total" the way a headcount is), so keeping the existing nudge-factor mechanism and just fixing its stray "Country" label (which was never backed by real per-country data either) was the proportionate fix.
 
-### Geo Map: same fallback mechanic as ESG, ported directly
-**Decision:** `HesCapacityGeoMap.jsx`'s new Region/Sub-region toggle uses the identical "unmapped country falls back to parent region at 35% opacity" logic as `EsgCapacityGeoMap.jsx`/`Layer3GeoMap.jsx`, backed by a new `geoSloBySubRegion()`/`HES_GEO_SLO_BY_SUBREGION` (24 real sub-regions, rotating through the existing 4-region SLO baseline).
-**Why:** Requested directly ("It should [show] worldwide SLO likewise - region and sub-region wise"), and this exact mechanic already exists twice in the codebase (ESG Forecasting, ESG Capacity) — porting it a third time for HES Capacity is more consistent than any alternative sub-region-fallback design, and the "worldwide" framing fits naturally since the fallback ensures full map coverage regardless of view mode.
+### Geo Map: same fallback mechanic as MSG, ported directly
+**Decision:** `TsaCapacityGeoMap.jsx`'s new Region/Sub-region toggle uses the identical "unmapped country falls back to parent region at 35% opacity" logic as `MsgCapacityGeoMap.jsx`/`Layer3GeoMap.jsx`, backed by a new `geoSloBySubRegion()`/`TSA_GEO_SLO_BY_SUBREGION` (24 real sub-regions, rotating through the existing 4-region SLO baseline).
+**Why:** Requested directly ("It should [show] worldwide SLO likewise - region and sub-region wise"), and this exact mechanic already exists twice in the codebase (MSG Forecasting, MSG Capacity) — porting it a third time for TSA Capacity is more consistent than any alternative sub-region-fallback design, and the "worldwide" framing fits naturally since the fallback ensures full map coverage regardless of view mode.
 
 ### Shared `capacity/PlanOverPlanLayer.jsx` deleted once orphaned
-**Decision:** Once HES Capacity's Plan over Plan layer switched to its own `PlanOverPlanVariationLayer.jsx` (matching ESG Capacity's earlier switch), the original shared `src/components/capacity/PlanOverPlanLayer.jsx` had no remaining importers anywhere in the app — it and its now-empty `capacity/` folder were deleted rather than left as dead code.
+**Decision:** Once TSA Capacity's Plan over Plan layer switched to its own `PlanOverPlanVariationLayer.jsx` (matching MSG Capacity's earlier switch), the original shared `src/components/capacity/PlanOverPlanLayer.jsx` had no remaining importers anywhere in the app — it and its now-empty `capacity/` folder were deleted rather than left as dead code.
 **Why:** The component was built specifically to be shared between the two Capacity pages' identical-at-the-time Plan-over-Plan layers; once both pages independently outgrew it in different directions, keeping the file around would just be a maintenance trap for a future reader wondering whether it's still used. Confirmed orphaned via a full-repo grep before deleting.
 
 ### RCA/CLCA sidebar: same mechanism, own vocabulary, third time
-**Decision:** `HesCapacityRcaClcaPanel.jsx` follows the identical sticky-sidebar-next-to-Analysis-Layers pattern as the other three pages' RCA/CLCA panels, with illustrative content written in this page's own terms (staffing, attrition, Cases per FTE, Average Case Time, SLO).
-**Why:** Requested directly ("add RCA and RLCA section like we did for ESG Capacity") — by this point the pattern is fully established (ESG Forecasting → HES Forecasting → ESG Capacity → HES Capacity), so there was no ambiguity left to resolve: same mechanism, own words, per the standing precedent recorded earlier in this file.
+**Decision:** `TsaCapacityRcaClcaPanel.jsx` follows the identical sticky-sidebar-next-to-Analysis-Layers pattern as the other three pages' RCA/CLCA panels, with illustrative content written in this page's own terms (staffing, attrition, Cases per FTE, Average Case Time, SLO).
+**Why:** Requested directly ("add RCA and RLCA section like we did for MSG Capacity") — by this point the pattern is fully established (MSG Forecasting → TSA Forecasting → MSG Capacity → TSA Capacity), so there was no ambiguity left to resolve: same mechanism, own words, per the standing precedent recorded earlier in this file.
 
 ---
 
-## ESG Forecasting: Total Queues Drill-Down — Active + Inactive + Business Partner Breakdown (2026-07-08)
+## MSG Forecasting: Total Queues Drill-Down — Active + Inactive + Business Partner Breakdown (2026-07-08)
 
 ### Tag the inactive roster instead of leaving it structureless
 **Decision:** `INACTIVE_QUEUES` gives each of the 146 inactive names a `region` (via the same `inferRegion()` regex `ACTIVE_QUEUES` already uses) and a `businessPartner` (round-robin over the real `BUSINESS_PARTNERS` list) — attributes it never had before.
@@ -641,12 +641,12 @@ accent:   #4fc3f7  ← highlights, actuals bars, line charts
 **Decision:** The button always sits in the visual's top-left corner; `cornerControls` (Region/Sub-region toggles, Plan selectors, etc.) keeps its existing top-right slot.
 **Why:** Several visuals already place a toggle in the top-right via `cornerControls` — reusing that same slot for the insight button would force a choice between the two on crowded charts. A fixed, dedicated corner for each concern (data-scope controls on the right, this new "why" popup on the left) avoids collisions across all 35 charts without needing to special-case any of them.
 
-### ESG Forecasting's Layer1/Layer2 kept their own local `Visual`, not migrated to the shared one
+### MSG Forecasting's Layer1/Layer2 kept their own local `Visual`, not migrated to the shared one
 **Decision:** `Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx` (which predate `ChartKit.jsx`'s promotion and still define their own local `Visual`/`Tip`/color-role constants) got the `rca`/`clca` prop handling added to their *own* local `Visual`, importing only the shared `GraphInsightButton` — they were not migrated to import the shared `Visual` wholesale.
 **Why:** Migrating them would mean reconciling two independently-evolved local `C` color-role objects and `Tip` tooltip formatters against the shared ones — a bigger, riskier change than what was asked for. Extending their local `Visual` with the same two props achieves the same visible feature with much less blast radius; the two files' near-duplicate `Visual` definitions were an accepted, pre-existing state of the codebase (see the ChartKit.jsx promotion entry above), not something this request needed to resolve.
 
 ### Geo Maps: button placed directly in each map's own toggle row
-**Decision:** The 4 Geo Maps (which use a custom `layer-header` + content layout, not `Visual`) each got `GraphInsightButton` inserted directly into their existing toggle row, using `justify-content: space-between` so it sits opposite whatever Region/Sub-region (or dual metric+view, for ESG Capacity) toggle already lives there.
+**Decision:** The 4 Geo Maps (which use a custom `layer-header` + content layout, not `Visual`) each got `GraphInsightButton` inserted directly into their existing toggle row, using `justify-content: space-between` so it sits opposite whatever Region/Sub-region (or dual metric+view, for MSG Capacity) toggle already lives there.
 **Why:** These 4 components never adopted `Visual`'s layout, so the prop-based approach didn't apply — but the same "small button, opposite the existing toggle" placement rule was still followed for visual consistency with the other 31 charts, rather than inventing a different treatment for maps.
 
 ---

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoSloByRegion, geoSloBySubRegion } from '../../data/hesCapacityData'
+import { geoSloByRegion, geoSloBySubRegion } from '../../data/tsaCapacityData'
 import { regionForCountry, subRegionForCountry } from '../../data/mockData'
 import { BinaryToggle, GraphInsightButton } from '../ChartKit'
 
@@ -22,11 +22,11 @@ const LEGEND = [
 ]
 
 // Worldwide SLO, now with a Region/Sub-region toggle (2026-07-03) mirroring
-// EsgCapacityGeoMap's exact fallback mechanic: unmapped countries in Sub-region view
+// MsgCapacityGeoMap's exact fallback mechanic: unmapped countries in Sub-region view
 // shade at their parent region's color, 35% opacity. The mockup labels this "Layer 5"
 // but skips a "Layer 4" entirely; renumbered to 04 here to keep this page's badges
 // sequential (see design_choice.md).
-export default function HesCapacityGeoMap({ filters }) {
+export default function TsaCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [viewMode, setViewMode] = useState('Region')
   const [hovered, setHovered] = useState(null)

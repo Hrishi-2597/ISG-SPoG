@@ -1,4 +1,4 @@
-# Prompt Trail — ISG SPoG Project
+# Prompt Trail — TSG SPoG Project
 
 Chronological log of every user prompt and the corresponding actions taken.
 
@@ -25,9 +25,9 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 3 — 2026-06-30
-**Input:** `This is SPoG for ISG Business and particular for Enterprise Service Group(ESG) Forecasting Page and we want to built an interactive UI and also check for GIT credentials.` *(with git init commands and 2 screenshot images)*
+**Input:** `This is SPoG for TSG Business and particular for Enterprise Service Group(MSG) Forecasting Page and we want to built an interactive UI and also check for GIT credentials.` *(with git init commands and 2 screenshot images)*
 
-**Images provided:** Screenshots of the ESG Forecasting design spec showing filter panel layout, 5 KPI cards, Layer 1 (Plan over Plan) and Layer 2 (Actual vs Plan) graph layouts.
+**Images provided:** Screenshots of the MSG Forecasting design spec showing filter panel layout, 5 KPI cards, Layer 1 (Plan over Plan) and Layer 2 (Actual vs Plan) graph layouts.
 
 **Action:**
 - Checked git credentials: user=`Hrishi-2597`, email=`hrishikesh.yadav@alignedautomation.com`
@@ -48,7 +48,7 @@ Chronological log of every user prompt and the corresponding actions taken.
   ```
 - Installed dependencies via `npm install`
 - Built successfully (`vite build` → 682KB bundle, no errors)
-- `git init`, created README.md, committed, set remote to `https://github.com/Hrishi-2597/ISG-SPoG.git`
+- `git init`, created README.md, committed, set remote to `https://github.com/Hrishi-2597/TSG-SPoG.git`
 - Pushed to GitHub (`main` branch)
 
 ---
@@ -57,12 +57,12 @@ Chronological log of every user prompt and the corresponding actions taken.
 **Input:** `when everything is built push to github pages and setup everything deploy it and give the hosted link in the chat`
 
 **Action:**
-- Set `vite.config.js` base to `/ISG-SPoG/` for correct asset paths
+- Set `vite.config.js` base to `/TSG-SPoG/` for correct asset paths
 - Added `predeploy` / `deploy` scripts to `package.json`
 - Created `.github/workflows/deploy.yml` using `actions/configure-pages@v4` + `actions/deploy-pages@v4`
 - Fixed `Layer3GeoMap.jsx`: removed `ZoomableGroup` (removed in react-simple-maps v3)
 - Pushed to GitHub → Actions workflow triggered and completed with `success`
-- Verified HTTP 200 at `https://hrishi-2597.github.io/ISG-SPoG/`
+- Verified HTTP 200 at `https://hrishi-2597.github.io/TSG-SPoG/`
 - **Issue discovered:** site served raw source `index.html` (with `src="/src/main.jsx"`) — GitHub Pages was still set to "Deploy from branch: main", not GitHub Actions
 
 ---
@@ -71,10 +71,10 @@ Chronological log of every user prompt and the corresponding actions taken.
 **Input:** `The link is not loading on website`
 
 **Action:**
-- Diagnosed: `https://hrishi-2597.github.io/ISG-SPoG/` returned raw source `<script src="/src/main.jsx">` instead of compiled assets
+- Diagnosed: `https://hrishi-2597.github.io/TSG-SPoG/` returned raw source `<script src="/src/main.jsx">` instead of compiled assets
 - Root cause: GitHub Pages was configured to serve from `main` branch (raw files), not the Actions artifact
 - Fix: updated workflow to use `peaceiris/actions-gh-pages@v4` which pushes `dist/` to `gh-pages` branch
-- Verified `gh-pages` branch was created with correct built `index.html` (`src="/ISG-SPoG/assets/index-KRutg-Ok.js"`)
+- Verified `gh-pages` branch was created with correct built `index.html` (`src="/TSG-SPoG/assets/index-KRutg-Ok.js"`)
 - Pages workflow completed with `success`
 - Remaining step for user: go to Settings → Pages → Source → `gh-pages` branch
 
@@ -118,10 +118,10 @@ Chronological log of every user prompt and the corresponding actions taken.
 <!-- NEW PROMPTS APPENDED BELOW THIS LINE -->
 
 ## Prompt 8 — 2026-07-02
-**Input:** `add this repository https://github.com/Hrishi-2597/ISG-SPoG.git and follow the important documents`
+**Input:** `add this repository https://github.com/Hrishi-2597/TSG-SPoG.git and follow the important documents`
 
 **Action:**
-- Cloned the repo fresh to `C:\Users\hrishikesh.yadav\ISG-SPoG` (new machine/session, no prior local checkout)
+- Cloned the repo fresh to `C:\Users\hrishikesh.yadav\TSG-SPoG` (new machine/session, no prior local checkout)
 - Read `README.md`, `handoff.md`, `tech_spec.md`, `design_choice.md`, `prompt_trail.md` in full
 - Confirmed git remote/branches (`main`, `gh-pages`) and toolchain (Node v24, npm v11)
 - Saved the "update these 4 docs + push after every change" convention to persistent memory so it's followed automatically in future sessions on this machine
@@ -129,12 +129,12 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 9 — 2026-07-02
-**Input:** Large multi-part request for the HES Forecasting page: (1) card drill-downs → popup modals that preserve filters on close; (2) rename ASU/SR Actuals cards, add YTD messages with increase/decrease, change SR popup to a column chart, change CPASU popup to a CPASU-only line chart; (3) rename ASU Layer/SR Layer → ASU Trend/SR Trend and their 3 visuals ("Actuals vs Plan Comparison" with a "Plan Name" dropdown, "Plan vs Plan Comparison", "Plan Impact" with 4 regions AMER/APJ/EMEA/Global); (4) rename "ASU Impact on SR Trend" → "ASU/UCR Impact on SR Analysis", redesign its CPASU Trend visual to show regions by default and drill into a clicked region's trend at the top filter bar's time granularity, rename SR(Human)/SR(Bots) series and add a corner Plan selector on "UCR Impact on SR", and change "UCR Runrate with Target" to a fixed-FY chart with a year-click modal listing the top 5 non-adherent LOBs
+**Input:** Large multi-part request for the TSA Forecasting page: (1) card drill-downs → popup modals that preserve filters on close; (2) rename ASU/SR Actuals cards, add YTD messages with increase/decrease, change SR popup to a column chart, change CPASU popup to a CPASU-only line chart; (3) rename ASU Layer/SR Layer → ASU Trend/SR Trend and their 3 visuals ("Actuals vs Plan Comparison" with a "Plan Name" dropdown, "Plan vs Plan Comparison", "Plan Impact" with 4 regions AMER/APJ/EMEA/Global); (4) rename "ASU Impact on SR Trend" → "ASU/UCR Impact on SR Analysis", redesign its CPASU Trend visual to show regions by default and drill into a clicked region's trend at the top filter bar's time granularity, rename SR(Human)/SR(Bots) series and add a corner Plan selector on "UCR Impact on SR", and change "UCR Runrate with Target" to a fixed-FY chart with a year-click modal listing the top 5 non-adherent LOBs
 
 **Action:**
-- `HesChartKit.jsx`: added a shared `Modal` popup component, a `cornerControls` slot on `Visual`, and a `PillButton` helper
-- `hesData.js`: added `yoyPct` to `hesCardData()`'s ASU/SR/CPASU metrics; changed `IMPACT_REGIONS` to `['AMER','APJ','EMEA','Global']`; added `cpasuByRegion`/`regionTrendGranularity`/`cpasuTrendByRegion` for the CPASU Trend redesign; added `topNonAdherentLobsByYear`; removed the now-dead `ucrNonAdherentQueues` (queue-level) and its fallback constant, along with the unused `asuSrTrendByFY`/`asuSrTrendCountries` Region/Country-toggle functions
-- `HesMetricCards.jsx`: card drill-downs now open in the new `Modal`; renamed "ASU Actuals"→"Active Service Units" and "SR Actuals"→"Service Requests"; all three of ASU/SR/CPASU show a YTD year-over-year message instead of "Plan X"; SR's DB/OSP popup changed to grouped columns; CPASU's popup changed to a CPASU-only line chart
+- `TsaChartKit.jsx`: added a shared `Modal` popup component, a `cornerControls` slot on `Visual`, and a `PillButton` helper
+- `tsaData.js`: added `yoyPct` to `tsaCardData()`'s ASU/SR/CPASU metrics; changed `IMPACT_REGIONS` to `['AMER','APJ','EMEA','Global']`; added `cpasuByRegion`/`regionTrendGranularity`/`cpasuTrendByRegion` for the CPASU Trend redesign; added `topNonAdherentLobsByYear`; removed the now-dead `ucrNonAdherentQueues` (queue-level) and its fallback constant, along with the unused `asuSrTrendByFY`/`asuSrTrendCountries` Region/Country-toggle functions
+- `TsaMetricCards.jsx`: card drill-downs now open in the new `Modal`; renamed "ASU Actuals"→"Active Service Units" and "SR Actuals"→"Service Requests"; all three of ASU/SR/CPASU show a YTD year-over-year message instead of "Plan X"; SR's DB/OSP popup changed to grouped columns; CPASU's popup changed to a CPASU-only line chart
 - `AsuLayer.jsx` / `SrLayer.jsx`: renamed layer headers to "ASU Trend"/"SR Trend" and all 3 visual titles; Plan dropdown relabeled "Plan Name"
 - `AsuSrTrendLayer.jsx`: renamed layer header to "ASU/UCR Impact on SR Analysis"; Visual1 ("CPASU Trend") rebuilt with region-default + click-to-drill-into-time-granularity; Visual2 series renamed to "SR's"/"UCR Handled SR's" plus a corner Plan selector; Visual3 now always shows all 3 FYs and opens a modal with the top 5 non-adherent LOBs on year click
 - Ran `npm install` (dependencies weren't present in this fresh clone), `npm run build` (clean), and grepped the whole `src/` tree for stale old titles/removed function names — none found
@@ -144,26 +144,26 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 10 — 2026-07-02
-**Input:** `remove the UCR card from the last and the front add the total queues card similarly we did for ESG Forecasting..I have already given you a list of active and inactive queues for HES.and drilldown should be similar pie chart we did for ESG Forecasting.Also add RCA and RLCA section similarly we did for ESG Forecasting.`
+**Input:** `remove the UCR card from the last and the front add the total queues card similarly we did for MSG Forecasting..I have already given you a list of active and inactive queues for TSA.and drilldown should be similar pie chart we did for MSG Forecasting.Also add RCA and RLCA section similarly we did for MSG Forecasting.`
 
 **Action:**
 - Removed the "UCR Impacted SR" card (was last) and its `ucrImpactedSrByFY()` selector (dead code)
 - Added a "Total Queues" card at the front of the Key Metrics row, worded/styled identically to the Forecasting page's ("Active / Inactive" sublabel, `active / total` value, "N inactive" sub-line)
-- Reused `LOB_QUEUES['High End Storage']`'s real 71 active / ~150 inactive queue names as the page-level HES queue roster (new `HES_ACTIVE_QUEUE_NAMES`/`HES_INACTIVE_QUEUE_NAMES`/`HES_ACTIVE_QUEUES` in `hesData.js`) — the only real per-queue name data supplied for this page, so it backs the Total Queues card directly rather than staying scoped to one LOB
-- Exported `inferRegion()` from `mockData.js` (was file-local) and reused it to tag each HES active queue with a region
-- Built a region-donut-then-table drill-down for the new card, mirroring the Forecasting page's `QueuesByRegionChart`/`QueueTable` (click a slice/legend entry to filter, "Clear" to reset), minus the Accuracy column since that concept doesn't exist for HES queues
-- Created `HesRcaClcaPanel.jsx` with HES-specific illustrative RCA/CLCA content (ASU/SR/CPASU/UCR-themed, not a copy of the Forecasting page's queue/call-volume-themed copy) and wired it into `HesForecastingPage.jsx` as a sticky sidebar alongside Layers 1-4, matching `ForecastingPage.jsx`'s exact layout
+- Reused `LOB_QUEUES['High End Storage']`'s real 71 active / ~150 inactive queue names as the page-level TSA queue roster (new `TSA_ACTIVE_QUEUE_NAMES`/`TSA_INACTIVE_QUEUE_NAMES`/`TSA_ACTIVE_QUEUES` in `tsaData.js`) — the only real per-queue name data supplied for this page, so it backs the Total Queues card directly rather than staying scoped to one LOB
+- Exported `inferRegion()` from `mockData.js` (was file-local) and reused it to tag each TSA active queue with a region
+- Built a region-donut-then-table drill-down for the new card, mirroring the Forecasting page's `QueuesByRegionChart`/`QueueTable` (click a slice/legend entry to filter, "Clear" to reset), minus the Accuracy column since that concept doesn't exist for TSA queues
+- Created `TsaRcaClcaPanel.jsx` with TSA-specific illustrative RCA/CLCA content (ASU/SR/CPASU/UCR-themed, not a copy of the Forecasting page's queue/call-volume-themed copy) and wired it into `TsaForecastingPage.jsx` as a sticky sidebar alongside Layers 1-4, matching `ForecastingPage.jsx`'s exact layout
 - Ran `npm run build` (clean) and grepped for stale references to the removed card/selector — none found
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
 
 ---
 
 ## Prompt 11 — 2026-07-02
-**Input:** `When a user clicks on any card, display the detailed view as a popup modal instead of navigating to a new page. The popup should allow users to close it and return to the dashboard without losing their current filter selections - do this for ESG Forecasting as well`
+**Input:** `When a user clicks on any card, display the detailed view as a popup modal instead of navigating to a new page. The popup should allow users to close it and return to the dashboard without losing their current filter selections - do this for MSG Forecasting as well`
 
 **Action:**
-- Extracted the `Modal` component (built for HES Forecasting's cards) out of `HesChartKit.jsx` into a shared `src/components/Modal.jsx`; `HesChartKit.jsx` now re-exports it so no existing HES import needed to change
-- `MetricCards.jsx` (ESG Forecasting): renamed `DrillDownPanel` → `DrillDownModal`, wrapped in the shared `Modal`; the nested `YearQueueModal` (CQN Variance year-click drill) needed no changes — it's now a modal nested inside a modal instead of nested inside an inline panel
+- Extracted the `Modal` component (built for TSA Forecasting's cards) out of `TsaChartKit.jsx` into a shared `src/components/Modal.jsx`; `TsaChartKit.jsx` now re-exports it so no existing TSA import needed to change
+- `MetricCards.jsx` (MSG Forecasting): renamed `DrillDownPanel` → `DrillDownModal`, wrapped in the shared `Modal`; the nested `YearQueueModal` (CQN Variance year-click drill) needed no changes — it's now a modal nested inside a modal instead of nested inside an inline panel
 - This supersedes the Forecasting page's original "Drill-down as inline panel (not modal)" decision, noted in `design_choice.md`
 - Ran `npm run build` (clean) and grepped for stale `DrillDownPanel` references — none found
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the change; committed and pushed to `main`
@@ -171,7 +171,7 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 12 — 2026-07-02
-**Input:** Two lists of real queue names pasted in chat, labeled "Inactive queues list for ESG Forecasting and CCC MidRange Mandarin" and "Active queues for ESG Forecasting - update accordingly"
+**Input:** Two lists of real queue names pasted in chat, labeled "Inactive queues list for MSG Forecasting and CCC MidRange Mandarin" and "Active queues for MSG Forecasting - update accordingly"
 
 **Action:**
 - Cross-checked both pasted lists against the existing `ACTIVE_QUEUE_NAMES`/`INACTIVE_QUEUE_NAMES` in `mockData.js`: every name in the "active" list was already somewhere in the old active list, every name in the "inactive" list was already somewhere in the old inactive list — confirmed this is a pruned/corrected roster, not new additions
@@ -185,15 +185,15 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 13 — 2026-07-02
-**Input:** Screenshot of the HES Forecasting filter bar showing a visible gap between Fiscal Week and Business Partner, with instructions to fill it and to add a light/dark mode toggle for both pages
+**Input:** Screenshot of the TSA Forecasting filter bar showing a visible gap between Fiscal Week and Business Partner, with instructions to fill it and to add a light/dark mode toggle for both pages
 
 **Action:**
-- Root-caused the gap: `HesFilterPanel.jsx`'s `Cluster` grid div was missing `flex-1 min-w-0` (the Forecasting page's `FilterPanel.jsx` `Cluster` already had it), so the Time cluster's flex-grown width went unclaimed as blank space instead of stretching its 4 dropdown columns. One-line fix.
+- Root-caused the gap: `TsaFilterPanel.jsx`'s `Cluster` grid div was missing `flex-1 min-w-0` (the Forecasting page's `FilterPanel.jsx` `Cluster` already had it), so the Time cluster's flex-grown width went unclaimed as blank space instead of stretching its 4 dropdown columns. One-line fix.
 - Built a full light/dark theme toggle:
   - New CSS custom-property system in `index.css` (`:root` dark defaults, `[data-theme='light']` overrides) covering background depth levels, border tiers, text hierarchy, accent + accent-contrast, tooltip/chart-grid/select tokens, scrollbars, and card shadows
   - Rerouted every shared CSS class (`.card-panel`, `.chart-panel`, `.layer-header`, `.select-dark`, `.ms-*`, `.filter-chip`, `.drill-toggle`/`.drill-btn`, `.chart-tooltip`, scrollbars) to the new variables
   - Added a sun/moon `ThemeToggle` in `App.jsx`'s header, state persisted to `localStorage`, applied via a `data-theme` attribute set in the `useState` initializer to avoid a flash on load
-  - Rerouted inline "chrome" colors (backgrounds/borders/text) across `App.jsx`, `SectionDivider.jsx`, `FilterPanel.jsx`/`HesFilterPanel.jsx`, `MultiSelectField.jsx`, `MetricCards.jsx`/`HesMetricCards.jsx`, `Modal.jsx`, `RcaClcaPanel.jsx`/`HesRcaClcaPanel.jsx`, `HesChartKit.jsx`, and all 7 layer/geo-map files
+  - Rerouted inline "chrome" colors (backgrounds/borders/text) across `App.jsx`, `SectionDivider.jsx`, `FilterPanel.jsx`/`TsaFilterPanel.jsx`, `MultiSelectField.jsx`, `MetricCards.jsx`/`TsaMetricCards.jsx`, `Modal.jsx`, `RcaClcaPanel.jsx`/`TsaRcaClcaPanel.jsx`, `TsaChartKit.jsx`, and all 7 layer/geo-map files
   - Deliberately left chart series/data colors, region palettes, the geo accuracy scale, status badges, and the geo maps' own canvases un-themed (constant across both modes) — see `design_choice.md`
 - Ran `npm run build` (clean), grepped the compiled CSS to confirm both `:root` and `[data-theme='light']` blocks survived Tailwind/PostCSS, and grepped the whole component tree to confirm no stray hardcoded chrome colors were left unconverted
 - This session's environment has no browser-automation tool, so the toggle wasn't visually clicked through in a rendered browser — flagged to the user as a follow-up to verify manually
@@ -202,14 +202,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 14 — 2026-07-02
-**Input:** Add a page-wide Quarter/Month/Week filter for both pages ("in order - Quarter | Month | Week"), with every graph interacting with it, researched and placed well at the top; also rename HES's ASU Layer subtitle from "average service unit" to "Active Service Unit"
+**Input:** Add a page-wide Quarter/Month/Week filter for both pages ("in order - Quarter | Month | Week"), with every graph interacting with it, researched and placed well at the top; also rename TSA's ASU Layer subtitle from "average service unit" to "Active Service Unit"
 
 **Action:**
 - Ran a web search on dashboard time-granularity/date-filter placement conventions before building anything, per the explicit request — findings (page-wide filters belong in the horizontal filter toolbar; granularity toggles sit prominently near other filters) informed placing the new control inside each filter bar rather than the header or a new toolbar row; cited in `design_choice.md`
-- Built a shared `GranularityToggle.jsx` (Quarter/Month/Week pill, same `.drill-toggle` styling as the DB/OSP and page toggles) and added it to the top-right of both `FilterPanel.jsx` and `HesFilterPanel.jsx`'s filter-bar rows
-- Lifted `granularity` state (default `'Quarter'`) into `ForecastingPage.jsx`/`HesForecastingPage.jsx` alongside `filters`, threaded as a prop into every chart component with a time axis
-- Added `FISCAL_MONTH_LIST` (moved to `mockData.js`, `hesData.js` now re-exports it), `periodsForGranularity()`, `expandToGranularity()` (additive fields — volumes/counts, divides across sub-periods with a wobble) and `expandRateToGranularity()` (rate fields — percentages/targets, keeps magnitude constant across sub-periods) to `mockData.js`
-- Applied granularity to every period-keyed selector on both pages: ESG's `planOverPlanByFY`, `actualVsPlanByFY`, `stackedAdherenceByFY` (own bespoke bucket-renormalizing expansion, not either generic helper), `callVolumeByFY`, `dbOspVolumeByFY`; HES's `asuByFY`, `srByFY`, `asuPlanVsPlanByFY`, `srPlanVsPlanByFY`, `cpasuByFY`, `ucrByFY`, `srBotsByFY`, `srDbOspByFY`, and `regionTrendGranularity`/`cpasuTrendByRegion` (now driven by the global toggle instead of inferring granularity from which time filter was selected)
+- Built a shared `GranularityToggle.jsx` (Quarter/Month/Week pill, same `.drill-toggle` styling as the DB/OSP and page toggles) and added it to the top-right of both `FilterPanel.jsx` and `TsaFilterPanel.jsx`'s filter-bar rows
+- Lifted `granularity` state (default `'Quarter'`) into `ForecastingPage.jsx`/`TsaForecastingPage.jsx` alongside `filters`, threaded as a prop into every chart component with a time axis
+- Added `FISCAL_MONTH_LIST` (moved to `mockData.js`, `tsaData.js` now re-exports it), `periodsForGranularity()`, `expandToGranularity()` (additive fields — volumes/counts, divides across sub-periods with a wobble) and `expandRateToGranularity()` (rate fields — percentages/targets, keeps magnitude constant across sub-periods) to `mockData.js`
+- Applied granularity to every period-keyed selector on both pages: MSG's `planOverPlanByFY`, `actualVsPlanByFY`, `stackedAdherenceByFY` (own bespoke bucket-renormalizing expansion, not either generic helper), `callVolumeByFY`, `dbOspVolumeByFY`; TSA's `asuByFY`, `srByFY`, `asuPlanVsPlanByFY`, `srPlanVsPlanByFY`, `cpasuByFY`, `ucrByFY`, `srBotsByFY`, `srDbOspByFY`, and `regionTrendGranularity`/`cpasuTrendByRegion` (now driven by the global toggle instead of inferring granularity from which time filter was selected)
 - Caught and fixed a real bug during this pass: `ucrByFY` initially used the additive `expandToGranularity` on target/current, which are percentages — dividing an 88% target by 52 weeks would have shown ~1.7% at Week granularity. Fixed by routing rate fields through the new `expandRateToGranularity` instead
 - This supersedes two same-day decisions: "UCR Runrate with Target" (fixed to always-FY earlier the same day) and the CPASU Trend region-drill's filter-bar-inferred granularity both now follow the new global toggle, since the request was explicit that every time-axis chart should respond to it
 - Generalized `topNonAdherentLobsByYear` to accept any period label (not just a bare fiscal year), deriving the target year via the first 4 characters, since its host chart can now render at quarter/month/week granularity
@@ -223,7 +223,7 @@ Chronological log of every user prompt and the corresponding actions taken.
 **Input:** Screenshot showing "PoP Variation" rendering 12 quarterly bars by default; feedback that the granularity feature itself is correct but every view should default to Fiscal Year (as before) with nothing pre-selected in the Quarter/Month/Week toggle, for both pages
 
 **Action:**
-- Changed `granularity` state default from `'Quarter'` to `null` in `ForecastingPage.jsx`/`HesForecastingPage.jsx` — `null` means Fiscal Year, matching the convention every value filter already uses (`[]` = "All", not a pre-picked option)
+- Changed `granularity` state default from `'Quarter'` to `null` in `ForecastingPage.jsx`/`TsaForecastingPage.jsx` — `null` means Fiscal Year, matching the convention every value filter already uses (`[]` = "All", not a pre-picked option)
 - Changed `GranularityToggle.jsx` so clicking the already-active pill deselects it back to `null`, instead of always keeping exactly one of Quarter/Month/Week active (that all-times-one-active behavior stays correct for the separate DB/OSP pill, which is a genuine 3-way exclusive choice)
 - Fixed a latent bug this surfaced: `regionTrendGranularity()`'s `= 'Quarter'` default parameter only applies when the argument is omitted, not when it's explicitly `null` — since the real caller now always passes the toggle's actual value (including `null`), the default silently never fired and `null` fell through to the Quarter branch of `periodsForGranularity()` anyway. Fixed with an explicit falsy/`'Year'` check that returns plain fiscal years, matching every other granularity-aware selector
 - Re-verified with the same throwaway-Node-script approach as before: confirmed `planOverPlanByFY`, `actualVsPlanByFY`, `asuByFY`, `ucrByFY` all return plain `['FY25','FY26','FY27']` both when `granularity` is omitted and when explicitly `null`, and `regionTrendGranularity(filters, null)` now correctly returns `{granularity: 'Year', periods: ['FY25','FY26','FY27']}`
@@ -233,17 +233,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 16 — 2026-07-02/03
-**Input:** "Let's build Capacity Planning pages for both ESG and HES" — followed by an explanation of the intended navigation before any screenshots: 4 pages total (ESG Forecasting, ESG Capacity Plan, HES Forecasting, HES Capacity Plan), entered via a new "ISG SPoG" landing page with ESG/HES tiles, each opening into an internal Forecasting/Capacity Plan toggle; confirmed a home button next to the logo for getting back to the tiles; then 5 mockup screenshots + real filter/queue/LOB lists, with an explicit invitation to ask clarifying questions before building. One clarifying question was asked (twice, at the user's request) about an ambiguous pair of Utilization-layer visual descriptions on ESG Capacity.
+**Input:** "Let's build Capacity Planning pages for both MSG and TSA" — followed by an explanation of the intended navigation before any screenshots: 4 pages total (MSG Forecasting, MSG Capacity Plan, TSA Forecasting, TSA Capacity Plan), entered via a new "TSG SPoG" landing page with MSG/TSA tiles, each opening into an internal Forecasting/Capacity Plan toggle; confirmed a home button next to the logo for getting back to the tiles; then 5 mockup screenshots + real filter/queue/LOB lists, with an explicit invitation to ask clarifying questions before building. One clarifying question was asked (twice, at the user's request) about an ambiguous pair of Utilization-layer visual descriptions on MSG Capacity.
 
 **Action:**
-- Promoted `HesChartKit.jsx`'s primitives (`Visual`, `Tip`, `PlanDropdowns`, `PlanSelect`, `CategoryTick`, `truncate`, `PillButton`) into a new shared `src/components/ChartKit.jsx`, plus a new `BinaryToggle` component; `HesChartKit.jsx` became a 2-line re-export shim so no existing import broke
+- Promoted `TsaChartKit.jsx`'s primitives (`Visual`, `Tip`, `PlanDropdowns`, `PlanSelect`, `CategoryTick`, `truncate`, `PillButton`) into a new shared `src/components/ChartKit.jsx`, plus a new `BinaryToggle` component; `TsaChartKit.jsx` became a 2-line re-export shim so no existing import broke
 - Added `CAPACITY_PLAN_NAMES`, `BUSINESS_ORGS`, `COUNTRIES`/`COUNTRY_REGION` to `mockData.js`
-- Built `src/data/esgCapacityData.js` from scratch (queue-level HC/utilization/SL/leaves fact table off the existing 47-queue `ACTIVE_QUEUE_NAMES` roster) and Node-smoke-tested every selector before building any UI — caught and fixed two real sorting bugs (`utilizationByQueue` was surfacing best-adherence queues instead of worst; `leavesByQueue` was missing large positive-delta outliers)
-- Asked the same clarifying question twice via `AskUserQuestion` (user said "wait" then "ask again" then "ask the same question again you asked me earlier") about ESG Capacity's two near-identically-worded Utilization visuals — confirmed both times: Visual 1 is a time-axis trend with an Aux-code tooltip, Visual 2 is a per-queue ranking chart
-- Built the full ESG Capacity Plan page (`src/components/esgCapacity/`): filter panel, 5 metric cards with Modal drill-downs, `HeadcountLayer` (badge 01), a new shared `src/components/capacity/PlanOverPlanLayer.jsx` (badge 02, built to be reused by HES Capacity too), `UtilizationLayer` (badge 03), and a dual-toggle (Headcount/SL% × Region/Country) geo map (badge 04)
-- Built `src/data/hesCapacityData.js`, reusing `hesData.js`'s `LOB_LIST`/`LOB_FACTS`/`filterLobs`/`hesEffectiveFiscalYears` directly since this page's filter set is identical to HES Forecasting's; Node-smoke-tested every selector (fteByFY, hesAttritionByFY, hesUtilByFY, cpfByFY, actHrsByFY, geoSloByRegion, planOverPlanFteByFY, workloadSankey, workloadByFY) across all 4 granularities and with filters applied
-- Built the full HES Capacity Plan page (`src/components/hesCapacity/`), reusing `hes/HesFilterPanel.jsx` directly (unmodified — identical filter fields): 5 metric cards, `HeadcountAttritionLayer` (badge 01), the shared `PlanOverPlanLayer` (badge 02), `WorkloadDistributionLayer` (badge 03 — new recharts `Sankey` diagram, first use of Sankey in this codebase, with a custom labeled node renderer), and a single-metric SLO-by-region geo map — renumbered from the mockup's "Layer 5" (which skips a Layer 4 entirely) to badge 04 for sequential consistency
-- Built `LandingPage.jsx` ("ISG SPoG" title, ESG/HES tiles) and restructured `App.jsx`: `view` state (`'landing'|'esg'|'hes'`) replaces the old 2-way page toggle; `esgSubPage`/`hesSubPage` state (independent, default `'forecasting'`) drives each business's internal Forecasting/Capacity Plan toggle; a `HomeButton` next to the logo (rendered only inside a business section) returns to the landing tiles
+- Built `src/data/msgCapacityData.js` from scratch (queue-level HC/utilization/SL/leaves fact table off the existing 47-queue `ACTIVE_QUEUE_NAMES` roster) and Node-smoke-tested every selector before building any UI — caught and fixed two real sorting bugs (`utilizationByQueue` was surfacing best-adherence queues instead of worst; `leavesByQueue` was missing large positive-delta outliers)
+- Asked the same clarifying question twice via `AskUserQuestion` (user said "wait" then "ask again" then "ask the same question again you asked me earlier") about MSG Capacity's two near-identically-worded Utilization visuals — confirmed both times: Visual 1 is a time-axis trend with an Aux-code tooltip, Visual 2 is a per-queue ranking chart
+- Built the full MSG Capacity Plan page (`src/components/msgCapacity/`): filter panel, 5 metric cards with Modal drill-downs, `HeadcountLayer` (badge 01), a new shared `src/components/capacity/PlanOverPlanLayer.jsx` (badge 02, built to be reused by TSA Capacity too), `UtilizationLayer` (badge 03), and a dual-toggle (Headcount/SL% × Region/Country) geo map (badge 04)
+- Built `src/data/tsaCapacityData.js`, reusing `tsaData.js`'s `LOB_LIST`/`LOB_FACTS`/`filterLobs`/`tsaEffectiveFiscalYears` directly since this page's filter set is identical to TSA Forecasting's; Node-smoke-tested every selector (fteByFY, tsaAttritionByFY, tsaUtilByFY, cpfByFY, actHrsByFY, geoSloByRegion, planOverPlanFteByFY, workloadSankey, workloadByFY) across all 4 granularities and with filters applied
+- Built the full TSA Capacity Plan page (`src/components/tsaCapacity/`), reusing `tsa/TsaFilterPanel.jsx` directly (unmodified — identical filter fields): 5 metric cards, `HeadcountAttritionLayer` (badge 01), the shared `PlanOverPlanLayer` (badge 02), `WorkloadDistributionLayer` (badge 03 — new recharts `Sankey` diagram, first use of Sankey in this codebase, with a custom labeled node renderer), and a single-metric SLO-by-region geo map — renumbered from the mockup's "Layer 5" (which skips a Layer 4 entirely) to badge 04 for sequential consistency
+- Built `LandingPage.jsx` ("TSG SPoG" title, MSG/TSA tiles) and restructured `App.jsx`: `view` state (`'landing'|'msg'|'tsa'`) replaces the old 2-way page toggle; `msgSubPage`/`tsaSubPage` state (independent, default `'forecasting'`) drives each business's internal Forecasting/Capacity Plan toggle; a `HomeButton` next to the logo (rendered only inside a business section) returns to the landing tiles
 - Verified with `npm run build` (clean, 1175 modules, everything wired into `App.jsx`) — this is the first build that actually exercises every new file, since earlier builds during this pass had nothing importing the new components yet
 - Started the dev server and opened it in the user's browser for manual click-through verification (tiles → per-business toggle → Sankey diagram → home button) — this session's environment has no browser-automation tool, so the agent couldn't verify the rendered UI itself
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
@@ -251,50 +251,50 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 17 — 2026-07-03
-**Input:** A detailed, itemized revision list for the ESG Capacity Plan page only, covering Filters (reuse ESG Forecasting's Plan Name list, remove Business Org, replace Country with Sub-region), Cards (YTD instead of target, drilling with the granularity slicer, inverted color logic for Total FTE/Attrition), and 8 numbered Graph changes (renames, a real region/sub-region click-to-drill for Attrition and a new Plan over Plan Variation layer, a stricter SL-defaulter rule, a multi-Aux breakdown with an added Adherence line, and a Geo Map toggle swap).
+**Input:** A detailed, itemized revision list for the MSG Capacity Plan page only, covering Filters (reuse MSG Forecasting's Plan Name list, remove Business Org, replace Country with Sub-region), Cards (YTD instead of target, drilling with the granularity slicer, inverted color logic for Total FTE/Attrition), and 8 numbered Graph changes (renames, a real region/sub-region click-to-drill for Attrition and a new Plan over Plan Variation layer, a stricter SL-defaulter rule, a multi-Aux breakdown with an added Adherence line, and a Geo Map toggle swap).
 
 **Action:**
-- Data layer (`esgCapacityData.js`): swapped `country` for `subRegion` on `CAPACITY_QUEUES` (reusing `ACTIVE_QUEUES[i].subRegion` directly rather than re-deriving it), dropped `businessOrg`/`country` from `filterCapacityQueues`; added `period`/`prevPeriod`/`yoyPct` to `capacityCardData` for all 5 metrics and threaded `granularity` through so headline values drill with the slicer; added `attritionByDimension`/`attritionTrendByDimension` and `planOverPlanByDimension`/`planOverPlanTrendByDimension` (region/sub-region default view + click-to-drill FY/granularity trend, mirroring HES Forecasting's `cpasuByRegion`/`cpasuTrendByRegion` pattern), backed by a new shared `shareByKey` helper; renamed `defaulterQueues` to `slDefaulterQueues` with the new `actualHC>planHC AND slActual<90` rule; added per-queue `popPlan1`/`popPlan2`/`popVariance` fields and `planOverPlanQueueVariance` (sorted by `|variance|` descending); extended `utilizationByFY` with a 3-code `auxBreakdown` (was a single `auxCulprit`) and `utilizationByQueue` with a 3-code `auxes` array; replaced the curated-14-country `geoCapacityByCountry`/`COUNTRY_TO_WORLD_ATLAS_NAME` machinery with `GEO_CAPACITY_BY_SUBREGION`/`geoCapacityBySubRegion` over the real 24 `SUB_REGIONS`
+- Data layer (`msgCapacityData.js`): swapped `country` for `subRegion` on `CAPACITY_QUEUES` (reusing `ACTIVE_QUEUES[i].subRegion` directly rather than re-deriving it), dropped `businessOrg`/`country` from `filterCapacityQueues`; added `period`/`prevPeriod`/`yoyPct` to `capacityCardData` for all 5 metrics and threaded `granularity` through so headline values drill with the slicer; added `attritionByDimension`/`attritionTrendByDimension` and `planOverPlanByDimension`/`planOverPlanTrendByDimension` (region/sub-region default view + click-to-drill FY/granularity trend, mirroring TSA Forecasting's `cpasuByRegion`/`cpasuTrendByRegion` pattern), backed by a new shared `shareByKey` helper; renamed `defaulterQueues` to `slDefaulterQueues` with the new `actualHC>planHC AND slActual<90` rule; added per-queue `popPlan1`/`popPlan2`/`popVariance` fields and `planOverPlanQueueVariance` (sorted by `|variance|` descending); extended `utilizationByFY` with a 3-code `auxBreakdown` (was a single `auxCulprit`) and `utilizationByQueue` with a 3-code `auxes` array; replaced the curated-14-country `geoCapacityByCountry`/`COUNTRY_TO_WORLD_ATLAS_NAME` machinery with `GEO_CAPACITY_BY_SUBREGION`/`geoCapacityBySubRegion` over the real 24 `SUB_REGIONS`
 - Node-smoke-tested every new/changed selector (subRegion tagging, YTD/YoY at all 4 granularities including the single-FY-in-scope null case, region+sub-region drill at Year and Quarter granularity, the SL-defaulter AND condition, queue-variance and aux-breakdown sort order, sub-region geo data) before touching any UI
-- `EsgCapacityFilterPanel.jsx`: Plan Name now uses `mockData.js`'s `PLAN_NAMES` (default `[]`, no more pre-selected `'Actual'`), Business Org field removed, Country field replaced with Sub-region (`SUB_REGIONS`); `EsgCapacityPage.jsx`'s `DEFAULT_FILTERS` updated to match
-- `EsgCapacityMetricCards.jsx`: added a `ytdSub` helper (copied structurally from `HesMetricCards.jsx`) and wired all 5 cards to it; Total FTE/Attrition pass `lowerIsBetter: true` so a YoY increase shows red
+- `MsgCapacityFilterPanel.jsx`: Plan Name now uses `mockData.js`'s `PLAN_NAMES` (default `[]`, no more pre-selected `'Actual'`), Business Org field removed, Country field replaced with Sub-region (`SUB_REGIONS`); `MsgCapacityPage.jsx`'s `DEFAULT_FILTERS` updated to match
+- `MsgCapacityMetricCards.jsx`: added a `ytdSub` helper (copied structurally from `TsaMetricCards.jsx`) and wired all 5 cards to it; Total FTE/Attrition pass `lowerIsBetter: true` so a YoY increase shows red
 - `HeadcountLayer.jsx`: Visual1 renamed "Actual vs Plan Variation" (line renamed "Variation %", Plan selector now offers `PLAN_NAMES`); Visual2 Attrition rebuilt as a region/sub-region click-to-drill chart with a custom tooltip showing the raw attritted-employee count; Visual3 renamed "Headcount Impact on SL", its Region/Country toggle removed, defaulter list switched to the new dual-condition rule
-- Built a new ESG-only `PlanOverPlanVariationLayer.jsx` (region/sub-region click-to-drill main chart + a "Queues with Highest Variation" diverging ranked bar chart reusing the polished value-labeled convention from Forecasting's own "Top Queues by Variance" charts) and swapped `EsgCapacityPage.jsx` to use it instead of the shared `capacity/PlanOverPlanLayer.jsx` (HES Capacity's usage of the shared component is untouched); removed the now-dead `planOverPlanHCByFY` selector
+- Built a new MSG-only `PlanOverPlanVariationLayer.jsx` (region/sub-region click-to-drill main chart + a "Queues with Highest Variation" diverging ranked bar chart reusing the polished value-labeled convention from Forecasting's own "Top Queues by Variance" charts) and swapped `MsgCapacityPage.jsx` to use it instead of the shared `capacity/PlanOverPlanLayer.jsx` (TSA Capacity's usage of the shared component is untouched); removed the now-dead `planOverPlanHCByFY` selector
 - `UtilizationLayer.jsx`: layer renamed "Utilization and Outage Analysis"; Visual1 gained an Adherence % line and a tooltip listing the top-3 Aux breakdown; Visual2 renamed "Utilization Defaulter Queues" (2-3 auxes per queue); Visual3 renamed "Leave Impact — Actual vs Target" (a name the agent chose, since the user asked for one without supplying it)
-- `EsgCapacityGeoMap.jsx`: Region/Country toggle replaced with Region/Sub-region, mirroring `Layer3GeoMap.jsx`'s exact fallback-to-parent-region-at-35%-opacity mechanic
-- Verified with `npm run build` (clean, 1176 modules) and a full grep sweep confirming no stale `businessOrg`/`COUNTRIES`/`CAPACITY_PLAN_NAMES`/`geoCapacityByCountry` references remained anywhere in the ESG Capacity component tree or data module
+- `MsgCapacityGeoMap.jsx`: Region/Country toggle replaced with Region/Sub-region, mirroring `Layer3GeoMap.jsx`'s exact fallback-to-parent-region-at-35%-opacity mechanic
+- Verified with `npm run build` (clean, 1176 modules) and a full grep sweep confirming no stale `businessOrg`/`COUNTRIES`/`CAPACITY_PLAN_NAMES`/`geoCapacityByCountry` references remained anywhere in the MSG Capacity component tree or data module
 - Restarted the dev server and reopened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
 
 ---
 
 ## Prompt 18 — 2026-07-03
-**Input:** "Change the Total FTE card to Cases per FTE - and show the card as YTD only and when pop-up opens it should show - cases per FTE actual and Plan. Also add a RCA and RLCA section as we did for ESG Forecasting."
+**Input:** "Change the Total FTE card to Cases per FTE - and show the card as YTD only and when pop-up opens it should show - cases per FTE actual and Plan. Also add a RCA and RLCA section as we did for MSG Forecasting."
 
 **Action:**
-- `esgCapacityData.js`: added `CPF_BY_FY` baseline + `cpfByFY(filters, granularity)` (rate-preserving expansion); `capacityCardData` dropped `totalFte` entirely and added `casesPerFte: {actual, plan, period}` — deliberately no `prevPeriod`/`yoyPct`, since this card shows YTD only
-- `EsgCapacityMetricCards.jsx`: replaced the Total FTE card with Cases per FTE (new icon, `YTD <period>: <value>` sub-line with no comparison/trend pip — a one-off exception to the `ytdSub` pattern used by the other 4 cards); added a new `CasesPerFteTrendChart` (Actual + Plan dashed lines) for the popup, replacing the old `fte` modal type
-- Built `EsgCapacityRcaClcaPanel.jsx` — same sticky-sidebar-next-to-Analysis-Layers mechanism as `RcaClcaPanel`/`HesRcaClcaPanel`, with its own illustrative content written in this page's vocabulary (staffing/utilization/SL/attrition/Cases-per-FTE), not copied from either Forecasting page; wired into `EsgCapacityPage.jsx` with the identical flex layout `HesForecastingPage.jsx` uses
-- Node-smoke-tested `capacityCardData`/`cpfByFY` (casesPerFte present and numeric at all 4 granularities, `totalFte` confirmed removed); ran `npm run build` (clean, 1177 modules); grepped the ESG Capacity component tree to confirm no stray `totalFte`/`'fte'` references remained
+- `msgCapacityData.js`: added `CPF_BY_FY` baseline + `cpfByFY(filters, granularity)` (rate-preserving expansion); `capacityCardData` dropped `totalFte` entirely and added `casesPerFte: {actual, plan, period}` — deliberately no `prevPeriod`/`yoyPct`, since this card shows YTD only
+- `MsgCapacityMetricCards.jsx`: replaced the Total FTE card with Cases per FTE (new icon, `YTD <period>: <value>` sub-line with no comparison/trend pip — a one-off exception to the `ytdSub` pattern used by the other 4 cards); added a new `CasesPerFteTrendChart` (Actual + Plan dashed lines) for the popup, replacing the old `fte` modal type
+- Built `MsgCapacityRcaClcaPanel.jsx` — same sticky-sidebar-next-to-Analysis-Layers mechanism as `RcaClcaPanel`/`TsaRcaClcaPanel`, with its own illustrative content written in this page's vocabulary (staffing/utilization/SL/attrition/Cases-per-FTE), not copied from either Forecasting page; wired into `MsgCapacityPage.jsx` with the identical flex layout `TsaForecastingPage.jsx` uses
+- Node-smoke-tested `capacityCardData`/`cpfByFY` (casesPerFte present and numeric at all 4 granularities, `totalFte` confirmed removed); ran `npm run build` (clean, 1177 modules); grepped the MSG Capacity component tree to confirm no stray `totalFte`/`'fte'` references remained
 - Restarted the dev server and reopened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
 
 ---
 
 ## Prompt 19 — 2026-07-03
-**Input:** "Lets move on to HES Capacity Planning" — a detailed revision list (with a screenshot of the real Global Grouping options) covering Filters, Cards, the Headcount/Attrition layer (renamed "Headcount and Utilization"), Workload Distribution, Geo Map, and adding an RCA/CLCA section "like we did for ESG Capacity." The message also contained a large block of text identical to the prior ESG Capacity revision request (with one added phrase) — treated as accidental leftover clipboard content, not new instructions, since it referred to "ESG Capacity Planning" throughout and that work was already completed.
+**Input:** "Lets move on to TSA Capacity Planning" — a detailed revision list (with a screenshot of the real Global Grouping options) covering Filters, Cards, the Headcount/Attrition layer (renamed "Headcount and Utilization"), Workload Distribution, Geo Map, and adding an RCA/CLCA section "like we did for MSG Capacity." The message also contained a large block of text identical to the prior MSG Capacity revision request (with one added phrase) — treated as accidental leftover clipboard content, not new instructions, since it referred to "MSG Capacity Planning" throughout and that work was already completed.
 
 **Action:**
-- `hesData.js`: replaced the inferred `GLOBAL_GROUPING_LIST` (`['Consumer','Commercial','Enterprise']`) with the real 5-value list from the screenshot — affects HES Forecasting's Global Grouping filter too, since both HES pages share this constant
-- `hesCapacityData.js`: added a `subRegion` tag to `HES_CAPACITY_LOBS` (round-robin over `SUB_REGIONS`) and a `hesShareByKey` helper; added `period`/`prevPeriod`/`yoyPct` to `hesCapacityCardData` for Staffing Summary/Attrition/Avg Case Time/SLO % (Cases per FTE untouched) and threaded `granularity` through; added `hesAttritionByDimension`/`hesAttritionTrendByDimension` and `hesPlanOverPlanByDimension`/`hesPlanOverPlanTrendByDimension` (region/sub-region click-to-drill, mirroring ESG's pattern); added per-LOB `popPlan1`/`popPlan2`/`popVariance` and `planOverPlanLobVariance`; extended `workloadSankey` with a `mode` param ('LOB'/'CQN') so the toggle can route illustrative tiers into either real LOB names or 4 real HES queue names (validated against `LOB_QUEUES['High End Storage'].active`); added `adherence` to `actHrsByFY` and a new `actHrsDefaulterLobs` selector; added `geoSloBySubRegion`/`HES_GEO_SLO_BY_SUBREGION`; removed the now-dead `workloadByFY`/`WORKLOAD_BY_FY` and `planOverPlanFteByFY`
+- `tsaData.js`: replaced the inferred `GLOBAL_GROUPING_LIST` (`['Consumer','Commercial','Enterprise']`) with the real 5-value list from the screenshot — affects TSA Forecasting's Global Grouping filter too, since both TSA pages share this constant
+- `tsaCapacityData.js`: added a `subRegion` tag to `TSA_CAPACITY_LOBS` (round-robin over `SUB_REGIONS`) and a `tsaShareByKey` helper; added `period`/`prevPeriod`/`yoyPct` to `tsaCapacityCardData` for Staffing Summary/Attrition/Avg Case Time/SLO % (Cases per FTE untouched) and threaded `granularity` through; added `tsaAttritionByDimension`/`tsaAttritionTrendByDimension` and `tsaPlanOverPlanByDimension`/`tsaPlanOverPlanTrendByDimension` (region/sub-region click-to-drill, mirroring MSG's pattern); added per-LOB `popPlan1`/`popPlan2`/`popVariance` and `planOverPlanLobVariance`; extended `workloadSankey` with a `mode` param ('LOB'/'CQN') so the toggle can route illustrative tiers into either real LOB names or 4 real TSA queue names (validated against `LOB_QUEUES['High End Storage'].active`); added `adherence` to `actHrsByFY` and a new `actHrsDefaulterLobs` selector; added `geoSloBySubRegion`/`TSA_GEO_SLO_BY_SUBREGION`; removed the now-dead `workloadByFY`/`WORKLOAD_BY_FY` and `planOverPlanFteByFY`
 - Node-smoke-tested every new/changed selector (subRegion tagging, YTD/YoY at all 4 granularities, region+sub-region drill at Year/Quarter, Sankey LOB/CQN mode shapes including confirming the 4 real queue names resolve, ACT adherence + defaulter sort order, sub-region geo data) before touching UI
-- `HesCapacityMetricCards.jsx`: renamed Total FTE → Staffing Summary and Global SLO → SLO %, wired a `ytdSub` helper (Attrition/Avg Case Time `lowerIsBetter: true`); Cases per FTE left unchanged
+- `TsaCapacityMetricCards.jsx`: renamed Total FTE → Staffing Summary and Global SLO → SLO %, wired a `ytdSub` helper (Attrition/Avg Case Time `lowerIsBetter: true`); Cases per FTE left unchanged
 - `HeadcountAttritionLayer.jsx`: renamed layer "Headcount and Utilization"; Visual1 renamed "Actual vs Plan Variation" (line renamed "Variation %"); Visual2 Attrition rebuilt as a region/sub-region click-to-drill chart with a raw-attritted-count tooltip; Visual3 renamed "Utilization Variance," its Region/Country toggle relabeled Region/Sub-region
-- Built a new HES-specific `PlanOverPlanVariationLayer.jsx` (region/sub-region drill + a "LOBs with Highest Variation" diverging ranked chart) and swapped `HesCapacityPage.jsx` to use it; deleted the now-orphaned shared `capacity/PlanOverPlanLayer.jsx` and its empty folder once a repo-wide grep confirmed nothing imported it anymore
+- Built a new TSA-specific `PlanOverPlanVariationLayer.jsx` (region/sub-region drill + a "LOBs with Highest Variation" diverging ranked chart) and swapped `TsaCapacityPage.jsx` to use it; deleted the now-orphaned shared `capacity/PlanOverPlanLayer.jsx` and its empty folder once a repo-wide grep confirmed nothing imported it anymore
 - `WorkloadDistributionLayer.jsx`: Visual1 renamed "Workload Distribution" with a new LOB/CQN `BinaryToggle`; Visual2 renamed "Average Case Time Variance" and repointed at `actHrsByFY` (bars + new Adherence % line + top-LOBs-above-target list), reinterpreting the original "Workload Act vs Plan" name as having always meant Average Case Time; Visual3 "ACT Trend — Actual vs Plan" kept as a trend line but gained the same Adherence % line and defaulter list
-- `HesCapacityGeoMap.jsx`: added a Region/Sub-region `BinaryToggle` mirroring `EsgCapacityGeoMap.jsx`'s exact fallback-to-parent-region-at-35%-opacity mechanic
-- Built `HesCapacityRcaClcaPanel.jsx` (own vocabulary: staffing/attrition/Cases-per-FTE/Average-Case-Time/SLO) and wired it into `HesCapacityPage.jsx` with the same sticky-sidebar layout as the other three pages
-- Verified with `npm run build` (clean, 1178 modules) and a grep sweep confirming no stale references to the deleted selectors/component remained; also caught and fixed two stale paragraphs in `tech_spec.md` left over from the ESG Capacity revision pass (still describing a "Total FTE" card and business-logic rule that no longer exists after that pass swapped it for Cases per FTE)
+- `TsaCapacityGeoMap.jsx`: added a Region/Sub-region `BinaryToggle` mirroring `MsgCapacityGeoMap.jsx`'s exact fallback-to-parent-region-at-35%-opacity mechanic
+- Built `TsaCapacityRcaClcaPanel.jsx` (own vocabulary: staffing/attrition/Cases-per-FTE/Average-Case-Time/SLO) and wired it into `TsaCapacityPage.jsx` with the same sticky-sidebar layout as the other three pages
+- Verified with `npm run build` (clean, 1178 modules) and a grep sweep confirming no stale references to the deleted selectors/component remained; also caught and fixed two stale paragraphs in `tech_spec.md` left over from the MSG Capacity revision pass (still describing a "Total FTE" card and business-logic rule that no longer exists after that pass swapped it for Cases per FTE)
 - Restarted the dev server and reopened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
 
@@ -310,21 +310,30 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 21 — 2026-07-06
-**Input:** Screenshot of HES Capacity's Workload Distribution layer showing the 3-visual row badly cramped, with the request "make the RCA and CLCA section small for all the pages... you can reduce the size of lines." Mid-task, a follow-up message: "Also remove the adherence line from the ACT graph for HES Capacity planning."
+**Input:** Screenshot of TSA Capacity's Workload Distribution layer showing the 3-visual row badly cramped, with the request "make the RCA and CLCA section small for all the pages... you can reduce the size of lines." Mid-task, a follow-up message: "Also remove the adherence line from the ACT graph for TSA Capacity planning."
 
 **Action:**
-- Narrowed the RCA/CLCA sidebar from `width: 300` to `width: 220` in all 4 page files (`ForecastingPage.jsx`, `HesForecastingPage.jsx`, `EsgCapacityPage.jsx`, `HesCapacityPage.jsx`) — freeing up width for the main 3-visual-per-row chart area
+- Narrowed the RCA/CLCA sidebar from `width: 300` to `width: 220` in all 4 page files (`ForecastingPage.jsx`, `TsaForecastingPage.jsx`, `MsgCapacityPage.jsx`, `TsaCapacityPage.jsx`) — freeing up width for the main 3-visual-per-row chart area
 - Compacted the shared `Section` component in all 4 RCA/CLCA panel files to match the narrower column (smaller badge/title/subtitle/list-item type, tighter line-height and gaps, reduced padding); also shrank the "RCA & CLCA" header label
-- Removed the Adherence % line (and its now-unused right axis) from HES Capacity's "ACT Trend — Actual vs Plan" (`WorkloadDistributionLayer.jsx` Visual3) — read "the ACT graph" as the one chart literally titled "ACT Trend," leaving "Average Case Time Variance" (Visual2, same underlying metric) with its own Adherence % line untouched
+- Removed the Adherence % line (and its now-unused right axis) from TSA Capacity's "ACT Trend — Actual vs Plan" (`WorkloadDistributionLayer.jsx` Visual3) — read "the ACT graph" as the one chart literally titled "ACT Trend," leaving "Average Case Time Variance" (Visual2, same underlying metric) with its own Adherence % line untouched
 - Ran `npm run build` (clean) to confirm both changes; updated `handoff.md`; committed and pushed to `main`
 
 ---
 
 ## Prompt 22 — 2026-07-08
-**Input:** "For ESG Forecasting tab we have total queues card and a dropdown for it...we need to make it more interactive...right now we are showing only active queues in the donut chart..we need to figure out a way to show both active and inactive queues..and also a table for BP queues list and a split of active and inactive queues for them-and when we hover on that number we would be able to see the queue name."
+**Input:** "For MSG Forecasting tab we have total queues card and a dropdown for it...we need to make it more interactive...right now we are showing only active queues in the donut chart..we need to figure out a way to show both active and inactive queues..and also a table for BP queues list and a split of active and inactive queues for them-and when we hover on that number we would be able to see the queue name."
 
 **Action:**
 - `mockData.js`: added `INACTIVE_QUEUES` (146 inactive queue names tagged with `region`/`businessPartner`, same illustrative-tagging convention as `ACTIVE_QUEUES`); added `allQueuesByStatus(filters)` (combined active+inactive rows tagged with `status`, narrowed by region/businessPartner only) and `queuesByBusinessPartner(filters)` (per-BP active/inactive counts + the queue-name arrays behind each count)
+
+---
+
+## Prompt 23 — 2026-07-16
+**Input:** Prepare a sanitized fork of this project for public release.
+
+**Action:**
+- Produced this fork as a public-release-ready copy: internal organization identifiers, business-unit/segment codes, and product/technology line names throughout the codebase and these four docs were replaced with generic placeholder terms, preserving structure and functionality exactly (mock numbers/illustrative data untouched). No build logic changed as a result.
+- Verified `npm run build` succeeds and re-ran a repo-wide sweep to confirm no original identifiers remain.
 - Node-smoke-tested both new selectors (tagging present, counts sum back to the full rosters, region/BP filters narrow correctly, BP rows sorted by total) before touching the UI
 - `MetricCards.jsx`: reworked the Total Queues drill-down — `QueuesByRegionChart` now plots whichever of an All/Active/Inactive segmented pill is selected, but always shows the region's Active/Inactive split in the center label and every slice's tooltip regardless of the toggle position; `QueueTable` now lists both rosters with a Status badge column (inactive rows show "—" for Accuracy); added a new `BusinessPartnerTable` below it (Business Partner / Active / Inactive / Total) with a `HoverCount` component that reveals the underlying queue names in a styled tooltip on hover
 - Renamed the modal title from "Active Queue Directory" to "Queue Directory — Active & Inactive"; removed the now-unused `filterQueues`/`structuralRows` plumbing this replaced
@@ -355,13 +364,13 @@ Chronological log of every user prompt and the corresponding actions taken.
 ---
 
 ## Prompt 29 — 2026-07-10
-**Input:** "i want a extra drill down for RCA and CLCA for each and every graph not cards - for ESG and HES pages...dont exhaugarete it just a small pop up is fine" — asked a scope-clarifying question first (all 4 pages vs. just the 2 Forecasting pages); user confirmed all 4.
+**Input:** "i want a extra drill down for RCA and CLCA for each and every graph not cards - for MSG and TSA pages...dont exhaugarete it just a small pop up is fine" — asked a scope-clarifying question first (all 4 pages vs. just the 2 Forecasting pages); user confirmed all 4.
 
 **Action:**
 - Added a new shared `GraphInsightButton` component to `ChartKit.jsx` — a small circular "i" toggle that opens a compact popup with one RCA sentence + one CLCA sentence, reusing the existing `.chart-tooltip` styling
 - Wired it into the shared `Visual` component via two new optional props (`rca`/`clca`); passing them renders the button in the visual's top-left corner (opposite `cornerControls`, which many visuals use for Region/Sub-region toggles); omitting both renders nothing, so every untouched `Visual` call site elsewhere kept working
-- Added `rca`/`clca` one-liners to all 31 chart-panel visuals across all 4 pages: ESG Forecasting (`Layer1PlanOverPlan.jsx` ×3, `Layer2ActualVsPlan.jsx` ×3 — both predate the shared `ChartKit.jsx` and got the same prop handling added to their own local `Visual` instead of being migrated), HES Forecasting (`AsuLayer.jsx` ×3, `SrLayer.jsx` ×3, `AsuSrTrendLayer.jsx` ×3), ESG Capacity Plan (`HeadcountLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `UtilizationLayer.jsx` ×3), HES Capacity Plan (`HeadcountAttritionLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `WorkloadDistributionLayer.jsx` ×3)
-- Added the same button directly (not via `Visual`, since these use a custom layout) to all 4 Geo Maps — `Layer3GeoMap.jsx`, `HesGeoMap.jsx`, `EsgCapacityGeoMap.jsx`, `HesCapacityGeoMap.jsx` — positioned in each map's existing toggle row via `justify-content: space-between`
+- Added `rca`/`clca` one-liners to all 31 chart-panel visuals across all 4 pages: MSG Forecasting (`Layer1PlanOverPlan.jsx` ×3, `Layer2ActualVsPlan.jsx` ×3 — both predate the shared `ChartKit.jsx` and got the same prop handling added to their own local `Visual` instead of being migrated), TSA Forecasting (`AsuLayer.jsx` ×3, `SrLayer.jsx` ×3, `AsuSrTrendLayer.jsx` ×3), MSG Capacity Plan (`HeadcountLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `UtilizationLayer.jsx` ×3), TSA Capacity Plan (`HeadcountAttritionLayer.jsx` ×3, `PlanOverPlanVariationLayer.jsx` ×2, `WorkloadDistributionLayer.jsx` ×3)
+- Added the same button directly (not via `Visual`, since these use a custom layout) to all 4 Geo Maps — `Layer3GeoMap.jsx`, `TsaGeoMap.jsx`, `MsgCapacityGeoMap.jsx`, `TsaCapacityGeoMap.jsx` — positioned in each map's existing toggle row via `justify-content: space-between`
 - Verified with `npm run build` (clean) and a grep sweep confirming exactly 35 matching `rca=`/`clca=` pairs (one per graph, none missing, none orphaned)
 - Started the dev server and opened it in the user's browser for manual verification (no browser-automation tool available this session)
 - Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
@@ -373,7 +382,7 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 **Action:**
 - Extended the per-graph `GraphInsightButton` popup (added earlier the same day) to every KPI card — 20 total, 5 cards × 4 pages
-- Changed each page's local `Card` component (`MetricCards.jsx`, `HesMetricCards.jsx`, `EsgCapacityMetricCards.jsx`, `HesCapacityMetricCards.jsx`) from a `<button>` to a `<div role="button" tabIndex={0}>` with an explicit Enter/Space `onKeyDown` handler — necessary since the new insight button is a real nested `<button>`, which HTML doesn't allow inside another `<button>`
+- Changed each page's local `Card` component (`MetricCards.jsx`, `TsaMetricCards.jsx`, `MsgCapacityMetricCards.jsx`, `TsaCapacityMetricCards.jsx`) from a `<button>` to a `<div role="button" tabIndex={0}>` with an explicit Enter/Space `onKeyDown` handler — necessary since the new insight button is a real nested `<button>`, which HTML doesn't allow inside another `<button>`
 - Added `rca`/`clca` one-liners to all 20 card call sites, positioned top-right of each card (opposite corner from the graph placement, since cards have no existing top-right control to avoid)
 - Verified with `npm run build` (clean) and a grep sweep confirming 6 `rca=` matches per file (1 destructure + 5 cards) across all 4 metric-card files
 - Started the dev server and opened it in the user's browser for manual verification (no browser-automation tool available this session)

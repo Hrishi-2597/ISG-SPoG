@@ -6,11 +6,11 @@ export const PLAN_NAMES = ['AOP_FY26Q4_AA', 'FY27 Q1 APR Plan', 'FY27 Q2 JUN Pla
 // pickers filter it out the same way Forecasting's plan dropdowns already do.
 export const CAPACITY_PLAN_NAMES = ['Actual', 'Dec Plan', 'Jan Plan', 'April Plan']
 
-// Business Org filter (ESG Capacity only) — illustrative sibling org units alongside
+// Business Org filter (MSG Capacity only) — illustrative sibling org units alongside
 // the one this page is scoped to by default.
-export const BUSINESS_ORGS = ['ISG ESG', 'ISG HES', 'ISG Core']
+export const BUSINESS_ORGS = ['TSG MSG', 'TSG TSA', 'TSG Core']
 
-// Country filter (ESG Capacity only) — a curated, real-country list distinct from the
+// Country filter (MSG Capacity only) — a curated, real-country list distinct from the
 // exhaustive world-atlas country groupings the geo choropleths use; COUNTRY_REGION is
 // a simple lookup for whichever capacity selectors need to narrow by region via a
 // selected country, decoupled from the choropleth's own regionForCountry() (that one's
@@ -37,8 +37,8 @@ export const FISCAL_WEEK_LIST = FISCAL_YEARS.flatMap(fy =>
   Array.from({ length: 52 }, (_, i) => `${fy}W${String(i + 1).padStart(2, '0')}`)
 )
 
-// Fiscal Month options: FY25M01 ... FY27M12 — canonical here; hesData.js imports this
-// instead of keeping its own duplicate (HES Forecasting was the first page with a
+// Fiscal Month options: FY25M01 ... FY27M12 — canonical here; tsaData.js imports this
+// instead of keeping its own duplicate (TSA Forecasting was the first page with a
 // Month filter, but this is now shared by the granularity toggle on both pages).
 export const FISCAL_MONTH_LIST = FISCAL_YEARS.flatMap(fy =>
   Array.from({ length: 12 }, (_, i) => `${fy}M${String(i + 1).padStart(2, '0')}`)
@@ -62,7 +62,7 @@ function periodsPerYear(granularity) {
 
 // Expands an FY-level {period, ...rawFields} series into quarter/month/week-level
 // synthetic points, dividing each FY's raw values across the periods within it with
-// a small deterministic wobble — same technique HES's cpasuTrendByRegion already
+// a small deterministic wobble — same technique TSA's cpasuTrendByRegion already
 // used for its own region-drill trend. Callers recompute any derived/getter field
 // (adherence, variance, etc.) from the divided raw fields afterward; ratios stay
 // approximately consistent since both sides of a ratio scale down together.
@@ -107,15 +107,15 @@ export const SUB_REGIONS = [
 ]
 
 export const L5_MANAGERS = [
-  'Banthia, Nishant', 'Brown, Dexter', 'Carey, Geraldine', 'Christmas, James',
-  'Copeland, Jessica', 'Creixell, Gustavo', "D'Arcy, Mark", 'Denis Lucey', 'Dexter Brown',
-  'Kenneally, Niall', 'Lind, Matt', 'No Assigned L6', 'Punch, Patrick', 'Vega, Cyril',
-  'Yap, Diane',
+  'Ashford, Priya', 'Bellweather, Owen', 'Carrow, Marguerite', 'Winslow, Damian',
+  'Fairbanks, Renata', 'Castellan, Mateo', "O'Halloran, Liam", 'Corin Vasquez', 'Owen Bellweather',
+  'Delacroix, Simone', 'Marlowe, Trent', 'No Assigned L6', 'Ashcombe, Peregrine', 'Thorne, Cassius',
+  'Okafor, Adaeze',
 ]
 
 export const BUSINESS_PARTNERS = [
-  'Bethany Rana', 'Juliano Alves Neres', 'Khim Sun Lau', 'Lucas Serafim', 'Marcy Jelinek',
-  'Miguel Galicia', 'StephenRaj  Kumar',
+  'Helena Marsh', 'Diego Ferreira Costa', 'Mei Ling Tan', 'Rafael Andrade', 'Wendy Callahan',
+  'Andres Molina', 'Sanjay  Nair',
 ]
 
 export const CAPACITY_CODES = [
@@ -127,7 +127,7 @@ export const CAPACITY_CODES = [
   'BZ20','BZ21','BZ22','BZ24','CC03','CC04','CC05','CC07','CC09','CC10','CC11','CC12',
   'CC13','CC14','CC22','CC23','CC27','CC28','CC29','CCB1','CCB2','CE01','CE02','CE03',
   'CG Comp','CG01','CGEQ','CGGC','CGVE','CGVX','CHEQ','CM01','CM03','CM04','CM05',
-  'CSS1','CST4','CST5','CT11','CT12','CT13','CT14','CT15','CT16','CT17','CT18','CT19',
+  'CSS1','CSX4','CSX5','CT11','CT12','CT13','CT14','CT15','CT16','CT17','CT18','CT19',
   'CT20','CT23','CT24','CT25','CT26','CT27','CT29','CT30','CT32','CT34','CT35','CT36',
   'CT37','CT38','CT67','CT68','CT69','CT70','CT76','CT91','CT95','CT96','CTA3','CTA4',
   'CTA5','CTA6','CTA7','CTE2','CTE3','CTE4','CTE6','CV01','CV02','CV03','CV04','CV05',
@@ -164,7 +164,7 @@ export const CAPACITY_CODES = [
   'NF22','NF23','NF24','NF25','NF26','NF27','NF28','NF29','NF30','NF31','NF32','NF33',
   'NF34','NF35','NF36','NF37','NF40','NF41','NF42','NF43','NF44','NF45','NF46','NF47',
   'NF48','NF49','NF50','NF53','NF54','NF56','NF57','NF58','PE01','PF01','PG01','PH08',
-  'PHSS','PM01','PowerProtect','PP21','PS03','PS10','QCE1','RAH1','RE03','RL02','RL05',
+  'PHSS','PM01','ProtectCore','PP21','PS03','PS10','QCE1','RAH1','RE03','RL02','RL05',
   'RL09','RL10','RL11','RL12','RL14','RL15','RL16','RL18','RL19','RM02','ROEN','RP01',
   'RP02','RP03','RPS1','RR02','RR03','RTC1','SA10','SE02','SM02','SMP1','SMP2','SMP3',
   'SMP4','SMP5','SMP6','SMP7','SMP8','SP04','SP09','SP10','SS03','SW02','SY01','TH04',
@@ -184,7 +184,7 @@ export const ACTIVE_QUEUE_NAMES = [
   'ENG ProSupp Nordics Server (CWD)', 'Enterprise Pro/Core ID', 'Enterprise Pro/Core TH',
   'Enterprise Pro/Core VN', 'FRA Networking (MTP)', 'France Storage', 'GER Networking (HAL)',
   'German Storage', 'Global Compute English', 'Global Inbound Support Team', 'Global Midrange',
-  'Global Networking English', 'Global Powerstore', 'KOR Storage Upsell Korean', 'Korea CNS',
+  'Global Networking English', 'Global CoreStore', 'KOR Storage Upsell Korean', 'Korea CNS',
   'LATAM AH Portuguese', 'LATAM AH Spanish', 'LATAM Compute Portuguese', 'LATAM Compute Spanish',
   'LATAM Midrange Portuguese', 'LATAM Midrange Spanish', 'LATAM Networking Portuguese',
   'LATAM Networking Spanish', 'LATAM Top Customers Portuguese', 'LATAM Top Customers Spanish',
@@ -197,18 +197,18 @@ export const ACTIVE_QUEUE_NAMES = [
 // names, down from the prior 406) — replaces the previous list wholesale. Includes
 // 'CCC MidRange Mandarin', moved here from the active list per the same update.
 export const INACTIVE_QUEUE_NAMES = [
-  'APJ GNCS Hyperconverged Wipro', 'APJ NR-FLS', 'APJ Upsell-Operations Multi',
-  'Backup Solution HC US', 'Brazil ESG CTE', 'Brazil Powerstore',
+  'APJ GNCS Hyperconverged NovaTech Partners', 'APJ NR-FLS', 'APJ Upsell-Operations Multi',
+  'Backup Solution HC US', 'Brazil MSG CTE', 'Brazil CoreStore',
   'Brazil Senior and Master Engineer', 'BRZ HC Server Voice (EL)', 'BRZ HC Storage Voice (EL)',
   'BRZ LC Server Voice (EL)', 'BRZ LC Storage Voice (EL)', 'CCC CNS Cantonese',
   'CCC CNS Mandarin', 'CCC CNS Mandarin Email', 'CCC CNS Mandarin Voice', 'CCC MidRange Mandarin',
-  'Compellent Copilot US', 'Compute High Complexity', 'Compute ProSupport Alt Channel',
+  'CoreVault Copilot US', 'Compute High Complexity', 'Compute ProSupport Alt Channel',
   'CPS Chat ROLA', 'CTE CCC', 'CTE Enterprise KOR', 'CTE JPN', 'CTE KOR', 'CTE NW IND', 'CTE SA',
   'CTE Server/Networking CCC', 'CTE Server/Networking JPN', 'CTE Storage CCC', 'CTE Storage IND',
   'CTE Storage JPN', 'DSP OEM', 'EC Basic Enterprise (CAS)', 'EC ProSupp Server Arabic (CAS)',
   'EC ProSupp Server CEE (HAL)', 'EC ProSupp Storage', 'EC RUS Enterprise (HAL)',
-  'EMEA MODULAR CTE', 'EMEA ProSupport Compellent', 'EMEA ProSupport Powerstore',
-  'EMEA ProSupport Powervault', 'EMEA SERVER CTE', 'EMEA Server Upsell English',
+  'EMEA MODULAR CTE', 'EMEA ProSupport CoreVault', 'EMEA ProSupport CoreStore',
+  'EMEA ProSupport VaultPro', 'EMEA SERVER CTE', 'EMEA Server Upsell English',
   'EMEA Solutions HCI (ENG)', 'EMEA Solutions HCI (FRA)', 'EMEA Solutions HCI (GER)',
   'EMEA Solutions MS (ENG)', 'EMEA Solutions MS (FRA)', 'EMEA Solutions MS (GER)',
   'ENG Modular (CWD)', 'ENG ProSupp Server', 'ENG ProSupp Server 247 (CWD)',
@@ -221,22 +221,22 @@ export const INACTIVE_QUEUE_NAMES = [
   'FRA Modular (MTP)', 'FRA ProSupp Server Alternate', 'FRA ProSupp Storage (MTP)',
   'FRA ProSupport Plus Server (MTP)', 'FRA ProSupport Server (CAS)', 'FRA Solutions (MTP)',
   'GER Enterprise (HAL)', 'GER Modular (HAL)', 'GER ProSupp Server Email (HAL)',
-  'GER ProSupp Storage Co Pilot', 'GER Solutions (HAL)', 'HES Global Operations',
-  'Honeywell Panama', 'IND VX Rail Storage', 'ITA Basic Enterprise (CAS)',
+  'GER ProSupp Storage Co Pilot', 'GER Solutions (HAL)', 'TSA Global Operations',
+  'Meridian Global Panama', 'IND RailFlex Storage', 'ITA Basic Enterprise (CAS)',
   'ITA ProSupp Server (MTP)', 'Japan Enterprise SW-NWK', 'Japan Storage ProSupport KAW',
   'KOR Compute Basic Korean', 'KOR Compute Upsell Korean', 'KOR Networking Upsell Korean',
-  'MMCLA ESG CTE', 'MMCLA HC Server Voice (PAN)', 'MMCLA LC Server Voice (PAN)',
-  'MMCLA Powerstore', 'Modular US', 'NA Compute Pro Support', 'NA CTE Server', 'NA CTE Storage',
+  'MMCLA MSG CTE', 'MMCLA HC Server Voice (PAN)', 'MMCLA LC Server Voice (PAN)',
+  'MMCLA CoreStore', 'Modular US', 'NA Compute Pro Support', 'NA CTE Server', 'NA CTE Storage',
   'NA ProSupp Storage eSupport', 'NA Server Basic (BNG)', 'NA Server Basic Chat (BNG)',
   'Networking Basic US', 'Networking CCC', 'Networking Pro Core SA',
   'Networking ProSupport Analysts US', 'Networking ProSupport ANZ', 'Networking ProSupport RTSE US',
   'Networking ProSupport US', 'Networking SPSPE', 'POR ProSupp Server (MTP)',
-  'PowerEdge After Hours US', 'PowerEdge Alternate Channel US', 'Powerstore US',
+  'EdgeCore After Hours US', 'EdgeCore Alternate Channel US', 'CoreStore US',
   'Proactive Systems Maintenance ROLA', 'ProSupp EQL (CWD)', 'ProSupp EQL (MTP)',
   'ProSupp Storage 247 (CWD)', 'ProSupp Storage Co Pilot (CWD)', 'ROLA Senior and Master Engineer',
-  'RT Linux / Virtualization US', 'RT Microsoft US', 'Server Combined CCC', 'Server Core IND',
+  'RT Linux / Virtualization US', 'RT WinPlatform US', 'Server Combined CCC', 'Server Core IND',
   'Server ProSupport ANZ', 'Server ProSupport CCC', 'Server ProSupport Chat US',
-  'Server ProSupport Plus CCC', 'Server ProSupport ROLA', 'Skytech Enterprise SA',
+  'Server ProSupport Plus CCC', 'Server ProSupport ROLA', 'Northwind Traders SA',
   'SPA Basic Enterprise (CAS)', 'SPA ProSupp Server (MTP)', 'SSO Quality Lets Fix It',
   'Storage Echannel CCC', 'Storage ProSupport ANZ', 'Storage ProSupport CCC',
   'Storage ProSupport SA', 'Storage PS MD US', 'Storage ROLA', 'Support Ops ROLA',
@@ -245,10 +245,10 @@ export const INACTIVE_QUEUE_NAMES = [
 ]
 
 export function inferRegion(name) {
-  if (/^APJ|^HCS APJ|^HCS LATAM|^Korea|^KOR|^ANZ|^MMCLA|^CCC|^Japan|^JP |^BRZ|^Brazil|CTE.*JPN|CTE.*KOR|CTE.*CCC/.test(name)) return 'APJ'
+  if (/^APJ|^HCX APJ|^HCX LATAM|^Korea|^KOR|^ANZ|^MMCLA|^CCC|^Japan|^JP |^BRZ|^Brazil|CTE.*JPN|CTE.*KOR|CTE.*CCC/.test(name)) return 'APJ'
   if (/^LATAM|^ROLA|Portuguese$|Spanish$|Panama/.test(name)) return 'LATAM'
   if (/^EMEA|^ENG |^GER |^German|^FRA |^French|^ITA |^Italian|^SPA |^EC |^CER|^CZE|^ROE|^SWE|Nordics|^UKI|^UKI/.test(name)) return 'EMEA'
-  if (/^AMER|^NA |^NAMER|^US |Federal|Modular US|Enterprise.*US|Powerstore US/.test(name)) return 'NAMER'
+  if (/^AMER|^NA |^NAMER|^US |Federal|Modular US|Enterprise.*US|CoreStore US/.test(name)) return 'NAMER'
   return 'Global'
 }
 
@@ -352,7 +352,7 @@ export function effectiveFiscalYears(filters = {}) {
 }
 
 // A multi-select filter with no selection ([] or undefined) matches everything.
-// Exported since other pages' data modules (e.g. hesData.js) reuse this same rule.
+// Exported since other pages' data modules (e.g. tsaData.js) reuse this same rule.
 export function matchesMulti(selected, value) {
   return !selected || selected.length === 0 || selected.includes(value)
 }

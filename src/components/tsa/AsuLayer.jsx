@@ -1,20 +1,20 @@
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { PLAN_NAMES } from '../../data/mockData'
-import { srByFY, srPlanVsPlanByFY, srRegionPlans, srLobImpact } from '../../data/hesData'
-import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './HesChartKit'
+import { asuByFY, asuPlanVsPlanByFY, asuRegionPlans, asuLobImpact, IMPACT_REGIONS } from '../../data/tsaData'
+import { C, Visual, Tip, PlanDropdowns, PlanSelect } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 
 function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
-  const data = useMemo(() => srByFY(filters, granularity), [filters, granularity])
+  const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
-      rca="SR actuals are outpacing plan as case complexity rises."
-      clca="Add a complexity-adjusted buffer to the SR plan.">
+      rca="ASU actuals are trending below plan in the most recent fiscal year."
+      clca="Re-forecast ASU using the latest onboarding velocity before the next lock.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -37,11 +37,11 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
 }
 
 function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
-  const data = useMemo(() => srPlanVsPlanByFY(filters, granularity), [filters, granularity])
+  const data = useMemo(() => asuPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
-      rca="Plan variance for SR is widest in the most recent quarter."
-      clca="Reconcile plans against the latest actuals before the next AOP cycle.">
+      rca="Plan B consistently understates ASU relative to Plan A."
+      clca="Reconcile the two plans against actuals before selecting a primary.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -63,16 +63,19 @@ function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   )
 }
 
+// Click a region's bar to drill into which LOBs contributed to that region's Plan A
+// vs Plan B gap — same "click to narrow, inline panel" pattern as the Forecasting
+// page's Total Queues donut and CQN Variance year-modal.
 function Visual3({ filters, planA, planB, onPlanChange }) {
   const [selectedRegion, setSelectedRegion] = useState(null)
-  const data = useMemo(() => srRegionPlans(filters), [filters])
-  const lobImpact = useMemo(() => selectedRegion ? srLobImpact(selectedRegion) : [], [selectedRegion])
+  const data = useMemo(() => asuRegionPlans(filters), [filters])
+  const lobImpact = useMemo(() => selectedRegion ? asuLobImpact(selectedRegion) : [], [selectedRegion])
 
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
-      rca="SR impact concentrates in a small number of LOBs per region."
-      clca="Prioritize staffing reviews for the top LOBs in the highest-impact region.">
+      rca="A few LOBs drive most of each region's ASU impact."
+      clca="Focus region reviews on the top-contributing LOBs shown here.">
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -109,7 +112,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   )
 }
 
-export default function SrLayer({ filters, granularity }) {
+export default function AsuLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [plan, setPlan] = useState('FY27 Q1 APR Plan')
   const [plans, setPlans] = useState({ planA: 'AOP_FY26Q4_AA', planB: 'FY27 Q1 APR Plan' })
@@ -119,11 +122,11 @@ export default function SrLayer({ filters, granularity }) {
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
       <div className="layer-header" onClick={() => setOpen(o => !o)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#34d399', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>02</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>SR Trend</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— service request tracking</span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#38bdf8', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>01</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>ASU Trend</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— Active Service Unit tracking</span>
         </div>
-        <span style={{ fontSize: 11, color: '#34d399', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
+        <span style={{ fontSize: 11, color: '#38bdf8', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>

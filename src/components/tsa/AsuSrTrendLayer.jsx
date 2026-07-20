@@ -7,8 +7,8 @@ import { PLAN_NAMES } from '../../data/mockData'
 import {
   cpasuByRegion, regionTrendGranularity, cpasuTrendByRegion, srBotsByFY,
   ucrByFY, topNonAdherentLobsByYear,
-} from '../../data/hesData'
-import { C, Visual, Tip, PlanSelect, Modal, PillButton } from './HesChartKit'
+} from '../../data/tsaData'
+import { C, Visual, Tip, PlanSelect, Modal, PillButton } from './TsaChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 

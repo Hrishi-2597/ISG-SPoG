@@ -1,5 +1,5 @@
-// Mock data + selectors for the ESG Capacity Plan page (Staffing / Utilization /
-// SL% / FTE / Attrition). Structurally mirrors mockData.js/hesData.js — multi-select
+// Mock data + selectors for the MSG Capacity Plan page (Staffing / Utilization /
+// SL% / FTE / Attrition). Structurally mirrors mockData.js/tsaData.js — multi-select
 // filters as arrays, FY-level series narrowed by the most specific time filter and
 // expandable to the page-wide Quarter/Month/Week granularity toggle, real queue names
 // paired with illustrative numbers — but is its own module since this page has a
@@ -27,7 +27,7 @@ const CAPACITY_FIELD_BY_KEY = {
 // same "real names + illustrative structure" convention as ACTIVE_QUEUES. Sub-region
 // is read directly off ACTIVE_QUEUES[i] (same name, same index, same source array)
 // instead of re-assigned independently, so a given queue carries the identical
-// sub-region tag on both this page and ESG Forecasting.
+// sub-region tag on both this page and MSG Forecasting.
 export const CAPACITY_QUEUES = ACTIVE_QUEUE_NAMES.map((name, i) => {
   const planHC = 8 + (i % 12)
   const actualHC = Math.round(planHC * (0.82 + (i % 13) * 0.02))
@@ -151,7 +151,7 @@ export function attritionByDimension(filters = {}, dimension = 'Region') {
 }
 
 // FY/granularity trend for one clicked region/sub-region key — same "click a region
-// to drill into its own time trend" mechanic as hesData.js's cpasuByRegion/
+// to drill into its own time trend" mechanic as tsaData.js's cpasuByRegion/
 // cpasuTrendByRegion, scaled by that key's share of the currently in-scope queues
 // so the drilled trend still respects whatever the top filters/granularity are set to.
 export function attritionTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
@@ -207,7 +207,7 @@ export function slDefaulterQueues(filters = {}, count = 6) {
 // FY-level baseline that planOverPlanByDimension/planOverPlanTrendByDimension below
 // scale per region/sub-region share — this page's Plan over Plan Variation layer
 // only ever shows the region/sub-region drill, not a flat FY-only chart, so there's
-// no standalone planOverPlanByFY selector here (unlike HES Capacity's simpler layer).
+// no standalone planOverPlanByFY selector here (unlike TSA Capacity's simpler layer).
 export const CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   period: fy,
   plan1: BASE_HC_PLAN[fy],
@@ -341,7 +341,7 @@ export const CPF_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 }))
 
 // Cases per FTE is a rate (cases handled per head), so its trend chart uses the
-// rate-preserving expansion, same reasoning as UCR target/current on HES Forecasting.
+// rate-preserving expansion, same reasoning as UCR target/current on TSA Forecasting.
 export function cpfByFY(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
   const fyRows = CPF_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, actual: d.actual, plan: d.plan }))
@@ -349,7 +349,7 @@ export function cpfByFY(filters = {}, granularity) {
 }
 
 // Year-over-year % change between the latest in-scope FY and the one before it;
-// null when there's no prior year in scope, same convention as hesData.js's yoyPct.
+// null when there's no prior year in scope, same convention as tsaData.js's yoyPct.
 function yoyPct(curr, prev) {
   if (prev === undefined || prev === null || !prev) return null
   return +(((curr - prev) / prev) * 100).toFixed(1)
@@ -358,12 +358,12 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // The headline `value`/`actual` for each card drills with the page-wide Quarter/
 // Month/Week slicer (granularity); the YTD `period`/`prevPeriod`/`yoyPct` comparison
-// is always FY-over-FY regardless of granularity — same split HES Forecasting's
-// hesCardData uses, since a granular sub-year YoY comparison has no real baseline
+// is always FY-over-FY regardless of granularity — same split TSA Forecasting's
+// tsaCardData uses, since a granular sub-year YoY comparison has no real baseline
 // to compare against (the sub-period numbers are themselves synthesized from the FY
 // total). Staffing/Utilization/SL adherence % naturally don't shift with queue-scoping
 // filters (both sides of each ratio scale together) — only headcount totals (Total FTE)
-// visibly respond, same reasoning as the Forecasting/HES cards' rate metrics.
+// visibly respond, same reasoning as the Forecasting/TSA cards' rate metrics.
 export function capacityCardData(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
   const hcGranular = hcStaffingByFY(filters, granularity)
@@ -408,10 +408,10 @@ export function capacityCardData(filters = {}, granularity) {
 }
 
 // ── Geo Map: headcount fulfillment % / SL% by region, with a Sub-region lens ──────
-// Same choropleth mechanism as Layer3GeoMap/HesGeoMap (region fill, dimmed fallback
+// Same choropleth mechanism as Layer3GeoMap/TsaGeoMap (region fill, dimmed fallback
 // for non-highlighted areas in Sub-region view) but colored by whichever of the two
 // capacity metrics the map's own toggle picks. Sub-region view uses the same real
-// 24 SUB_REGIONS values (and subRegionForCountry lookup) as ESG Forecasting's own
+// 24 SUB_REGIONS values (and subRegionForCountry lookup) as MSG Forecasting's own
 // Geo Map, replacing the earlier curated 14-country view entirely.
 export const GEO_CAPACITY_BY_REGION = [
   { region: 'NAMER', fulfillmentPct: 96, slPct: 92 },

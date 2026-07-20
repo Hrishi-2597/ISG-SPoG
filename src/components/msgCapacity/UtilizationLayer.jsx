@@ -3,7 +3,7 @@ import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { utilizationByFY, utilizationByQueue, leavesByQueue } from '../../data/esgCapacityData'
+import { utilizationByFY, utilizationByQueue, leavesByQueue } from '../../data/msgCapacityData'
 import { C, Visual, Tip, CategoryTick } from '../ChartKit'
 
 // Extends the shared Tip with the top-3 Aux codes driving the gap (a shortfall can

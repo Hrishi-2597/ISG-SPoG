@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 
-// Shared chart primitives used across every page (Forecasting, HES Forecasting, and
+// Shared chart primitives used across every page (Forecasting, TSA Forecasting, and
 // both Capacity Plan pages) — one Visual wrapper / Tip / plan-picker implementation
-// instead of near-duplicates per page. Originally lived in hes/HesChartKit.jsx;
+// instead of near-duplicates per page. Originally lived in tsa/TsaChartKit.jsx;
 // promoted here once a second page family (Capacity Plan) needed the exact same
-// pieces — HesChartKit.jsx now re-exports everything from here so none of its
+// pieces — TsaChartKit.jsx now re-exports everything from here so none of its
 // existing imports had to change.
 
 // Same color-role convention established on the Forecasting page: blue/orange compare

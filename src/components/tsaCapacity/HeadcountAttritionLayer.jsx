@@ -4,8 +4,8 @@ import {
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  fteByFY, hesAttritionByDimension, hesAttritionTrendByDimension, hesUtilByFY,
-} from '../../data/hesCapacityData'
+  fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension, tsaUtilByFY,
+} from '../../data/tsaCapacityData'
 import { C, Visual, Tip, BinaryToggle, PillButton } from '../ChartKit'
 
 function Visual1({ filters, granularity }) {
@@ -32,7 +32,7 @@ function Visual1({ filters, granularity }) {
 }
 
 // Custom tooltip so the raw attrition headcount (not just the %) is always visible —
-// same "attrition % along with original number" treatment as ESG Capacity Plan.
+// same "attrition % along with original number" treatment as MSG Capacity Plan.
 function AttritionTip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload
@@ -54,15 +54,15 @@ function AttritionTip({ active, payload, label }) {
 }
 
 // Region/Sub-region renders by default (one bar+line per key); clicking a bar drills
-// into that key's own FY/granularity trend — same click-to-drill mechanic as ESG
-// Capacity Plan's Attrition visual (and HES Forecasting's own CPASU Trend).
+// into that key's own FY/granularity trend — same click-to-drill mechanic as MSG
+// Capacity Plan's Attrition visual (and TSA Forecasting's own CPASU Trend).
 function Visual2({ filters, granularity }) {
   const [dimension, setDimension] = useState('Region')
   const [selectedKey, setSelectedKey] = useState(null)
   const dimLabel = dimension === 'SubRegion' ? 'Sub-region' : 'Region'
-  const dimData = useMemo(() => hesAttritionByDimension(filters, dimension), [filters, dimension])
+  const dimData = useMemo(() => tsaAttritionByDimension(filters, dimension), [filters, dimension])
   const trendData = useMemo(
-    () => (selectedKey ? hesAttritionTrendByDimension(filters, selectedKey, dimension, granularity) : []),
+    () => (selectedKey ? tsaAttritionTrendByDimension(filters, selectedKey, dimension, granularity) : []),
     [filters, selectedKey, dimension, granularity]
   )
   const handleDimensionChange = val => {
@@ -100,10 +100,10 @@ function Visual2({ filters, granularity }) {
 
 // Renamed "Utilization Variance"; the lens toggle's "Country" label was always
 // cosmetic (no real per-country utilization data existed on this page) — relabeled
-// "Sub-region" now that a real subRegion dimension exists on HES_CAPACITY_LOBS.
+// "Sub-region" now that a real subRegion dimension exists on TSA_CAPACITY_LOBS.
 function Visual3({ filters, granularity }) {
   const [lens, setLens] = useState('Region')
-  const data = useMemo(() => hesUtilByFY(filters, granularity, lens), [filters, granularity, lens])
+  const data = useMemo(() => tsaUtilByFY(filters, granularity, lens), [filters, granularity, lens])
   return (
     <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}
       rca="Utilization gaps persist even where headcount is at or above plan."

@@ -6,7 +6,7 @@ import {
 import { PLAN_NAMES } from '../../data/mockData'
 import {
   hcStaffingByFY, attritionByDimension, attritionTrendByDimension, slTrendByFY, slDefaulterQueues,
-} from '../../data/esgCapacityData'
+} from '../../data/msgCapacityData'
 import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
 
 const PLANS = PLAN_NAMES
@@ -58,7 +58,7 @@ function AttritionTip({ active, payload, label }) {
 }
 
 // Region/Sub-region renders by default (one bar+line per key); clicking a bar drills
-// into that key's own FY/granularity trend, same "click to drill" mechanic as HES
+// into that key's own FY/granularity trend, same "click to drill" mechanic as TSA
 // Forecasting's CPASU Trend (AsuSrTrendLayer Visual1). Switching the Region/Sub-region
 // toggle while drilled in resets the drill, since a selected key from one dimension
 // has no matching key in the other.
@@ -107,7 +107,7 @@ function Visual2({ filters, granularity }) {
 // Renamed from "Actual vs Plan Trend with SL%"; the Region/Country toggle is gone
 // (not requested here) and the defaulter list below now uses a stricter, more
 // actionable rule: over-plan headcount that STILL hasn't fixed SL — see
-// slDefaulterQueues in esgCapacityData.js.
+// slDefaulterQueues in msgCapacityData.js.
 function Visual3({ filters, granularity }) {
   const data = useMemo(() => slTrendByFY(filters, granularity), [filters, granularity])
   const defaulters = useMemo(() => slDefaulterQueues(filters), [filters])

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoCapacityByRegion, geoCapacityBySubRegion, regionForCountry, subRegionForCountry } from '../../data/esgCapacityData'
+import { geoCapacityByRegion, geoCapacityBySubRegion, regionForCountry, subRegionForCountry } from '../../data/msgCapacityData'
 import { BinaryToggle, GraphInsightButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -20,7 +20,7 @@ const LEGEND = [
   { label: '< 70% Critical',  color: '#dc2626' },
 ]
 
-// Same choropleth mechanism as Layer3GeoMap/HesGeoMap, with two independent toggles:
+// Same choropleth mechanism as Layer3GeoMap/TsaGeoMap, with two independent toggles:
 // which metric colors the map (Headcount fulfillment vs SL%), and whether the
 // highlighted areas are whole regions or the real 24 SUB_REGIONS values — replacing
 // the earlier curated 14-country view entirely, per direct request. Sub-region view
@@ -28,7 +28,7 @@ const LEGEND = [
 // specific sub-region tag, same "full coverage, named areas pop" convention
 // Layer3GeoMap established, and is suppressed once Region/Sub-region filters
 // already narrow the view (see subRegionIsNarrowed below).
-export default function EsgCapacityGeoMap({ filters }) {
+export default function MsgCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [metric, setMetric] = useState('Headcount')
   const [viewMode, setViewMode] = useState('Region')

@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import LandingPage from './components/LandingPage'
 import ForecastingPage from './components/ForecastingPage'
-import EsgCapacityPage from './components/esgCapacity/EsgCapacityPage'
-import HesForecastingPage from './components/hes/HesForecastingPage'
-import HesCapacityPage from './components/hesCapacity/HesCapacityPage'
+import MsgCapacityPage from './components/msgCapacity/MsgCapacityPage'
+import TsaForecastingPage from './components/tsa/TsaForecastingPage'
+import TsaCapacityPage from './components/tsaCapacity/TsaCapacityPage'
 
-const THEME_KEY = 'isg-spog-theme'
+const THEME_KEY = 'tsg-spog-theme'
 
-// Each business section (ESG/HES) has its own internal Forecasting/Capacity Plan
+// Each business section (MSG/TSA) has its own internal Forecasting/Capacity Plan
 // toggle — this is the sub-page shown inside that section, not a top-level route.
 const SUB_PAGES = {
-  esg: [
-    { key: 'forecasting', label: 'ESG Forecasting' },
-    { key: 'capacity', label: 'ESG Capacity Plan' },
+  msg: [
+    { key: 'forecasting', label: 'MSG Forecasting' },
+    { key: 'capacity', label: 'MSG Capacity Plan' },
   ],
-  hes: [
-    { key: 'forecasting', label: 'HES Forecasting' },
-    { key: 'capacity', label: 'HES Capacity Plan' },
+  tsa: [
+    { key: 'forecasting', label: 'TSA Forecasting' },
+    { key: 'capacity', label: 'TSA Capacity Plan' },
   ],
 }
 
@@ -33,11 +33,11 @@ function PageToggle({ options, page, setPage }) {
 }
 
 // Home button placed next to the header logo, next to a business section, to get
-// back to the ISG SPoG landing tiles — the only way back up once a business is
+// back to the TSG SPoG landing tiles — the only way back up once a business is
 // selected, since the header no longer carries a top-level page toggle.
 function HomeButton({ onClick }) {
   return (
-    <button onClick={onClick} aria-label="Back to ISG SPoG home" title="Back to ISG SPoG home" style={{
+    <button onClick={onClick} aria-label="Back to TSG SPoG home" title="Back to TSG SPoG home" style={{
       width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border-default)',
       background: 'var(--bg-inset)', color: 'var(--text-dim)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
@@ -50,7 +50,7 @@ function HomeButton({ onClick }) {
   )
 }
 
-// Sun/moon pill switch, mirroring the same knob-slide pattern as HesGeoMap's
+// Sun/moon pill switch, mirroring the same knob-slide pattern as TsaGeoMap's
 // Region/Sub-region toggle rather than inventing a new interaction for "flip a
 // binary setting."
 function ThemeToggle({ theme, onToggle }) {
@@ -82,17 +82,17 @@ function ThemeToggle({ theme, onToggle }) {
 }
 
 const BUSINESS_META = {
-  esg: { fullName: 'Enterprise Service Group', badge: 'ISG ESG' },
-  hes: { fullName: 'High End Storage', badge: 'ISG HES' },
+  msg: { fullName: 'Enterprise Service Group', badge: 'TSG MSG' },
+  tsa: { fullName: 'High End Storage', badge: 'TSG TSA' },
 }
 
 export default function App() {
-  // Top-level: 'landing' or a business key ('esg'/'hes'). Each business remembers
+  // Top-level: 'landing' or a business key ('msg'/'tsa'). Each business remembers
   // its own last-viewed sub-page (Forecasting/Capacity Plan) independently, so
   // hopping back to the landing tiles and returning doesn't reset it.
   const [view, setView] = useState('landing')
-  const [esgSubPage, setEsgSubPage] = useState('forecasting')
-  const [hesSubPage, setHesSubPage] = useState('forecasting')
+  const [msgSubPage, setMsgSubPage] = useState('forecasting')
+  const [tsaSubPage, setTsaSubPage] = useState('forecasting')
 
   // Reading + applying the saved theme inside the initializer (not a useEffect)
   // sets the data-theme attribute before first paint, avoiding a dark->light flash.
@@ -107,9 +107,9 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
-  const isBusiness = view === 'esg' || view === 'hes'
-  const subPage = view === 'esg' ? esgSubPage : hesSubPage
-  const setSubPage = view === 'esg' ? setEsgSubPage : setHesSubPage
+  const isBusiness = view === 'msg' || view === 'tsa'
+  const subPage = view === 'msg' ? msgSubPage : tsaSubPage
+  const setSubPage = view === 'msg' ? setMsgSubPage : setTsaSubPage
   const meta = isBusiness ? BUSINESS_META[view] : null
   const subPageLabel = isBusiness ? SUB_PAGES[view].find(p => p.key === subPage)?.label : null
 
@@ -139,7 +139,7 @@ export default function App() {
           </div>
           <div>
             <h1 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-              ISG SPoG
+              TSG SPoG
             </h1>
             <p style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
               {isBusiness ? `${meta.fullName} · ${subPageLabel}` : 'Enterprise Service Group · High End Storage'}
@@ -173,14 +173,14 @@ export default function App() {
       <div style={{ height: 1, background: 'linear-gradient(90deg, var(--accent) 0%, rgba(56,189,248,0.1) 40%, transparent 70%)' }} />
 
       {view === 'landing' && <LandingPage onSelect={setView} />}
-      {view === 'esg' && (esgSubPage === 'forecasting' ? <ForecastingPage /> : <EsgCapacityPage />)}
-      {view === 'hes' && (hesSubPage === 'forecasting' ? <HesForecastingPage /> : <HesCapacityPage />)}
+      {view === 'msg' && (msgSubPage === 'forecasting' ? <ForecastingPage /> : <MsgCapacityPage />)}
+      {view === 'tsa' && (tsaSubPage === 'forecasting' ? <TsaForecastingPage /> : <TsaCapacityPage />)}
 
       <footer style={{
         textAlign: 'center', fontSize: 10, color: 'var(--text-muted)',
         padding: '12px 0', borderTop: '1px solid var(--border-subtle)',
       }}>
-        ISG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
+        TSG SPoG · Enterprise Service Group · © 2026 Aligned Automation Services
       </footer>
     </div>
   )

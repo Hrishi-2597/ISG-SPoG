@@ -4,23 +4,23 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import {
-  hesPlanOverPlanByDimension, hesPlanOverPlanTrendByDimension, planOverPlanLobVariance,
-} from '../../data/hesCapacityData'
+  tsaPlanOverPlanByDimension, tsaPlanOverPlanTrendByDimension, planOverPlanLobVariance,
+} from '../../data/tsaCapacityData'
 import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick } from '../ChartKit'
 
-// HES-specific counterpart to esgCapacity/PlanOverPlanVariationLayer.jsx — same
+// TSA-specific counterpart to msgCapacity/PlanOverPlanVariationLayer.jsx — same
 // Region/Sub-region click-to-drill + ranked-variance-list structure, but ranking
 // LOBs instead of queues (this page has no per-queue dimension), per direct request.
 // Built as its own component rather than the shared capacity/PlanOverPlanLayer.jsx
-// for the same reason ESG's version was: neither page's new capabilities apply to
+// for the same reason MSG's version was: neither page's new capabilities apply to
 // the other.
 function MainChart({ filters, granularity }) {
   const [dimension, setDimension] = useState('Region')
   const [selectedKey, setSelectedKey] = useState(null)
   const dimLabel = dimension === 'SubRegion' ? 'Sub-region' : 'Region'
-  const dimData = useMemo(() => hesPlanOverPlanByDimension(filters, dimension), [filters, dimension])
+  const dimData = useMemo(() => tsaPlanOverPlanByDimension(filters, dimension), [filters, dimension])
   const trendData = useMemo(
-    () => (selectedKey ? hesPlanOverPlanTrendByDimension(filters, selectedKey, dimension, granularity) : []),
+    () => (selectedKey ? tsaPlanOverPlanTrendByDimension(filters, selectedKey, dimension, granularity) : []),
     [filters, selectedKey, dimension, granularity]
   )
   const handleDimensionChange = val => {
@@ -61,7 +61,7 @@ function MainChart({ filters, granularity }) {
 }
 
 // Diverging bar per LOB, value-labeled — same polished convention as Forecasting's
-// "Top Queues by Variance" charts and ESG Capacity's "Queues with Highest Variation".
+// "Top Queues by Variance" charts and MSG Capacity's "Queues with Highest Variation".
 function LobVarianceChart({ filters }) {
   const data = useMemo(() => planOverPlanLobVariance(filters, 8), [filters])
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(1, ...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])

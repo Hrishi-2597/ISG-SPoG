@@ -1,21 +1,22 @@
 import React from 'react'
 
-// Illustrative example content, written for this page's own metrics (ASU/SR/CPASU/UCR)
-// rather than reusing the Forecasting page's queue/call-volume-themed copy — see
-// design_choice.md. Not generated from real incident data; once RCA/CLCA workflows
+// Illustrative example content, written for this page's own metrics (staffing/
+// utilization/SL/attrition/cases-per-FTE) rather than reusing the Forecasting page's
+// queue/call-volume-themed copy — same "own vocabulary, own content" convention as
+// TsaRcaClcaPanel.jsx. Not generated from real incident data; once RCA/CLCA workflows
 // are connected to a real data source, this panel should read from that instead.
 const RCA = [
-  'APJ Symmetrix LOBs are trending under ASU plan for two consecutive quarters, correlated with a slower-than-modeled ramp on recently onboarded High End Storage queues.',
-  'SR volume for EMEA HES queues has outpaced ASU growth, pushing CPASU upward — an early signal of rising support intensity the current AOP baseline doesn’t capture.',
-  'UCR runrate misses cluster in LOBs with the lowest bot-deflection share, suggesting UCR automation coverage — not staffing — is the binding constraint.',
-  'NAMER "UCR Handled SR’s" grew faster than plan while "SR’s" held flat, indicating bot deflection is absorbing more volume than the FY27 plan assumed.',
+  'EMEA queues are running below utilization target for two consecutive quarters, while headcount sits at or above plan — the shortfall traces to Aux 3 (training) and Aux 6 (system downtime) absorbing more productive time than the AOP baseline assumed.',
+  'Attrition in APJ has climbed above bench for three straight fiscal years, concentrated in sub-regions with the longest average tenure-to-backfill gap — new hires aren\'t landing fast enough to offset departures.',
+  'Cases per FTE is trending above plan across most queues, indicating the current headcount plan under-forecast case volume growth rather than an efficiency problem.',
+  'Several queues that are over headcount plan are still missing their 90% SL target — extra heads alone haven\'t resolved the underlying service-level gap, pointing to a skill-mix or routing issue rather than a staffing-level one.',
 ]
 
 const CLCA = [
-  'Re-baseline the APJ Symmetrix ASU ramp curve using actual onboarding velocity from the last two quarters before the Q3 AOP lock.',
-  'Add a CPASU early-warning threshold (e.g. >15% QoQ increase) to flag EMEA HES queues for a support-intensity review before it shows up in the UCR runrate.',
-  'Prioritize bot-deflection coverage expansion for the LOBs on this quarter’s non-adherent list, ahead of additional headcount asks.',
-  'Fold observed bot-deflection growth into the FY27 SR plan so "UCR Handled SR’s" isn’t chronically under-planned relative to actuals.',
+  'Add an Aux-code contingency buffer to the EMEA utilization target for queues with recurring Aux 3/Aux 6 exposure, rather than treating every shortfall as a pure headcount gap.',
+  'Pull forward APJ backfill hiring by one full recruiting cycle for the sub-regions on this quarter\'s highest-attrition list, and pilot a stay-interview program for at-risk tenure bands.',
+  'Re-baseline the FY28 Cases-per-FTE plan using the last two quarters\' actual case-volume growth rate before the next AOP lock, instead of carrying forward the current plan unchanged.',
+  'For queues over headcount plan but still below 90% SL, prioritize a skill-mix/routing review ahead of any further headcount ask — the data says the fix isn\'t more heads.',
 ]
 
 // Compacted 2026-07-06 to fit the narrower (220px) sidebar without cramping the
@@ -43,7 +44,7 @@ function Section({ badge, badgeColor, title, subtitle, items }) {
   )
 }
 
-export default function HesRcaClcaPanel() {
+export default function MsgCapacityRcaClcaPanel() {
   return (
     <div className="flex flex-col gap-3">
       <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>

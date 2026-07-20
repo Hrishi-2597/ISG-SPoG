@@ -37,12 +37,12 @@ function ClusterDivider() {
 // Mirrors FilterPanel.jsx's cluster layout (Scope/Time/People/Geography + DB/OSP
 // pill), swapping in this page's own field set: Combined Queue Name instead of
 // Queue Name. Plan Name, Region and Sub-region reuse the exact same options lists
-// as ESG Forecasting's own FilterPanel.jsx (PLAN_NAMES/REGIONS/SUB_REGIONS) rather
+// as MSG Forecasting's own FilterPanel.jsx (PLAN_NAMES/REGIONS/SUB_REGIONS) rather
 // than page-specific lists, per direct request — Business Org and Country (this
 // page's original two extra dimensions) were dropped entirely. The GranularityToggle
 // sits at the end of the first row, same placement convention as both Forecasting
 // filter bars.
-export default function EsgCapacityFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
+export default function MsgCapacityFilterPanel({ filters, onChange, granularity, onGranularityChange }) {
   const set = key => val => onChange({ ...filters, [key]: val })
 
   const defs = {

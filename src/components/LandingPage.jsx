@@ -2,17 +2,17 @@ import React from 'react'
 
 const TILES = [
   {
-    key: 'esg',
-    label: 'ESG',
+    key: 'msg',
+    label: 'MSG',
     fullName: 'Enterprise Service Group',
-    desc: 'Forecasting and Capacity Plan for ESG queues, staffing and utilization.',
+    desc: 'Forecasting and Capacity Plan for MSG queues, staffing and utilization.',
     accent: '#38bdf8',
   },
   {
-    key: 'hes',
-    label: 'HES',
+    key: 'tsa',
+    label: 'TSA',
     fullName: 'High End Storage',
-    desc: 'Forecasting and Capacity Plan for HES lines of business and workload.',
+    desc: 'Forecasting and Capacity Plan for TSA lines of business and workload.',
     accent: '#a78bfa',
   },
 ]
@@ -55,7 +55,7 @@ export default function LandingPage({ onSelect }) {
       alignItems: 'center', justifyContent: 'center', gap: 36, padding: '40px 20px',
     }}>
       <div style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>ISG SPoG</h1>
+        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>TSG SPoG</h1>
         <p style={{ fontSize: 12.5, color: 'var(--text-dim)', marginTop: 6 }}>Select a business to open its Forecasting and Capacity Plan views</p>
       </div>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>

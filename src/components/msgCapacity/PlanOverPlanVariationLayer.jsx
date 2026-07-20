@@ -5,14 +5,14 @@ import {
 } from 'recharts'
 import {
   planOverPlanByDimension, planOverPlanTrendByDimension, planOverPlanQueueVariance,
-} from '../../data/esgCapacityData'
+} from '../../data/msgCapacityData'
 import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick } from '../ChartKit'
 
-// ESG-specific replacement for the shared capacity/PlanOverPlanLayer.jsx — this page's
+// MSG-specific replacement for the shared capacity/PlanOverPlanLayer.jsx — this page's
 // version got its own Region/Sub-region drill and a queue-variance ranking on top of
-// the base chart, none of which apply to HES Capacity's simpler plan-vs-plan layer,
+// the base chart, none of which apply to TSA Capacity's simpler plan-vs-plan layer,
 // so it was built as its own component rather than growing the shared one with
-// ESG-only branches (see design_choice.md).
+// MSG-only branches (see design_choice.md).
 function MainChart({ filters, granularity }) {
   const [dimension, setDimension] = useState('Region')
   const [selectedKey, setSelectedKey] = useState(null)

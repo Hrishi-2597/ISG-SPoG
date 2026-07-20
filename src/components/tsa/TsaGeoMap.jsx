@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoAdherenceByRegion, regionForCountry } from '../../data/hesData'
+import { geoAdherenceByRegion, regionForCountry } from '../../data/tsaData'
 import { GraphInsightButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -23,7 +23,7 @@ const LEGEND = [
 // LOB adherence across regions — same choropleth mechanism as the Forecasting page's
 // Geo Map, colored by geoAdherenceByRegion() instead of forecast accuracy. No
 // Region/Country toggle here — the deck only specifies a region-level view.
-export default function HesGeoMap({ filters }) {
+export default function TsaGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [hovered, setHovered] = useState(null)
   const rows = useMemo(() => geoAdherenceByRegion(filters), [filters])

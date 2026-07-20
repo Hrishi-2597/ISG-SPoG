@@ -1,23 +1,21 @@
 import React from 'react'
 
-// Illustrative example content, written for this page's own metrics (staffing/
-// attrition/Cases-per-FTE/Average Case Time/SLO) rather than reusing any other
-// page's copy — same "own vocabulary, own content" convention as
-// EsgCapacityRcaClcaPanel.jsx/HesRcaClcaPanel.jsx. Not generated from real incident
-// data; once RCA/CLCA workflows are connected to a real data source, this panel
-// should read from that instead.
+// Illustrative example content, written for this page's own metrics (ASU/SR/CPASU/UCR)
+// rather than reusing the Forecasting page's queue/call-volume-themed copy — see
+// design_choice.md. Not generated from real incident data; once RCA/CLCA workflows
+// are connected to a real data source, this panel should read from that instead.
 const RCA = [
-  'Average Case Time has run above plan for two consecutive fiscal years, concentrated in a handful of LOBs rather than spread evenly — a small number of queues are driving most of the overage.',
-  'Attrition in APJ sub-regions is outpacing the rest of the portfolio, correlated with the longest average backfill lead time — new hires aren\'t landing fast enough to offset departures there.',
-  'SLO is below the FY27 target in 2 of 4 regions, both of which also show above-plan Average Case Time — slower case resolution appears to be the direct driver of the SLO miss, not staffing.',
-  'Cases per FTE is trending above plan across most LOBs, suggesting the current headcount plan under-forecast case volume growth rather than an efficiency shortfall.',
+  'APJ ApexArray LOBs are trending under ASU plan for two consecutive quarters, correlated with a slower-than-modeled ramp on recently onboarded High End Storage queues.',
+  'SR volume for EMEA TSA queues has outpaced ASU growth, pushing CPASU upward — an early signal of rising support intensity the current AOP baseline doesn’t capture.',
+  'UCR runrate misses cluster in LOBs with the lowest bot-deflection share, suggesting UCR automation coverage — not staffing — is the binding constraint.',
+  'NAMER "UCR Handled SR’s" grew faster than plan while "SR’s" held flat, indicating bot deflection is absorbing more volume than the FY27 plan assumed.',
 ]
 
 const CLCA = [
-  'Prioritize an Average Case Time review for the specific LOBs identified as top defaulters this quarter, ahead of any broader staffing-level change.',
-  'Pull forward APJ backfill hiring for the sub-regions on this quarter\'s highest-attrition list, and shorten the recruiting-to-productive-agent pipeline where possible.',
-  'Tie the SLO recovery plan for at-risk regions to Average Case Time improvement first, since the data points there rather than to headcount.',
-  'Re-baseline the FY28 Cases-per-FTE plan using the last two quarters\' actual case-volume growth before the next AOP lock, instead of carrying the current plan forward unchanged.',
+  'Re-baseline the APJ ApexArray ASU ramp curve using actual onboarding velocity from the last two quarters before the Q3 AOP lock.',
+  'Add a CPASU early-warning threshold (e.g. >15% QoQ increase) to flag EMEA TSA queues for a support-intensity review before it shows up in the UCR runrate.',
+  'Prioritize bot-deflection coverage expansion for the LOBs on this quarter’s non-adherent list, ahead of additional headcount asks.',
+  'Fold observed bot-deflection growth into the FY27 SR plan so "UCR Handled SR’s" isn’t chronically under-planned relative to actuals.',
 ]
 
 // Compacted 2026-07-06 to fit the narrower (220px) sidebar without cramping the
@@ -45,7 +43,7 @@ function Section({ badge, badgeColor, title, subtitle, items }) {
   )
 }
 
-export default function HesCapacityRcaClcaPanel() {
+export default function TsaRcaClcaPanel() {
   return (
     <div className="flex flex-col gap-3">
       <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>

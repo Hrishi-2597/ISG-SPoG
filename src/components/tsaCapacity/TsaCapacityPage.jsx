@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
-import HesFilterPanel from '../hes/HesFilterPanel'
-import HesCapacityMetricCards from './HesCapacityMetricCards'
+import TsaFilterPanel from '../tsa/TsaFilterPanel'
+import TsaCapacityMetricCards from './TsaCapacityMetricCards'
 import HeadcountAttritionLayer from './HeadcountAttritionLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import WorkloadDistributionLayer from './WorkloadDistributionLayer'
-import HesCapacityGeoMap from './HesCapacityGeoMap'
-import HesCapacityRcaClcaPanel from './HesCapacityRcaClcaPanel'
+import TsaCapacityGeoMap from './TsaCapacityGeoMap'
+import TsaCapacityRcaClcaPanel from './TsaCapacityRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
-// Same filter field set as HES Forecasting (LOB / FY-Qtr-Month-Week / Business
-// Partner / Global Grouping) — HesFilterPanel is reused directly rather than
+// Same filter field set as TSA Forecasting (LOB / FY-Qtr-Month-Week / Business
+// Partner / Global Grouping) — TsaFilterPanel is reused directly rather than
 // duplicated, since it's a stateless controlled component with no page-specific
 // hardcoding.
 const DEFAULT_FILTERS = {
@@ -22,16 +22,16 @@ const DEFAULT_FILTERS = {
   globalGrouping: [],
 }
 
-export default function HesCapacityPage() {
+export default function TsaCapacityPage() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [granularity, setGranularity] = useState(null)
 
   return (
     <>
-      <HesFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
+      <TsaFilterPanel filters={filters} onChange={setFilters} granularity={granularity} onGranularityChange={setGranularity} />
 
       <SectionDivider label="Key Metrics" />
-      <HesCapacityMetricCards filters={filters} granularity={granularity} />
+      <TsaCapacityMetricCards filters={filters} granularity={granularity} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
         <div className="flex-1 min-w-0">
@@ -40,12 +40,12 @@ export default function HesCapacityPage() {
             <HeadcountAttritionLayer filters={filters} granularity={granularity} />
             <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
             <WorkloadDistributionLayer filters={filters} granularity={granularity} />
-            <HesCapacityGeoMap filters={filters} />
+            <TsaCapacityGeoMap filters={filters} />
           </div>
         </div>
 
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <HesCapacityRcaClcaPanel />
+          <TsaCapacityRcaClcaPanel />
         </div>
       </div>
     </>

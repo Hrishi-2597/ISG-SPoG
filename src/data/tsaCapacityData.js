@@ -1,12 +1,12 @@
-// Mock data + selectors for the HES Capacity Plan page (Total FTE / Attrition /
+// Mock data + selectors for the TSA Capacity Plan page (Total FTE / Attrition /
 // Cases-per-FTE / Avg Case Time / Global SLO). Its filter set (LOB / FY-Qtr-Month-
-// Week / Business Partner / Global Grouping) is IDENTICAL to HES Forecasting's, so
-// this page reuses HES Forecasting's own LOB fact table, filter function, and
+// Week / Business Partner / Global Grouping) is IDENTICAL to TSA Forecasting's, so
+// this page reuses TSA Forecasting's own LOB fact table, filter function, and
 // filter-panel component directly rather than duplicating them — only the metrics
 // are new.
 import {
-  LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, hesEffectiveFiscalYears,
-} from './hesData'
+  LOB_LIST, GLOBAL_GROUPING_LIST, LOB_FACTS, LOB_QUEUES, filterLobs, tsaEffectiveFiscalYears,
+} from './tsaData'
 import {
   FISCAL_YEARS, REGIONS, SUB_REGIONS, matchesMulti, expandToGranularity, expandRateToGranularity,
 } from './mockData'
@@ -17,22 +17,22 @@ function lobScopeRatio(filters) {
 }
 
 // Deterministic {key: share} distribution of a LOB set across 'region' or
-// 'subRegion' — same role as esgCapacityData.js's shareByKey, backing the
+// 'subRegion' — same role as msgCapacityData.js's shareByKey, backing the
 // Attrition and Plan over Plan Variation region/sub-region drills below.
-function hesShareByKey(rows, key) {
+function tsaShareByKey(rows, key) {
   const counts = {}
   rows.forEach(l => { if (l[key] != null) counts[l[key]] = (counts[l[key]] || 0) + 1 })
   const total = rows.length || 1
   return Object.fromEntries(Object.entries(counts).map(([k, c]) => [k, c / total]))
 }
 
-// In-scope HES_CAPACITY_LOBS rows for the current filters (lob/businessPartner/
+// In-scope TSA_CAPACITY_LOBS rows for the current filters (lob/businessPartner/
 // globalGrouping) — filterLobs(filters) narrows LOB_FACTS, this maps that back onto
 // the capacity-specific per-LOB rows so region/sub-region drills stay filter-aware.
 function filterCapacityLobs(filters) {
   const inScope = new Set(filterLobs(filters).map(l => l.lob))
-  const rows = HES_CAPACITY_LOBS.filter(l => inScope.has(l.lob))
-  return rows.length ? rows : HES_CAPACITY_LOBS
+  const rows = TSA_CAPACITY_LOBS.filter(l => inScope.has(l.lob))
+  return rows.length ? rows : TSA_CAPACITY_LOBS
 }
 
 // ── Total FTE ──────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ export const FTE_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 }))
 
 export function fteByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const fyRows = FTE_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, plan: d.plan, actual: d.actual }))
   return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
@@ -55,17 +55,17 @@ export function fteByFY(filters = {}, granularity) {
 // ── Attrition (Layer 1, Visual 2) ──────────────────────────────────────────
 const BASE_ATTRITION_BENCH = { FY25: 7.5, FY26: 7.2, FY27: 7.0 }
 
-export const HES_ATTRITION_BY_FY = FISCAL_YEARS.map((fy, i) => ({
+export const TSA_ATTRITION_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   period: fy,
   headcount: 3000 + ((i * 233) % 1200),
   bench: BASE_ATTRITION_BENCH[fy],
   attrition: +(BASE_ATTRITION_BENCH[fy] * (1.1 + (i * 4 % 6) / 100)).toFixed(1),
 }))
 
-export function hesAttritionByFY(filters = {}, granularity, lens = 'Region') {
-  const years = hesEffectiveFiscalYears(filters)
+export function tsaAttritionByFY(filters = {}, granularity, lens = 'Region') {
+  const years = tsaEffectiveFiscalYears(filters)
   const lensScale = lens === 'Country' ? 0.97 : 1
-  const fyRows = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const fyRows = TSA_ATTRITION_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, headcount: Math.round(d.headcount * lensScale), attrition: d.attrition }))
   const expandedHc = expandToGranularity(fyRows, granularity, ['headcount'])
   const expandedRate = expandRateToGranularity(fyRows, granularity, ['attrition'])
@@ -74,15 +74,15 @@ export function hesAttritionByFY(filters = {}, granularity, lens = 'Region') {
 
 // Region/Sub-region default view for HeadcountAttritionLayer Visual2 — one row per
 // key, sized by each key's share of currently in-scope LOBs; clicking a key drills
-// into hesAttritionTrendByDimension below. Same mechanic as esgCapacityData.js's
+// into tsaAttritionTrendByDimension below. Same mechanic as msgCapacityData.js's
 // attritionByDimension, adapted to this page's LOB fact table.
-export function hesAttritionByDimension(filters = {}, dimension = 'Region') {
+export function tsaAttritionByDimension(filters = {}, dimension = 'Region') {
   const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
-  const shares = hesShareByKey(rows, key)
-  const years = hesEffectiveFiscalYears(filters)
-  const fyRows = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
-  const latest = fyRows[fyRows.length - 1] || HES_ATTRITION_BY_FY[HES_ATTRITION_BY_FY.length - 1]
+  const shares = tsaShareByKey(rows, key)
+  const years = tsaEffectiveFiscalYears(filters)
+  const fyRows = TSA_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const latest = fyRows[fyRows.length - 1] || TSA_ATTRITION_BY_FY[TSA_ATTRITION_BY_FY.length - 1]
   return Object.entries(shares)
     .map(([k, share], i) => {
       const headcount = Math.round(latest.headcount * share)
@@ -93,14 +93,14 @@ export function hesAttritionByDimension(filters = {}, dimension = 'Region') {
 }
 
 // FY/granularity trend for one clicked region/sub-region key, same drill mechanic
-// as esgCapacityData.js's attritionTrendByDimension.
-export function hesAttritionTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+// as msgCapacityData.js's attritionTrendByDimension.
+export function tsaAttritionTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
   const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
-  const shares = hesShareByKey(rows, dimKey)
+  const shares = tsaShareByKey(rows, dimKey)
   const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
-  const years = hesEffectiveFiscalYears(filters)
-  const fyRows = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const years = tsaEffectiveFiscalYears(filters)
+  const fyRows = TSA_ATTRITION_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, headcount: Math.round(d.headcount * share), attrition: d.attrition }))
   const expandedHc = expandToGranularity(fyRows, granularity, ['headcount'])
   const expandedRate = expandRateToGranularity(fyRows, granularity, ['attrition'])
@@ -111,18 +111,18 @@ export function hesAttritionTrendByDimension(filters = {}, key, dimension = 'Reg
 }
 
 // ── Actual vs Plan utilization (Layer 1, Visual 3) ─────────────────────────
-const BASE_HES_UTIL_TARGET = { FY25: 80, FY26: 82, FY27: 84 }
+const BASE_TSA_UTIL_TARGET = { FY25: 80, FY26: 82, FY27: 84 }
 
-export const HES_UTIL_BY_FY = FISCAL_YEARS.map((fy, i) => ({
+export const TSA_UTIL_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   period: fy,
-  target: BASE_HES_UTIL_TARGET[fy],
-  actual: +(BASE_HES_UTIL_TARGET[fy] * (0.94 + (i * 5 % 9) / 100)).toFixed(1),
+  target: BASE_TSA_UTIL_TARGET[fy],
+  actual: +(BASE_TSA_UTIL_TARGET[fy] * (0.94 + (i * 5 % 9) / 100)).toFixed(1),
 }))
 
-export function hesUtilByFY(filters = {}, granularity, lens = 'Region') {
-  const years = hesEffectiveFiscalYears(filters)
+export function tsaUtilByFY(filters = {}, granularity, lens = 'Region') {
+  const years = tsaEffectiveFiscalYears(filters)
   const lensScale = lens === 'Country' ? 0.98 : 1
-  const fyRows = HES_UTIL_BY_FY.filter(d => years.includes(d.period))
+  const fyRows = TSA_UTIL_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, target: d.target, actual: +(d.actual * lensScale).toFixed(1) }))
   return expandRateToGranularity(fyRows, granularity, ['target', 'actual'])
     .map(d => ({ ...d, adherence: d.target ? +((d.actual / d.target) * 100).toFixed(1) : 0 }))
@@ -138,7 +138,7 @@ export const CPF_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 // Cases per FTE is a rate (cases handled per head), so its trend chart uses the
 // rate-preserving expansion, same as actHrsByFY below.
 export function cpfByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const fyRows = CPF_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, actual: d.actual, plan: d.plan }))
   return expandRateToGranularity(fyRows, granularity, ['actual', 'plan'])
 }
@@ -151,12 +151,12 @@ export const ACT_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 
 // Avg Case Time is a rate (hours per case), not a summable volume, so its trend
 // chart uses the rate-preserving expansion, same reasoning as UCR target/current
-// on HES Forecasting. `adherence` is plan/actual (not actual/target) since this is a
+// on TSA Forecasting. `adherence` is plan/actual (not actual/target) since this is a
 // "lower is better" metric — adherence reads >=100 when actual is at or under plan,
 // <100 when it's running long, same directional convention as Cases per FTE's
 // "overload" framing on this page's cards.
 export function actHrsByFY(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+  const years = tsaEffectiveFiscalYears(filters)
   const fyRows = ACT_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, actual: d.actual, plan: d.plan }))
   return expandRateToGranularity(fyRows, granularity, ['actual', 'plan'])
     .map(d => ({ ...d, adherence: d.actual ? +((d.plan / d.actual) * 100).toFixed(1) : 0 }))
@@ -182,7 +182,7 @@ export const SLO_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 
 // Tuned so exactly 2 regions sit below the FY27 SLO target (95) — matching the
 // mockup's literal "2 regions at risk" card message.
-export const HES_GEO_SLO_BY_REGION = [
+export const TSA_GEO_SLO_BY_REGION = [
   { region: 'NAMER', slo: 97 },
   { region: 'EMEA', slo: 88 },
   { region: 'APJ', slo: 96 },
@@ -190,23 +190,23 @@ export const HES_GEO_SLO_BY_REGION = [
 ]
 
 export function geoSloByRegion() {
-  return HES_GEO_SLO_BY_REGION
+  return TSA_GEO_SLO_BY_REGION
 }
 
 // Per-sub-region SLO, worldwide — rotates through the region baselines above with a
 // per-sub-region nudge, same "real names + illustrative structure" convention as
-// esgCapacityData.js's GEO_CAPACITY_BY_SUBREGION.
-export const HES_GEO_SLO_BY_SUBREGION = SUB_REGIONS.map((subRegion, i) => {
-  const base = HES_GEO_SLO_BY_REGION[i % HES_GEO_SLO_BY_REGION.length]
+// msgCapacityData.js's GEO_CAPACITY_BY_SUBREGION.
+export const TSA_GEO_SLO_BY_SUBREGION = SUB_REGIONS.map((subRegion, i) => {
+  const base = TSA_GEO_SLO_BY_REGION[i % TSA_GEO_SLO_BY_REGION.length]
   return { subRegion, slo: Math.max(60, Math.min(100, base.slo + ((i * 7) % 9) - 4)) }
 })
 
 export function geoSloBySubRegion() {
-  return HES_GEO_SLO_BY_SUBREGION
+  return TSA_GEO_SLO_BY_SUBREGION
 }
 
 // Year-over-year % change between the latest in-scope FY and the one before it;
-// null when there's no prior year in scope, same convention as esgCapacityData.js's yoyPct.
+// null when there's no prior year in scope, same convention as msgCapacityData.js's yoyPct.
 function yoyPct(curr, prev) {
   if (prev === undefined || prev === null || !prev) return null
   return +(((curr - prev) / prev) * 100).toFixed(1)
@@ -215,13 +215,13 @@ function yoyPct(curr, prev) {
 // ── Card headlines ─────────────────────────────────────────────────────────
 // Staffing Summary/Attrition/Avg Case Time/SLO % headline values drill with the
 // page-wide granularity slicer; each YTD/YoY comparison stays FY-over-FY regardless
-// of granularity — same split as esgCapacityData.js's capacityCardData. Cases per
+// of granularity — same split as msgCapacityData.js's capacityCardData. Cases per
 // FTE is unchanged (still a plain Plan-based sub-line, not part of this revision).
-export function hesCapacityCardData(filters = {}, granularity) {
-  const years = hesEffectiveFiscalYears(filters)
+export function tsaCapacityCardData(filters = {}, granularity) {
+  const years = tsaEffectiveFiscalYears(filters)
   const fteGranular = fteByFY(filters, granularity)
   const fteFY = fteByFY(filters)
-  const attritionFY = HES_ATTRITION_BY_FY.filter(d => years.includes(d.period))
+  const attritionFY = TSA_ATTRITION_BY_FY.filter(d => years.includes(d.period))
   const cpf = CPF_BY_FY.filter(d => years.includes(d.period))
   const actFY = ACT_BY_FY.filter(d => years.includes(d.period))
   const sloFY = SLO_BY_FY.filter(d => years.includes(d.period))
@@ -236,7 +236,7 @@ export function hesCapacityCardData(filters = {}, granularity) {
   const prevAct = actFY[actFY.length - 2]
   const latestSlo = sloFY[sloFY.length - 1]
   const prevSlo = sloFY[sloFY.length - 2]
-  const regionsAtRisk = latestSlo ? HES_GEO_SLO_BY_REGION.filter(r => r.slo < latestSlo.target).length : 0
+  const regionsAtRisk = latestSlo ? TSA_GEO_SLO_BY_REGION.filter(r => r.slo < latestSlo.target).length : 0
 
   return {
     totalFte: {
@@ -260,21 +260,21 @@ export function hesCapacityCardData(filters = {}, granularity) {
 }
 
 // ── Plan over Plan headcount comparison (Layer 2) ──────────────────────────
-export const HES_CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
+export const TSA_CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   period: fy,
   plan1: BASE_FTE_PLAN[fy],
   plan2: Math.round(BASE_FTE_PLAN[fy] * (0.95 + (i * 7 % 11) / 100)),
 }))
 
-// Region/Sub-region default view for the HES Plan over Plan Variation layer — same
-// share-weighted mechanic as esgCapacityData.js's planOverPlanByDimension.
-export function hesPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
+// Region/Sub-region default view for the TSA Plan over Plan Variation layer — same
+// share-weighted mechanic as msgCapacityData.js's planOverPlanByDimension.
+export function tsaPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
   const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
-  const shares = hesShareByKey(rows, key)
-  const years = hesEffectiveFiscalYears(filters)
-  const fyRows = HES_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-  const latest = fyRows[fyRows.length - 1] || HES_CAPACITY_PLAN_VS_PLAN_BY_FY[HES_CAPACITY_PLAN_VS_PLAN_BY_FY.length - 1]
+  const shares = tsaShareByKey(rows, key)
+  const years = tsaEffectiveFiscalYears(filters)
+  const fyRows = TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const latest = fyRows[fyRows.length - 1] || TSA_CAPACITY_PLAN_VS_PLAN_BY_FY[TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.length - 1]
   return Object.entries(shares)
     .map(([k, share]) => {
       const plan1 = Math.round(latest.plan1 * share)
@@ -285,14 +285,14 @@ export function hesPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
 }
 
 // FY/granularity trend for one clicked region/sub-region key, same drill mechanic
-// as esgCapacityData.js's planOverPlanTrendByDimension.
-export function hesPlanOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+// as msgCapacityData.js's planOverPlanTrendByDimension.
+export function tsaPlanOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
   const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
-  const shares = hesShareByKey(rows, dimKey)
+  const shares = tsaShareByKey(rows, dimKey)
   const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
-  const years = hesEffectiveFiscalYears(filters)
-  const fyRows = HES_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const years = tsaEffectiveFiscalYears(filters)
+  const fyRows = TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
     .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share), plan2: Math.round(d.plan2 * share) }))
   return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
@@ -300,7 +300,7 @@ export function hesPlanOverPlanTrendByDimension(filters = {}, key, dimension = '
 
 // LOBs with the highest Plan-over-Plan headcount variation, worst (largest
 // |variance|) first — the ranked list under the Plan over Plan Variation layer,
-// analogous to esgCapacityData.js's planOverPlanQueueVariance but for LOBs.
+// analogous to msgCapacityData.js's planOverPlanQueueVariance but for LOBs.
 export function planOverPlanLobVariance(filters = {}, topN = 8) {
   const rows = filterCapacityLobs(filters)
   return rows
@@ -311,9 +311,9 @@ export function planOverPlanLobVariance(filters = {}, topN = 8) {
 
 // ── Workload distribution (Layer 3) — per-LOB fact table ───────────────────
 // Reuses LOB_FACTS's own businessPartner/globalGrouping tagging so a given LOB
-// carries the same tags across both HES pages, rather than re-deriving them with
+// carries the same tags across both TSA pages, rather than re-deriving them with
 // a different index formula.
-export const HES_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
+export const TSA_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
   const popPlan1 = 8 + (i % 12)
   const popPlan2 = Math.round(popPlan1 * (0.82 + (i % 17) * 0.018))
   return {
@@ -333,16 +333,16 @@ export const HES_CAPACITY_LOBS = LOB_FACTS.map((l, i) => {
 
 // Illustrative Sankey, now with two modes (2026-07-03): 'LOB' flows 3 illustrative
 // CQN priority tiers into 4 real LOB names; 'CQN' flows 3 illustrative LOB-priority
-// tiers into 4 real HES queue names (pulled from LOB_QUEUES['High End Storage'] —
+// tiers into 4 real TSA queue names (pulled from LOB_QUEUES['High End Storage'] —
 // the only real per-queue list this page has access to). Neither direction has a
 // real per-queue-to-LOB mapping, so both tier label sets stay illustrative while the
 // leaf nodes they flow into are always real business names.
 const SANKEY_CQN_TIERS = ['CQN-Standard', 'CQN-Critical', 'CQN-Enterprise']
-const SANKEY_LOBS = ['Networking', 'Storage', 'Server', 'PowerScale']
+const SANKEY_LOBS = ['Networking', 'Storage', 'Server', 'ScaleVault']
 const SANKEY_LOB_TIERS = ['LOB-Storage', 'LOB-Networking', 'LOB-Compute']
 // Filtered against the real active-queue list so this stays a genuine subset of
 // LOB_QUEUES rather than a hand-typed name that could drift from the source data.
-const SANKEY_QUEUES = ['Global Networking', 'Global Symmetrix Backline', 'GLOBAL UDS PowerScale', 'Global VxRail']
+const SANKEY_QUEUES = ['Global Networking', 'Global ApexArray Backline', 'GLOBAL UDX ScaleVault', 'Global RailFlex']
   .filter(name => LOB_QUEUES['High End Storage'].active.includes(name))
 
 export function workloadSankey(filters = {}, mode = 'LOB') {

@@ -3,7 +3,7 @@ import {
   ComposedChart, LineChart, Sankey, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Rectangle,
 } from 'recharts'
-import { workloadSankey, actHrsByFY, actHrsDefaulterLobs } from '../../data/hesCapacityData'
+import { workloadSankey, actHrsByFY, actHrsDefaulterLobs } from '../../data/tsaCapacityData'
 import { C, Visual, Tip, BinaryToggle } from '../ChartKit'
 
 // Recharts' default Sankey node renders as a plain unlabeled rect — this custom
@@ -43,9 +43,9 @@ function SankeyTip({ active, payload }) {
 }
 
 // Toggle switches which real-name set the Sankey flows into: 'LOB' mode routes
-// illustrative CQN priority tiers into real HES LOB names; 'CQN' mode routes
-// illustrative LOB-priority tiers into real HES queue names (from LOB_QUEUES) — per
-// direct request to "utilize some HES LOB's and some HES Queues."
+// illustrative CQN priority tiers into real TSA LOB names; 'CQN' mode routes
+// illustrative LOB-priority tiers into real TSA queue names (from LOB_QUEUES) — per
+// direct request to "utilize some TSA LOB's and some TSA Queues."
 function Visual1({ filters }) {
   const [mode, setMode] = useState('LOB')
   const data = useMemo(() => workloadSankey(filters, mode), [filters, mode])

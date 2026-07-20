@@ -4,9 +4,9 @@ import {
   Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
-  hesCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, HES_ACTIVE_QUEUES,
-} from '../../data/hesData'
-import { C, Tip, Modal, GraphInsightButton } from './HesChartKit'
+  tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, TSA_ACTIVE_QUEUES,
+} from '../../data/tsaData'
+import { C, Tip, Modal, GraphInsightButton } from './TsaChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
 // Same region palette as the Forecasting page's Total Queues donut (MetricCards.jsx)
@@ -227,10 +227,10 @@ function QueueTable({ rows }) {
 
 function TotalQueuesSection() {
   const [selectedRegion, setSelectedRegion] = useState(null)
-  const filteredRows = selectedRegion ? HES_ACTIVE_QUEUES.filter(q => q.region === selectedRegion) : HES_ACTIVE_QUEUES
+  const filteredRows = selectedRegion ? TSA_ACTIVE_QUEUES.filter(q => q.region === selectedRegion) : TSA_ACTIVE_QUEUES
   return (
     <>
-      <QueuesByRegionChart rows={HES_ACTIVE_QUEUES} selectedRegion={selectedRegion}
+      <QueuesByRegionChart rows={TSA_ACTIVE_QUEUES} selectedRegion={selectedRegion}
         onSelectRegion={r => setSelectedRegion(prev => prev === r ? null : r)} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 6px' }}>
         <p style={{ fontSize: 10, color: 'var(--text-faint)' }}>
@@ -249,7 +249,7 @@ function TotalQueuesSection() {
 }
 
 const MODAL_TITLES = {
-  totalQueues: 'HES Queue Directory',
+  totalQueues: 'TSA Queue Directory',
   asu:         'Active Service Units — Trend',
   sr:          'Service Requests — DB vs OSP',
   cpasu:       'CPASU Trend',
@@ -257,7 +257,7 @@ const MODAL_TITLES = {
 }
 
 // Opening/closing a card's popup only touches this component's own `active`
-// state — the `filters` prop keeps flowing from HesForecastingPage unchanged,
+// state — the `filters` prop keeps flowing from TsaForecastingPage unchanged,
 // so closing the modal always returns to the dashboard exactly as filtered.
 function DrillDownModal({ type, filters, granularity, onClose }) {
   return (
@@ -283,9 +283,9 @@ function ytdSub(metric, formattedValue, { lowerIsBetter = false } = {}) {
   return { text: `YTD ${metric.period}: ${formattedValue} · ${up ? '▲' : '▼'} ${Math.abs(metric.yoyPct)}% vs ${metric.prevPeriod}`, trend: good }
 }
 
-export default function HesMetricCards({ filters, granularity }) {
+export default function TsaMetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
-  const d = useMemo(() => hesCardData(filters), [filters])
+  const d = useMemo(() => tsaCardData(filters), [filters])
   const toggle = key => setActive(prev => prev === key ? null : key)
 
   const asuYtd = ytdSub(d.asuActuals, fmt(d.asuActuals.value))
