@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## DB/OSP Split Card: Show Only the Selected Channel's %, Not Both (2026-07-20)
+
+- **Clarified via screenshot:** the earlier fix made the split *percentage calculation* stable (66%/34%, never degenerating to 100/0) but the card still displayed BOTH numbers ("66% / 34%") regardless of which DB/OSP pill was active. The actually-wanted behavior: when scoped to DB, show only the DB number (66%); when scoped to OSP, show only the OSP number (34%); only show both together when the pill is "All".
+- `MetricCards.jsx`'s `dbOsp` Card now branches its `value`/`sub`/`sublabel` on `filters.dbOsp` — `'DB'` → `"66%"` / `"DB 124.2K"` / `"Offered volume · DB only"`, `'OSP'` → `"34%"` / `"OSP 64.0K"` / `"Offered volume · OSP only"`, `'All'` → unchanged combined display. The underlying `dbOspSplit` calculation itself (always full-population, volume-weighted) didn't need to change — this was purely a display-layer fix.
+- Verified with `npm run build` (clean).
+
 ## Fixed for Real: Sankey Node Hover — Wrong Mechanism Entirely (2026-07-20)
 
 - **Bug:** node hover still didn't appear after the first attempted fix (custom `onHover`/`onLeave` props on `SankeyNode`, then a hit-area `<rect>` variant) — reported directly twice ("its not appearing" / "still not able to see").

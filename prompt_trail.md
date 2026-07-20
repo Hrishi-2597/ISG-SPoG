@@ -502,6 +502,17 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 ---
 
+## Prompt 38 — 2026-07-20
+**Input:** Screenshot of the DB/OSP Split card showing "66% / 34%" while the DB pill is active, with the clarification "when i click on DB it should show only 66% and when i click on OSP it should show 34%"
+
+**Action:**
+- Clarified the intended UI behavior: the earlier split-calculation fix (stable 66%/34%, never 100/0) was correct, but the card was still displaying both numbers together regardless of which pill was selected
+- `MetricCards.jsx`'s `dbOsp` Card now branches `value`/`sub`/`sublabel` on `filters.dbOsp`: DB → single "66%" + "DB 124.2K"; OSP → single "34%" + "OSP 64.0K"; All → unchanged combined "66% / 34%" display
+- Verified with `npm run build` (clean)
+- Updated `handoff.md`; committed and pushed to `main`
+
+---
+
 ## Prompt 34 — 2026-07-20
 **Input:** "Allow clicking on a region to highlight only the selected area instead of showing all regions together"
 

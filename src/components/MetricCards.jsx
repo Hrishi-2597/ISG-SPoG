@@ -650,9 +650,18 @@ export default function MetricCards({ filters, granularity }) {
           clca="Pre-staff for the holidays with the largest historical volume swings."
         />
         <Card id="dbOsp"
-          icon="⚖" label="DB / OSP Split" sublabel="Offered volume"
-          value={`${d.dbOspSplit.db}% / ${d.dbOspSplit.osp}%`}
-          sub={`DB ${fmt(d.dbOspSplit.dbVol)}  ·  OSP ${fmt(d.dbOspSplit.ospVol)}`}
+          icon="⚖" label="DB / OSP Split"
+          sublabel={filters.dbOsp === 'DB' ? 'Offered volume · DB only' : filters.dbOsp === 'OSP' ? 'Offered volume · OSP only' : 'Offered volume'}
+          value={
+            filters.dbOsp === 'DB' ? `${d.dbOspSplit.db}%`
+            : filters.dbOsp === 'OSP' ? `${d.dbOspSplit.osp}%`
+            : `${d.dbOspSplit.db}% / ${d.dbOspSplit.osp}%`
+          }
+          sub={
+            filters.dbOsp === 'DB' ? `DB ${fmt(d.dbOspSplit.dbVol)}`
+            : filters.dbOsp === 'OSP' ? `OSP ${fmt(d.dbOspSplit.ospVol)}`
+            : `DB ${fmt(d.dbOspSplit.dbVol)}  ·  OSP ${fmt(d.dbOspSplit.ospVol)}`
+          }
           onClick={() => toggle('dbOsp')} active={active === 'dbOsp'}
           rca="OSP share tends to rise when DB queues are running over plan."
           clca="Review OSP routing rules whenever the split shifts more than a few points quarter over quarter."
