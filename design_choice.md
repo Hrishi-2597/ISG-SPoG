@@ -4,6 +4,16 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## RCA/Insights: Per-Graph "i" Button Only, Sidebar Removed (2026-07-20)
+
+**Decision:** Removed the page-level RCA/CLCA sticky sidebar entirely (all 4 pages). RCA/Insights now live exclusively on each graph/card's own "i" info-button popup (`GraphInsightButton`, built 2026-07-10).
+
+**Why:** Requested directly — "Implement RCA/Insights as a flip-over or info button on each visual instead of displaying RCA text on the right panel." Since every visual and card already had the per-graph "i" button wired up from the earlier pass, no new UI needed to be built; the sidebar had become a redundant second copy of the same insight, just at paragraph length instead of one sentence. Removing it also gives Analysis Layers the full page width back instead of sharing it with a 220px column.
+
+**Not built:** the "flip-over" card-flip alternative the request also offered as an option. Went with the info-button route since it already existed, was already wired to all 62 rca/clca call sites, and matches the same "small popup, don't exaggerate it" precedent set when the per-graph button was first built. Revisit if a literal flip animation is wanted later.
+
+---
+
 ## Visual Design
 
 ### Color Palette — Dark Navy Theme

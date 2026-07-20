@@ -5,7 +5,6 @@ import HeadcountAttritionLayer from './HeadcountAttritionLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import WorkloadDistributionLayer from './WorkloadDistributionLayer'
 import TsaCapacityGeoMap from './TsaCapacityGeoMap'
-import TsaCapacityRcaClcaPanel from './TsaCapacityRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 // Same filter field set as TSA Forecasting (LOB / FY-Qtr-Month-Week / Business
@@ -33,20 +32,12 @@ export default function TsaCapacityPage() {
       <SectionDivider label="Key Metrics" />
       <TsaCapacityMetricCards filters={filters} granularity={granularity} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
-        <div className="flex-1 min-w-0">
-          <SectionDivider label="Analysis Layers" />
-          <div className="px-4 pb-4 flex flex-col gap-3">
-            <HeadcountAttritionLayer filters={filters} granularity={granularity} />
-            <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
-            <WorkloadDistributionLayer filters={filters} granularity={granularity} />
-            <TsaCapacityGeoMap filters={filters} />
-          </div>
-        </div>
-
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <TsaCapacityRcaClcaPanel />
-        </div>
+      <SectionDivider label="Analysis Layers" />
+      <div className="px-4 pb-4 flex flex-col gap-3">
+        <HeadcountAttritionLayer filters={filters} granularity={granularity} />
+        <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
+        <WorkloadDistributionLayer filters={filters} granularity={granularity} />
+        <TsaCapacityGeoMap filters={filters} />
       </div>
     </>
   )

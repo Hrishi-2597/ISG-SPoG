@@ -5,7 +5,6 @@ import AsuLayer from './AsuLayer'
 import SrLayer from './SrLayer'
 import AsuSrTrendLayer from './AsuSrTrendLayer'
 import TsaGeoMap from './TsaGeoMap'
-import TsaRcaClcaPanel from './TsaRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 // Every filter is multi-select: [] means "no selection = All" — same convention as
@@ -36,20 +35,12 @@ export default function TsaForecastingPage() {
       <SectionDivider label="Key Metrics" />
       <TsaMetricCards filters={filters} granularity={granularity} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
-        <div className="flex-1 min-w-0">
-          <SectionDivider label="Analysis Layers" />
-          <div className="px-4 pb-4 flex flex-col gap-3">
-            <AsuLayer filters={filters} granularity={granularity} />
-            <SrLayer filters={filters} granularity={granularity} />
-            <AsuSrTrendLayer filters={filters} granularity={granularity} />
-            <TsaGeoMap filters={filters} />
-          </div>
-        </div>
-
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <TsaRcaClcaPanel />
-        </div>
+      <SectionDivider label="Analysis Layers" />
+      <div className="px-4 pb-4 flex flex-col gap-3">
+        <AsuLayer filters={filters} granularity={granularity} />
+        <SrLayer filters={filters} granularity={granularity} />
+        <AsuSrTrendLayer filters={filters} granularity={granularity} />
+        <TsaGeoMap filters={filters} />
       </div>
     </>
   )

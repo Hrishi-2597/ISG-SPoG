@@ -53,30 +53,27 @@ SPoG/
 │   │   ├── Layer2ActualVsPlan.jsx  # Actual vs Plan: 3 chart visuals + stacked bar
 │   │   ├── Layer3GeoMap.jsx    # World map with accuracy markers + summary table
 │   │   ├── msgCapacity/         # MSG Capacity Plan page (all new, 2026-07-03; revised same day)
-│   │   │   ├── MsgCapacityPage.jsx        # Page body: filters + cards + 4 layers + RCA/CLCA sidebar (added 2026-07-03)
+│   │   │   ├── MsgCapacityPage.jsx        # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20, see below)
 │   │   │   ├── MsgCapacityFilterPanel.jsx # Scope/Time/People/Geography clusters + DB/OSP pill + GranularityToggle
 │   │   │   ├── MsgCapacityMetricCards.jsx # 5 KPI cards (Staffing/Utilization/SL%/Cases per FTE/Attrition), Modal drill-downs
 │   │   │   ├── HeadcountLayer.jsx         # Layer 01 "Headcount and SL%" — staffing summary, attrition, actual-vs-plan+SL%+defaulters
 │   │   │   ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + queue-variance ranking
 │   │   │   ├── UtilizationLayer.jsx       # Layer 03 "Utilization and Outage Analysis" — actual-vs-target trend w/ 3-aux tooltip, per-queue Aux ranking, leaves ranking
 │   │   │   ├── MsgCapacityGeoMap.jsx      # Layer 04 — dual toggle (Headcount/SL% metric × Region/Sub-region view)
-│   │   │   └── MsgCapacityRcaClcaPanel.jsx # Sticky RCA/CLCA sidebar, MSG-Capacity-specific illustrative content
 │   │   └── tsaCapacity/         # TSA Capacity Plan page (all new, 2026-07-03; revised same day)
-│   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers + RCA/CLCA sidebar
+│   │       ├── TsaCapacityPage.jsx           # Page body: filters (reuses tsa/TsaFilterPanel.jsx directly) + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaCapacityMetricCards.jsx    # 5 KPI cards (Staffing Summary/Attrition/Cases per FTE/Avg Case Time/SLO %)
 │   │       ├── HeadcountAttritionLayer.jsx   # Layer 01 "Headcount and Utilization" — staffing, region/sub-region attrition drill, utilization variance
 │   │       ├── PlanOverPlanVariationLayer.jsx # Layer 02 "Plan over Plan Variation" — region/sub-region drill + LOB-variance ranking
 │   │       ├── WorkloadDistributionLayer.jsx # Layer 03 "Workload Distribution" — Sankey (LOB/CQN toggle), Average Case Time Variance, ACT trend
 │   │       ├── TsaCapacityGeoMap.jsx         # Layer 04 (mockup labels it "Layer 5", renumbered — see design_choice.md) — worldwide SLO, Region/Sub-region toggle
-│   │       └── TsaCapacityRcaClcaPanel.jsx   # Sticky RCA/CLCA sidebar, TSA-Capacity-specific illustrative content
 │   │   └── tsa/                # TSA Forecasting page (all new, 2026-07-02; named "capacity/" until the same-day rename)
-│   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers + RCA/CLCA sidebar
+│   │       ├── TsaForecastingPage.jsx  # Page body: filters + cards + 4 layers (RCA/CLCA sidebar removed 2026-07-20)
 │   │       ├── TsaFilterPanel.jsx      # 7 filters: LOB / FY-Qtr-Month-Week / Business Partner-Global Grouping + GranularityToggle;
 │   │       │                            reused directly (unmodified) by tsaCapacity/TsaCapacityPage.jsx — identical field set
 │   │       ├── TsaChartKit.jsx         # Re-export shim: `export { Modal } from '../Modal'; export * from '../ChartKit'`
 │   │       │                            (was the canonical implementation until ChartKit.jsx was promoted, 2026-07-03)
 │   │       ├── TsaMetricCards.jsx      # 5 KPI cards, each opening its drill-down in Modal (Total Queues/ASU/SR/CPASU/UCR)
-│   │       ├── TsaRcaClcaPanel.jsx     # Sticky RCA/CLCA sidebar, TSA-specific illustrative content
 │   │       ├── AsuLayer.jsx            # Layer 01 "ASU Trend" — Actuals vs Plan, Plan vs Plan, Plan Impact (region→LOB drill)
 │   │       ├── SrLayer.jsx             # Layer 02 "SR Trend" — same structure as AsuLayer, SR metric
 │   │       ├── AsuSrTrendLayer.jsx     # Layer 03 "ASU/UCR Impact on SR Analysis" — CPASU Trend, UCR Impact on SR, UCR Runrate+top-5-LOB modal
@@ -115,8 +112,6 @@ App
 │   ├── Visual1           — ComposedChart: actualVsPlanByFY(filters) + Adherence% line
 │   ├── Visual2           — Stacked BarChart: stackedAdherenceByFY(filters), LabelList per segment
 │   └── Visual3           — Diverging horizontal Bar: cqnActualVariance(filters), green/red Cell by sign
-├── RcaClcaPanel          — Sticky sidebar (position: sticky), full height of the dashboard;
-│                            static illustrative RCA/CLCA bullet content, no filters prop
 └── Layer3GeoMap(filters) — Collapsible section
     ├── ComposableMap     — react-simple-maps world SVG, choropleth fill (no markers)
     │                        via regionForCountry/subRegionForCountry lookups
@@ -149,10 +144,6 @@ TsaForecastingPage
 │                                            topNonAdherentLobsByYear(filters, year) — top 5 LOBs, not queues
 └── TsaGeoMap(filters)    — Collapsible, badge "04"; same choropleth mechanism as Layer3GeoMap,
                             colored by geoAdherenceByRegion(filters); no Region/Sub-region toggle
-
-TsaRcaClcaPanel — sticky sidebar (position: sticky) alongside the 4 layers above, starting at the
-                  "Analysis Layers" divider — same layout as ForecastingPage's RcaClcaPanel, own
-                  illustrative content written for this page's ASU/SR/CPASU/UCR metrics
 ```
 
 ### App (2026-07-03 restructure): landing tiles + per-business sub-toggle
@@ -207,11 +198,6 @@ MsgCapacityPage
 │   └── Visual3 "Leave Impact — Actual vs Target" (renamed) — queue-axis horizontal bars: leavesByQueue(filters), ascending
 └── MsgCapacityGeoMap(filters)              — badge "04"; dual BinaryToggle (Headcount/SL% metric × Region/Sub-region view,
                                                replacing the earlier curated-14-country view)
-
-MsgCapacityRcaClcaPanel (2026-07-03) — sticky sidebar (position: sticky) alongside the 4 layers above,
-                  starting at the "Analysis Layers" divider — same layout as ForecastingPage's
-                  RcaClcaPanel/TsaForecastingPage's TsaRcaClcaPanel, own illustrative content written
-                  for this page's staffing/utilization/SL/attrition/cases-per-FTE metrics
 ```
 
 ### TsaCapacityPage (revised 2026-07-03 — mirrors MsgCapacityPage's revision pass, adapted to LOBs)
@@ -250,10 +236,6 @@ TsaCapacityPage
 └── TsaCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
                                                  Region/Sub-region BinaryToggle (was single-metric region-only),
                                                  same fallback-to-parent-region mechanic as MsgCapacityGeoMap
-
-TsaCapacityRcaClcaPanel (2026-07-03) — sticky sidebar (position: sticky) alongside the 4 layers above, starting at
-                  the "Analysis Layers" divider — same layout as the other 3 pages' RCA/CLCA panels, own illustrative
-                  content written for this page's staffing/attrition/Cases-per-FTE/Average-Case-Time/SLO metrics
 ```
 
 The shared `capacity/PlanOverPlanLayer.jsx` component (and its containing `capacity/` folder) was deleted 2026-07-03 once both Capacity pages had their own specialized Plan-over-Plan layer and nothing imported it anymore.
@@ -264,10 +246,11 @@ The shared `capacity/PlanOverPlanLayer.jsx` component (and its containing `capac
 
 Every chart-level visual on all 4 pages (31 `Visual`-wrapped charts + the 4 Geo Maps, which have their own
 custom layout) carries a small "i" button (`GraphInsightButton`, `ChartKit.jsx`) in its top-left corner. Clicking
-it shows one RCA sentence and one CLCA sentence specific to that graph — separate from, and much shorter than,
-each page's existing RCA/CLCA sidebar (`RcaClcaPanel.jsx`/`TsaRcaClcaPanel.jsx`/`MsgCapacityRcaClcaPanel.jsx`/
-`TsaCapacityRcaClcaPanel.jsx`), which stays a page-level, multi-bullet panel. `Visual` takes two new optional
-props, `rca`/`clca` (plain strings) — passing them renders the button; omitting both renders nothing, so every
+it shows one RCA sentence and one CLCA sentence specific to that graph. At the time this was built, each page
+also had a page-level RCA/CLCA sidebar (`RcaClcaPanel.jsx`/`TsaRcaClcaPanel.jsx`/`MsgCapacityRcaClcaPanel.jsx`/
+`TsaCapacityRcaClcaPanel.jsx`) with longer multi-bullet content; that sidebar was removed 2026-07-20 once this
+per-graph button became the sole RCA/Insights surface (see the 2026-07-20 entry above and in `design_choice.md`).
+`Visual` takes two new optional props, `rca`/`clca` (plain strings) — passing them renders the button; omitting both renders nothing, so every
 other `Visual` call site in the app that hasn't been touched continues to work unchanged. The button always sits
 top-left, opposite `cornerControls` (top-right), which many visuals already use for Region/Sub-region-style
 toggles, so the two never collide. Content is illustrative (same convention as the sidebars), one sentence each,
@@ -810,8 +793,7 @@ Steps:
 9. TSA Forecasting's Geo Map has no Region/Sub-region toggle (unlike MSG Forecasting's) since the source deck only specifies a region-level view; ASU/SR region-plan visuals (`asuRegionPlans`/`srRegionPlans`) also don't yet respond to filters, since the deck shows a fixed region view
 10. CPASU Trend's region-and-time drill-down (`cpasuTrendByRegion`) is fully synthetic — no real per-region/per-quarter/per-week ASU/SR dataset exists, same mock-data convention as everything else on this page
 11. The Plan Name selector on "UCR Impact on SR" (AsuSrTrendLayer Visual2) doesn't yet feed into `srBotsByFY()` — cosmetic for now, same as AsuLayer/SrLayer Visual1's Plan dropdown
-12. TSA Forecasting's RCA/CLCA sidebar (`TsaRcaClcaPanel.jsx`) is static illustrative example content, same as the Forecasting page's `RcaClcaPanel` — not yet connected to a real RCA workflow
-13. Neither Capacity Plan page has an RCA/CLCA sidebar — not specified in either page's mockups; revisit if requested
+12. (Superseded 2026-07-20) All 4 pages' RCA/CLCA sidebars were removed entirely — RCA/Insights now live only on each graph/card's per-visual "i" button; that button's content remains illustrative example content, not yet connected to a real RCA workflow
 14. TSA Capacity's Sankey diagram (`workloadSankey()`) uses an illustrative 3-tier CQN taxonomy as flow sources since this page's filter set has no real per-queue dimension — only the 4 target LOB names are real
 15. TSA Capacity's Geo Map is single-metric (SLO only, region-only) — the mockup ("Layer 5", renumbered to 04) only specifies a region-level SLO heatmap, unlike MSG Capacity's dual metric/view-toggle map
 16. The landing page, Capacity Plan pages, and per-business sub-toggle (2026-07-03) weren't visually clicked through in a rendered browser by the agent — no browser-automation tool available this session; verified via clean production build + Node data smoke tests only

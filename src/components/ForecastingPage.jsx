@@ -4,7 +4,6 @@ import MetricCards from './MetricCards'
 import Layer1PlanOverPlan from './Layer1PlanOverPlan'
 import Layer2ActualVsPlan from './Layer2ActualVsPlan'
 import Layer3GeoMap from './Layer3GeoMap'
-import RcaClcaPanel from './RcaClcaPanel'
 import SectionDivider from './SectionDivider'
 
 // Every filter below is multi-select: [] means "no selection = All". DB/OSP alone stays
@@ -42,20 +41,12 @@ export default function ForecastingPage() {
       <SectionDivider label="Key Metrics" />
       <MetricCards filters={filters} granularity={granularity} />
 
-      {/* ── Analysis Layers + RCA/CLCA sidebar ──────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
-        <div className="flex-1 min-w-0">
-          <SectionDivider label="Analysis Layers" />
-          <div className="px-4 pb-4 flex flex-col gap-3">
-            <Layer1PlanOverPlan filters={filters} granularity={granularity} />
-            <Layer2ActualVsPlan filters={filters} granularity={granularity} />
-            <Layer3GeoMap filters={filters} />
-          </div>
-        </div>
-
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <RcaClcaPanel />
-        </div>
+      {/* ── Analysis Layers — RCA/CLCA now lives on each graph's "i" button ── */}
+      <SectionDivider label="Analysis Layers" />
+      <div className="px-4 pb-4 flex flex-col gap-3">
+        <Layer1PlanOverPlan filters={filters} granularity={granularity} />
+        <Layer2ActualVsPlan filters={filters} granularity={granularity} />
+        <Layer3GeoMap filters={filters} />
       </div>
     </>
   )

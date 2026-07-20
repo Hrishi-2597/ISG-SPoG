@@ -1,5 +1,11 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Removed the RCA/CLCA Sidebar — Per-Graph "i" Button Is Now the Only RCA/Insights Surface (2026-07-20)
+
+- **Deleted the sticky right-hand RCA/CLCA sidebar panel from all 4 pages** (`RcaClcaPanel.jsx`, `TsaRcaClcaPanel.jsx`, `MsgCapacityRcaClcaPanel.jsx`, `TsaCapacityRcaClcaPanel.jsx` — all 4 files removed entirely, no longer imported anywhere). Each page's `flex` row (main content + 220px sticky sidebar) collapsed back to a single full-width column.
+- **No new component was needed** — every graph and card already had the per-visual `GraphInsightButton` "i" popup (built 2026-07-10, see below), which was the intended replacement mechanism. This change only removes the now-redundant sidebar; RCA/CLCA content itself is unchanged and still lives on each graph/card's own popup.
+- **Verified**: `npm run build` clean (1174 modules, down from 1178 — the 4 deleted files); grep confirms zero remaining `RcaClcaPanel` references anywhere in `src/`.
+
 ## Per-Card RCA/CLCA Popup — Every KPI Card on All 4 Pages (2026-07-10)
 
 - **Extended the same small "i" popup to every KPI card** (20 total: 5 cards × 4 pages), matching the per-graph treatment added earlier the same day. Same `GraphInsightButton`, same one-RCA-sentence + one-CLCA-sentence content shape.

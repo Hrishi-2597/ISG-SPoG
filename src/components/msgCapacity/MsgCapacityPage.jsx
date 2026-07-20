@@ -5,7 +5,6 @@ import HeadcountLayer from './HeadcountLayer'
 import PlanOverPlanVariationLayer from './PlanOverPlanVariationLayer'
 import UtilizationLayer from './UtilizationLayer'
 import MsgCapacityGeoMap from './MsgCapacityGeoMap'
-import MsgCapacityRcaClcaPanel from './MsgCapacityRcaClcaPanel'
 import SectionDivider from '../SectionDivider'
 
 const DEFAULT_FILTERS = {
@@ -33,20 +32,12 @@ export default function MsgCapacityPage() {
       <SectionDivider label="Key Metrics" />
       <MsgCapacityMetricCards filters={filters} granularity={granularity} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingRight: 16 }}>
-        <div className="flex-1 min-w-0">
-          <SectionDivider label="Analysis Layers" />
-          <div className="px-4 pb-4 flex flex-col gap-3">
-            <HeadcountLayer filters={filters} granularity={granularity} />
-            <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
-            <UtilizationLayer filters={filters} granularity={granularity} />
-            <MsgCapacityGeoMap filters={filters} />
-          </div>
-        </div>
-
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 14, marginTop: 14 }}>
-          <MsgCapacityRcaClcaPanel />
-        </div>
+      <SectionDivider label="Analysis Layers" />
+      <div className="px-4 pb-4 flex flex-col gap-3">
+        <HeadcountLayer filters={filters} granularity={granularity} />
+        <PlanOverPlanVariationLayer filters={filters} granularity={granularity} />
+        <UtilizationLayer filters={filters} granularity={granularity} />
+        <MsgCapacityGeoMap filters={filters} />
       </div>
     </>
   )

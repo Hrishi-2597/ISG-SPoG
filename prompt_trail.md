@@ -427,3 +427,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - `mockData.js`'s `cardData()`: added `abandonPct` to `callVolume` alongside the existing `handlePct` (computed directly as `(offered-handled)/offered*100`, not derived from `handlePct`, so it stays independently correct)
 - `MetricCards.jsx`'s Call Volume `Card`: sub-text changed from `"{handled} handled · {handlePct}%"` to `"{handled} handled · {abandonPct}% abandoned"`; the green/red trend threshold reframed from `handlePct >= 90` to the numerically equivalent `abandonPct <= 10`, so status coloring behavior is unchanged
 - Verified with `npm run build` (clean); updated `handoff.md`; committed and pushed to `main`
+
+---
+
+## Prompt 31 — 2026-07-20
+**Input:** "Implement RCA/Insights as a flip-over or info button on each visual instead of displaying RCA text on the right panel. Implement this on each and every graph."
+
+**Action:**
+- Confirmed every graph and card already had the per-visual "i" `GraphInsightButton` popup (built 2026-07-10, 62 `rca=`/`clca=` call sites across 19 files) — the requested mechanism already existed, so no new component was built
+- Removed the page-level RCA/CLCA sticky sidebar from all 4 pages (`ForecastingPage.jsx`, `TsaForecastingPage.jsx`, `MsgCapacityPage.jsx`, `TsaCapacityPage.jsx`) — dropped the `flex` row + 220px sticky column wrapper, Analysis Layers now render full-width in a single column
+- Deleted the 4 now-unused sidebar components: `RcaClcaPanel.jsx`, `TsaRcaClcaPanel.jsx`, `MsgCapacityRcaClcaPanel.jsx`, `TsaCapacityRcaClcaPanel.jsx`
+- Went with the info-button option (not a flip-card animation) since it already existed and was already wired everywhere — see `design_choice.md` for the full reasoning
+- Verified with `npm run build` (clean, 1174 modules, down from 1178) and a grep sweep confirming zero remaining `RcaClcaPanel` references anywhere in `src/`
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
