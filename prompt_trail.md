@@ -525,6 +525,20 @@ Chronological log of every user prompt and the corresponding actions taken.
 
 ---
 
+## Prompt 40 — 2026-07-20
+**Input:** Screenshot of the ESG/MSG Forecasting filter bar with View By set to "Quarter", with "all the views in the cards should change according to view by - quarter,month,week"
+
+**Action:**
+- Root-caused: `cardData(filters)` never accepted `granularity` — Call Volume/DB/OSP Split were flat aggregates, and `forecastAccuracyByFY` didn't accept granularity either, so all 5 cards were frozen at the Year-level totals regardless of the View By toggle
+- Made 3 of 5 cards granular: Call Volume and DB/OSP Split now read the latest period off their existing granular selectors (`callVolumeByFY`, `dbOspVolumeByFY`); extended `forecastAccuracyByFY` with an optional `granularity` param (additive — its existing caller, the drill-down chart, deliberately keeps calling it without one, preserving that chart's established FY-only design from 2026-07-08)
+- Deliberately left Total Queues and CQN Variance unchanged — both are flat, non-date-stamped queue-roster facts in this data model with no real per-quarter value to show
+- Also fixed `dbOspVolumeByFY` to be volume-weighted (was still queue-count-based, inconsistent with the `cardData` split fix from earlier the same day)
+- Verified with a Node smoke test (`cardData` at Year/Quarter/Month/Week, with and without a DB/OSP pill) — Call Volume and DB/OSP volumes scale correctly per period; noted Forecast Accuracy's % legitimately stays flat within a fiscal year (same ratio-cancellation reasoning as MSG Capacity's Staffing card)
+- Verified with `npm run build` (clean)
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md` with the full change set; committed and pushed to `main`
+
+---
+
 ## Prompt 34 — 2026-07-20
 **Input:** "Allow clicking on a region to highlight only the selected area instead of showing all regions together"
 

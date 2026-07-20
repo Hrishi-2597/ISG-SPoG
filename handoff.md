@@ -1,5 +1,17 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## MSG Forecasting Cards Now Respond to View By (Quarter/Month/Week) (2026-07-20)
+
+- **Bug:** all 5 KPI cards on this page (Total Queues, Call Volume, DB/OSP Split, Forecast Accuracy, CQN Variance) showed the exact same numbers no matter what the page-wide View By toggle was set to — reported directly via screenshot (View By: Quarter, cards unchanged from the Year-level totals).
+- **Root cause:** `cardData(filters)` never accepted a `granularity` argument — Call Volume and DB/OSP Split were computed as flat aggregates scaled by a queue-count ratio, and Forecast Accuracy's own selector (`forecastAccuracyByFY`) didn't accept granularity either.
+- **Fix — 3 of 5 cards now granular:**
+  - **Call Volume**: now reads the latest in-scope period off `callVolumeByFY(filters, granularity)` (already existed, already granular, already used by this card's own drill-down chart — the card face just wasn't using it).
+  - **DB/OSP Split**: now reads the latest period off `dbOspVolumeByFY(filters, granularity)`; also fixed that selector to be volume-weighted (was queue-count-based, inconsistent with the `cardData` split fix from earlier the same day).
+  - **Forecast Accuracy**: `forecastAccuracyByFY` gained an optional `granularity` param (additive — its existing caller, the drill-down chart `ForecastByFYChart`, still calls it without one, deliberately preserving that chart's established "one bar per fiscal year" design from 2026-07-08); `cardData` is the only caller that passes it.
+- **Deliberately NOT made granular — Total Queues and CQN Variance:** both are queue-roster composition metrics (active/inactive counts, % of queues within accuracy tolerance) — a queue's active status and `.accuracy` field are flat, non-date-stamped values in this data model. There's no real per-quarter number to show; faking one would violate the "real names + illustrative structure" convention (illustrative numbers should still represent something coherent).
+- **Known flatness, not a new bug:** Forecast Accuracy's % stays constant across Quarter/Month/Week (still varies by Fiscal Year) — same root cause as MSG Capacity's "Staffing" card noted earlier: it's a ratio (`actual/forecast`) where both sides get the same per-period wobble from `expandToGranularity`, so the ratio is mathematically constant within a year. Call Volume and DB/OSP's absolute volumes don't have this problem and do visibly change.
+- Verified via Node smoke test (`cardData` at Year/Quarter/Month/Week, with and without a DB/OSP pill set) — Call Volume and DB/OSP volumes scale down correctly per period, DB/OSP % stays stable, Forecast Accuracy correctly stays flat within a year. Verified with `npm run build` (clean).
+
 ## Fixed: Sankey Hover Was Crashing the Page (Blank Screen) (2026-07-20)
 
 - **Bug:** after wiring hover through `<Sankey>`'s own `onMouseEnter`/`onMouseLeave` props (the correct mechanism, confirmed by reading Recharts' source), hovering a node blanked the entire page — reported directly ("shows blank page").

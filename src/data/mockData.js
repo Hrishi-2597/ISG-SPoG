@@ -358,40 +358,51 @@ export function matchesMulti(selected, value) {
 }
 
 // ── Cards ────────────────────────────────────────────────────────────────────
-const BASE_CALL_VOLUME = { offered: 285400, handled: 268700 }
 
-export function cardData(filters = {}) {
+// `granularity` (2026-07-20) makes Call Volume, DB/OSP Split, and Forecast Accuracy
+// respond to the page's View By (Quarter/Month/Week) toggle — each now reads the
+// LATEST in-scope period off its own granular *ByFY selector, the same "latest period
+// snapshot" pattern the other 3 pages' cards already use, instead of a flat filters-only
+// aggregate that never reflected the granularity toggle at all.
+//
+// Total Queues and CQN Variance deliberately do NOT vary with granularity: both are
+// queue-ROSTER composition metrics (how many queues are active/inactive, what % of the
+// CURRENT queue list sits within accuracy tolerance) — a queue's active status and its
+// `.accuracy` field are single flat values in this data model, not date-stamped, so
+// there's no real per-quarter/month value to show. Faking one would mean inventing
+// numbers that don't represent anything, which is exactly what this app's "real names +
+// illustrative structure" convention is meant to avoid.
+export function cardData(filters = {}, granularity) {
   // Queue portfolio health (count, accuracy, variance) reflects who's in scope —
   // Queue Name, Region, Capacity Code, etc. — but not DB/OSP: a queue's accuracy
   // doesn't change depending on which slice of its call volume you're looking at.
   const structuralRows = filterQueues({ ...filters, dbOsp: 'All' })
-  const total = ACTIVE_QUEUES.length
   const activeCount = structuralRows.length
-  const avgAccuracy = activeCount ? +(structuralRows.reduce((s, q) => s + q.accuracy, 0) / activeCount).toFixed(1) : 0
   // "Within variance" band is deliberately tight (accuracy >= 89) so the headline
   // sits in the ~40-50% range that reflects how strict the ±10% target actually is.
   const withinRange = structuralRows.filter(q => q.accuracy >= 89).length
 
-  // Call volume, by contrast, is exactly what DB/OSP is meant to scope.
-  const volumeRows = filterQueues(filters)
-  const ratio = total ? volumeRows.length / total : 0
-  const offered = Math.round(BASE_CALL_VOLUME.offered * ratio)
-  const handled = Math.round(BASE_CALL_VOLUME.handled * ratio)
+  // Call volume — latest in-scope period at the page's current granularity; DB/OSP
+  // still scopes it (callVolumeByFY reads filters.dbOsp), same as before.
+  const cvRows = callVolumeByFY(filters, granularity)
+  const latestCv = cvRows[cvRows.length - 1]
+  const offered = latestCv?.offered ?? 0
+  const handled = latestCv?.handled ?? 0
 
-  // DB/OSP Split is a breakdown of the SAME offered volume by channel — always computed
-  // against the full population (dbOsp forced to 'All'), never narrowed by the dbOsp pill
-  // itself. Narrowing first and then asking "what % is DB" is circular: filtered to DB,
-  // every remaining row IS DB, so it always reported a meaningless 100%/0% (or 0%/100%
-  // for OSP) instead of the actual channel mix. It's also weighted by each queue's real
-  // `offered` volume, not a flat per-queue count — the card's own sublabel is "Offered
-  // volume", and DB/OSP queues don't carry identical average volume, so a volume-weighted
-  // split is the metric the label actually promises.
-  const splitRows = filterQueues({ ...filters, dbOsp: 'All' })
-  const splitTotalVol = splitRows.reduce((s, q) => s + q.offered, 0)
-  const splitDbVol = splitRows.filter(q => q.dbOsp === 'DB').reduce((s, q) => s + q.offered, 0)
-  // With zero rows in scope there's no split to report — 0/0, not a misleading 0/100.
-  const dbPct = splitTotalVol ? Math.round((splitDbVol / splitTotalVol) * 100) : 0
-  const ospPct = splitTotalVol ? 100 - dbPct : 0
+  // DB/OSP Split — same latest-period pattern, off the volume-weighted dbOspVolumeByFY
+  // (deliberately ignores the dbOsp pill itself — see that function's own comment for
+  // why narrowing first and then asking "what % is DB" is circular).
+  const dbOspRows = dbOspVolumeByFY(filters, granularity)
+  const latestDbOsp = dbOspRows[dbOspRows.length - 1]
+  const dbOspTotal = (latestDbOsp?.db ?? 0) + (latestDbOsp?.osp ?? 0)
+  const dbPct = dbOspTotal ? Math.round((latestDbOsp.db / dbOspTotal) * 100) : 0
+  const ospPct = dbOspTotal ? 100 - dbPct : 0
+
+  // Forecast Accuracy — same latest-period pattern; only cardData() passes granularity
+  // here, the card's own drill-down chart (ForecastByFYChart) deliberately keeps
+  // calling this without it, preserving its established FY-only bar chart.
+  const faRows = forecastAccuracyByFY(filters, granularity)
+  const latestFa = faRows[faRows.length - 1]
 
   return {
     totalQueues: { active: activeCount, inactive: INACTIVE_QUEUE_NAMES.length },
@@ -400,13 +411,13 @@ export function cardData(filters = {}) {
       handlePct: offered ? +((handled / offered) * 100).toFixed(1) : 0,
       abandonPct: offered ? +(((offered - handled) / offered) * 100).toFixed(1) : 0,
     },
-    dbOspSplit: { db: dbPct, osp: ospPct, dbVol: Math.round(offered * dbPct / 100), ospVol: Math.round(offered * ospPct / 100) },
-    forecastAccuracy: { value: avgAccuracy, target: 90 },
+    dbOspSplit: { db: dbPct, osp: ospPct, dbVol: latestDbOsp?.db ?? 0, ospVol: latestDbOsp?.osp ?? 0 },
+    forecastAccuracy: { value: latestFa?.accuracy ?? 0, target: 90 },
     cqnVariance: { withinRange, total: activeCount, pct: activeCount ? +((withinRange / activeCount) * 100).toFixed(1) : 0 },
   }
 }
 
-// Offered/handled baseline split by fiscal year — sums to BASE_CALL_VOLUME's totals.
+// Offered/handled baseline split by fiscal year (285.4K/268.7K total across FY25-27).
 const BASE_CALL_VOLUME_BY_FY = {
   FY25: { offered: 82000,  handled: 77500 },
   FY26: { offered: 96000,  handled: 90200 },
@@ -434,7 +445,12 @@ export function dbOspVolumeByFY(filters = {}, granularity) {
   const rows = filterQueues({ ...filters, dbOsp: 'All' })
   const total = ACTIVE_QUEUES.length
   const ratio = total ? rows.length / total : 0
-  const dbShare = rows.length ? rows.filter(q => q.dbOsp === 'DB').length / rows.length : 0
+  // Volume-weighted (2026-07-20, matches cardData()'s dbOspSplit fix) — a queue-count
+  // ratio would treat every queue as if it carried identical offered volume, which
+  // isn't true; this chart and the DB/OSP Split card should tell the same story.
+  const totalVol = rows.reduce((s, q) => s + q.offered, 0)
+  const dbVol = rows.filter(q => q.dbOsp === 'DB').reduce((s, q) => s + q.offered, 0)
+  const dbShare = totalVol ? dbVol / totalVol : 0
   const years = effectiveFiscalYears(filters)
   const fyRows = years.map(year => {
     const totalOffered = Math.round(BASE_CALL_VOLUME_BY_FY[year].offered * ratio)
@@ -465,15 +481,22 @@ export const FORECAST_ACCURACY_BY_REGION = REGIONS.map(region => {
 // convention used everywhere else in this file.
 const FY_ACCURACY_NUDGE = { FY25: 0.97, FY26: 1.0, FY27: 1.02 }
 
-export function forecastAccuracyByFY(filters = {}) {
+// `granularity` is optional and additive (2026-07-20) — the Forecast Accuracy card's
+// own drill-down chart (ForecastByFYChart) deliberately always calls this without it,
+// keeping its established "one bar per fiscal year, click a year to drill into region"
+// design (see design_choice.md, 2026-07-08). cardData() is the only caller that passes
+// granularity, so the KEY METRICS card headline responds to the page's View By toggle
+// without touching that chart's own FY-only x-axis.
+export function forecastAccuracyByFY(filters = {}, granularity) {
   const years = effectiveFiscalYears(filters)
   const rows = FORECAST_ACCURACY_BY_REGION.filter(d => matchesMulti(filters.region, d.region))
   const forecast = rows.reduce((s, r) => s + r.forecast, 0)
   const actualTotal = rows.reduce((s, r) => s + r.actual, 0)
-  return years.map(fy => {
-    const actual = Math.round(actualTotal * (FY_ACCURACY_NUDGE[fy] ?? 1))
-    return { period: fy, forecast, actual, accuracy: forecast ? +((actual / forecast) * 100).toFixed(1) : 0 }
-  })
+  const fyRows = years.map(fy => ({
+    period: fy, forecast, actual: Math.round(actualTotal * (FY_ACCURACY_NUDGE[fy] ?? 1)),
+  }))
+  return expandToGranularity(fyRows, granularity, ['forecast', 'actual'])
+    .map(d => ({ ...d, accuracy: d.forecast ? +((d.actual / d.forecast) * 100).toFixed(1) : 0 }))
 }
 
 // Region breakdown for one clicked fiscal year — applies the same per-year nudge to

@@ -16,6 +16,18 @@ A record of every significant design decision made, with the reasoning behind it
 
 **Scope — why not the main MSG/ESG Forecasting page:** `cardData()` in `mockData.js` doesn't show any period-over-period comparison on its cards at all (Call Volume shows abandon %, Forecast Accuracy shows vs-target, etc.) — nothing there for this fix to apply to, matching the request's own "where applicable" qualifier.
 
+## MSG Forecasting Cards: Granular Where the Data Model Supports It, Not Faked Where It Doesn't (2026-07-20)
+
+**Decision:** Call Volume, DB/OSP Split, and Forecast Accuracy now read the latest in-scope period off their own granularity-aware selector (`callVolumeByFY`, `dbOspVolumeByFY`, `forecastAccuracyByFY`); Total Queues and CQN Variance stay exactly as they were, unaffected by the View By toggle.
+
+**Why the split:** Requested directly, via screenshot, that "all the views in the cards should change according to view by." Three of the five metrics already have (or, for Forecast Accuracy, could cheaply gain) a real per-quarter/month baseline in this data model — Call Volume and DB/OSP volume both derive from `BASE_CALL_VOLUME_BY_FY`, and Forecast Accuracy derives from `FORECAST_ACCURACY_BY_REGION` + a per-FY nudge, all of which are legitimately expandable to sub-year periods via the same `expandToGranularity`/`expandRateToGranularity` machinery every other granular chart on this page already uses. Total Queues (`ACTIVE_QUEUE_NAMES.length`/`INACTIVE_QUEUE_NAMES.length`) and CQN Variance (`structuralRows.filter(q => q.accuracy >= 89)`) have no such baseline — a queue is simply active or not, and carries one flat `.accuracy` number; there is no quarter-by-quarter version of either fact in this dataset. Inventing one (e.g. randomly perturbing the count per quarter) would produce a number that responds to the toggle but represents nothing — worse than a card that honestly doesn't change, since it would look like real information.
+
+**forecastAccuracyByFY's `granularity` param is additive, not a replacement:** the Forecast Accuracy card's own drill-down chart (`ForecastByFYChart`) was deliberately built 2026-07-08 to always show one bar per fiscal year regardless of the page's View By toggle (see that entry). Extending the underlying selector to optionally accept granularity — used only by `cardData()` — makes the card headline responsive without disturbing that chart's established design; `ForecastByFYChart`'s own call site is untouched.
+
+**A caveat surfaced by this work, not a new bug:** Forecast Accuracy's % is flat across Quarter/Month/Week (only moves at the Fiscal Year level) — it's `actual/forecast`, and `expandToGranularity` applies the identical wobble to both fields for a given sub-period, so the ratio cancels out mathematically. This is the same phenomenon already documented for MSG Capacity's Staffing card; Call Volume and DB/OSP Split don't have it since their headline numbers are absolute volumes, not ratios of two co-expanded fields.
+
+**Also fixed as part of this pass:** `dbOspVolumeByFY` was still queue-count-weighted (`rows.filter(dbOsp==='DB').length / rows.length`), inconsistent with the volume-weighted fix already applied to `cardData`'s own DB/OSP split calculation earlier the same day. Switched it to the same `offered`-volume-weighted ratio so the card and its own drill-down chart agree.
+
 ## DB/OSP Split: Always Full-Population, Volume-Weighted (2026-07-20)
 
 **Decision:** `cardData()`'s DB/OSP Split percentage is computed from a row set forced to `dbOsp: 'All'` (ignoring the current pill), summed by each queue's `offered` volume rather than counted by queue.

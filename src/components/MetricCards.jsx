@@ -626,7 +626,7 @@ function DrillDownModal({ type, filters, granularity, onClose }) {
 
 export default function MetricCards({ filters, granularity }) {
   const [active, setActive] = useState(null)
-  const d = useMemo(() => cardData(filters), [filters])
+  const d = useMemo(() => cardData(filters, granularity), [filters, granularity])
   const toggle = key => setActive(prev => prev === key ? null : key)
 
   return (

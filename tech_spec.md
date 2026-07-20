@@ -428,19 +428,24 @@ queuesByBusinessPartner(filters) — per-Business-Partner {businessPartner, acti
 
 ### Cards
 ```
-cardData(filters) → {
-  totalQueues, forecastAccuracy, cqnVariance   — from filterQueues({...filters, dbOsp:'All'});
-                                                   cqnVariance's "within range" threshold is
-                                                   accuracy >= 89 (tight on purpose — lands the
-                                                   headline around 40-50%, not the ~75-80% a
-                                                   looser threshold would give)
-  callVolume                                    — from filterQueues(filters), scaled off a
-                                                   285.4K/268.7K baseline by the filtered-vs-total-
-                                                   active-queue ratio (DB/OSP genuinely scopes volume
-                                                   here); the ratio's denominator is
-                                                   ACTIVE_QUEUES.length, not a hardcoded count, so it
-                                                   tracks whatever the active roster currently is
-  dbOspSplit (2026-07-20 fix)                   — ALWAYS from filterQueues({...filters, dbOsp:'All'}),
+cardData(filters, granularity) → {
+  totalQueues, cqnVariance                      — from filterQueues({...filters, dbOsp:'All'}); NOT
+                                                   granularity-aware (2026-07-20, deliberate — queue
+                                                   roster/accuracy are flat, non-date-stamped facts, see
+                                                   design_choice.md). cqnVariance's "within range"
+                                                   threshold is accuracy >= 89 (tight on purpose — lands
+                                                   the headline around 40-50%, not the ~75-80% a looser
+                                                   threshold would give)
+  callVolume (2026-07-20: granular)              — latest period off callVolumeByFY(filters, granularity)
+                                                   (DB/OSP genuinely scopes volume here, via that
+                                                   selector's own use of filterQueues(filters))
+  forecastAccuracy (2026-07-20: granular)        — latest period off forecastAccuracyByFY(filters,
+                                                   granularity); % stays flat across Quarter/Month/Week
+                                                   within one FY (ratio-of-two-co-expanded-fields
+                                                   flatness, see design_choice.md) — only moves at the
+                                                   FY level
+  dbOspSplit (2026-07-20)                       — latest period off dbOspVolumeByFY(filters, granularity),
+                                                   ALWAYS from filterQueues({...filters, dbOsp:'All'}),
                                                    never the toggle-narrowed rows (that was circular —
                                                    filtered to "DB", every remaining row is DB, so it
                                                    always reported 100%/0%); summed by each queue's real
