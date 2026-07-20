@@ -4,6 +4,12 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Card Insight Popup: Removed `overflow: hidden` from `.card-panel` (2026-07-20)
+
+**Decision:** Dropped `overflow: hidden` from `.card-panel`'s CSS rather than reworking the popup to render outside the card (e.g. via a portal).
+
+**Why:** The popup is a DOM child of the card (so it can position itself relative to the card's own button), which means any `overflow: hidden` on the card clips the popup too — reported via screenshot showing the CLCA text cut off at the card's bottom edge. A portal would fully decouple the popup from the card's box model but requires computing screen coordinates from the button's `getBoundingClientRect()` and keeping them in sync on scroll/resize — real work for a bug whose actual cause was a CSS property that wasn't protecting anything else. Confirmed nothing else in the card needs the clipping (both the top `::before` glow line and the bottom active-state bar are already inset within the card's own width) — a bigger portal-based rewrite would be the right move on the day the card actually needs true corner-clipped content again, not now.
+
 ## Card Insight Popup: Right-Anchored, Not Left (2026-07-20)
 
 **Decision:** `GraphInsightButton` now takes an `align` prop (`'left'`|`'right'`) instead of always anchoring its popup's left edge to the button.

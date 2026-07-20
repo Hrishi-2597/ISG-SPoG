@@ -452,3 +452,14 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Passed `align="right"` from all 4 card files (`MetricCards.jsx`, `TsaMetricCards.jsx`, `MsgCapacityMetricCards.jsx`, `TsaCapacityMetricCards.jsx`); left graphs/Geo Maps on the default (`align="left"`) since their button sits top-left, where opening rightward was never a problem
 - Verified with `npm run build` (clean)
 - Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`
+
+---
+
+## Prompt 33 — 2026-07-20
+**Input:** Screenshot of the Forecast Accuracy card's popup showing "CLCA" label with its text cut off below — "now CLCA section is down and not able to see it clearly"
+
+**Action:**
+- Root-caused: `.card-panel` had `overflow: hidden` (for rounded-corner clipping) — since the insight popup is a DOM child of the card, growing taller than the card (RCA + CLCA text) got clipped at the card's own bottom edge
+- Removed `overflow: hidden` from `.card-panel` in `index.css`; confirmed nothing else in the card relies on it (the top glow `::before` bar and bottom active-state bar are both already inset within the card's width)
+- Verified with `npm run build` (clean)
+- Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`

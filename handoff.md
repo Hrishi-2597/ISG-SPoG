@@ -1,5 +1,12 @@
 # Project Handoff — TSG SPoG MSG Forecasting Dashboard
 
+## Fixed: Card Insight Popup Clipped Vertically (CLCA Cut Off) (2026-07-20)
+
+- **Bug:** after the right-alignment fix (above), the popup opened in the correct horizontal position but its bottom (the CLCA section) was still getting clipped — reported via screenshot showing "CLCA" label visible but its text cut off below.
+- **Root cause:** `.card-panel` (the KPI card's own CSS class) had `overflow: hidden`, added for rounded-corner clipping. Since the insight popup renders as a child of the card (needed so it's positioned relative to the card), the card's own `overflow: hidden` was clipping the popup whenever it grew taller than the card itself.
+- **Fix:** removed `overflow: hidden` from `.card-panel` in `index.css`. Nothing else in the card relies on it — the top `::before` glow bar and the bottom active-state gradient bar are already inset within the card's width and don't overflow it.
+- Verified with `npm run build` (clean).
+
 ## Fixed: Card Insight Popup Clipped Off-Screen (2026-07-20)
 
 - **Bug:** on all 20 KPI cards, the "i" button sits at the card's top-right corner, but `GraphInsightButton`'s popup always anchored its left edge to the button (`left: 0`) — for a 220px-wide popup opening from a top-right-corner button, that pushes most of the popup off the right edge of the screen/card, clipping the RCA/CLCA text (reported via screenshot: only slivers of "RCA"/"CLCA" text visible at the right edge).
