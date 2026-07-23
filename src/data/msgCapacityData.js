@@ -10,6 +10,18 @@ import {
   expandToGranularity, expandRateToGranularity, regionForCountry, subRegionForCountry,
 } from './mockData'
 
+// Deterministic per-plan-name scale factor so every "which Plan" dropdown added across
+// this page (2026-07-23) genuinely changes the numbers it drives, not just a label —
+// 'Actual' (or no selection) is the neutral baseline (1x); every other CAPACITY_PLAN_NAMES
+// value gets its own stable multiplier derived from the plan name itself, same
+// "illustrative structure, deterministic not random" convention as the rest of this file.
+export function planMultiplier(planName) {
+  if (!planName || planName === 'Actual') return 1
+  let hash = 0
+  for (let i = 0; i < planName.length; i++) hash = (hash * 31 + planName.charCodeAt(i)) % 97
+  return +(0.85 + (hash % 30) / 100).toFixed(3)
+}
+
 // Real call-center auxiliary/off-productive codes (break, training, meeting, etc.) —
 // kept as plain "Aux 1".."Aux 9" labels rather than invented category names, matching
 // how the source mockup names them.
@@ -181,11 +193,16 @@ export const SL_TREND_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   slPct: +(BASE_SL_TARGET[fy] * (1.0 + (i * 3 % 8) / 100)).toFixed(1),
 })).map(d => ({ ...d, actual: Math.round(d.actual) }))
 
-export function slTrendByFY(filters = {}, granularity) {
+// `planSelection` (added 2026-07-23, optional/additive — existing callers that omit
+// it keep getting the 'Actual' baseline, i.e. unchanged output) scales the Plan HC
+// bar via planMultiplier so Headcount Impact on SL's own Plan dropdown genuinely
+// moves the chart, not just its label.
+export function slTrendByFY(filters = {}, granularity, planSelection = 'Actual') {
   const years = effectiveFiscalYears(filters)
   const ratio = capacityScopeRatio(filters)
+  const mult = planMultiplier(planSelection)
   const fyRows = SL_TREND_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, actual: Math.round(d.actual * ratio), plan: Math.round(d.plan * ratio), slPct: d.slPct }))
+    .map(d => ({ period: d.period, actual: Math.round(d.actual * ratio), plan: Math.round(d.plan * ratio * mult), slPct: d.slPct }))
   const expandedVol = expandToGranularity(fyRows, granularity, ['actual', 'plan'])
   const expandedRate = expandRateToGranularity(fyRows, granularity, ['slPct'])
   return expandedVol.map((d, i) => ({ ...d, slPct: expandedRate[i].slPct }))
@@ -195,12 +212,18 @@ export function slTrendByFY(filters = {}, granularity) {
 // over their headcount plan AND still missing SL — i.e. extra heads didn't fix the
 // service-level problem, which is the actionable signal this list is meant to
 // surface (a queue merely over plan with healthy SL isn't a defaulter by this logic).
-export function slDefaulterQueues(filters = {}, count = 6) {
+// `planSelection` (optional/additive, defaults to the 'Actual' baseline so existing
+// callers are unaffected) re-scales each queue's plan HC before the over-plan test,
+// so picking a different plan can genuinely change which queues qualify and their
+// shown HC delta, not just relabel the list.
+export function slDefaulterQueues(filters = {}, count = 6, planSelection = 'Actual') {
+  const mult = planMultiplier(planSelection)
   return filterCapacityQueues(filters)
+    .map(q => ({ ...q, planHC: Math.round(q.planHC * mult) }))
     .filter(q => q.actualHC > q.planHC && q.slActual < 90)
     .sort((a, b) => a.slActual - b.slActual)
     .slice(0, count)
-    .map(q => ({ name: q.name, actualHC: q.actualHC, planHC: q.planHC, hcDelta: q.hcDelta, slActual: q.slActual }))
+    .map(q => ({ name: q.name, actualHC: q.actualHC, planHC: q.planHC, hcDelta: q.actualHC - q.planHC, slActual: q.slActual }))
 }
 
 // ── Plan over Plan headcount comparison (Layer 2) ─────────────────────────────
@@ -218,7 +241,11 @@ export const CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 // Region/Sub-region default view for the Plan over Plan Variation layer — same
 // share-weighted mechanic as attritionByDimension, applied to Plan A/B headcount
 // instead of attrition.
-export function planOverPlanByDimension(filters = {}, dimension = 'Region') {
+// `planA`/`planB` (added 2026-07-23, optional/additive so any caller that omits them
+// keeps the prior 'Actual'-vs-'Dec Plan' baseline behavior) let the layer's real Plan
+// A/Plan B dropdowns genuinely reweight plan1/plan2 via planMultiplier, instead of the
+// two series being fixed numbers with only their legend labels swappable.
+export function planOverPlanByDimension(filters = {}, dimension = 'Region', planA = 'Actual', planB = 'Dec Plan') {
   const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const scoped = filterCapacityQueues(filters)
   const rows = scoped.length ? scoped : CAPACITY_QUEUES
@@ -226,26 +253,30 @@ export function planOverPlanByDimension(filters = {}, dimension = 'Region') {
   const years = effectiveFiscalYears(filters)
   const fyRows = CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
   const latest = fyRows[fyRows.length - 1] || CAPACITY_PLAN_VS_PLAN_BY_FY[CAPACITY_PLAN_VS_PLAN_BY_FY.length - 1]
+  const multA = planMultiplier(planA)
+  const multB = planMultiplier(planB)
   return Object.entries(shares)
     .map(([k, share]) => {
-      const plan1 = Math.round(latest.plan1 * share)
-      const plan2 = Math.round(latest.plan2 * share)
+      const plan1 = Math.round(latest.plan1 * share * multA)
+      const plan2 = Math.round(latest.plan2 * share * multB)
       return { key: k, plan1, plan2, variance: plan1 ? +((plan2 - plan1) / plan1 * 100).toFixed(1) : 0 }
     })
     .sort((a, b) => b.plan1 - a.plan1)
 }
 
 // FY/granularity trend for one clicked region/sub-region key, same drill mechanic
-// as attritionTrendByDimension.
-export function planOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+// as attritionTrendByDimension. planA/planB same as planOverPlanByDimension above.
+export function planOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity, planA = 'Actual', planB = 'Dec Plan') {
   const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const scoped = filterCapacityQueues(filters)
   const rows = scoped.length ? scoped : CAPACITY_QUEUES
   const shares = shareByKey(rows, dimKey)
   const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
   const years = effectiveFiscalYears(filters)
+  const multA = planMultiplier(planA)
+  const multB = planMultiplier(planB)
   const fyRows = CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share), plan2: Math.round(d.plan2 * share) }))
+    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share * multA), plan2: Math.round(d.plan2 * share * multB) }))
   return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
@@ -253,12 +284,20 @@ export function planOverPlanTrendByDimension(filters = {}, key, dimension = 'Reg
 // Queues with the highest Plan-over-Plan headcount variation, worst (largest
 // |variance|) first — the ranked list under the Plan over Plan Variation layer,
 // meant to be the page's headline "what's actually driving plan risk" visual.
-export function planOverPlanQueueVariance(filters = {}, topN = 8) {
+// planA/planB same as planOverPlanByDimension above — reweights each queue's own
+// popPlan1/popPlan2 baseline instead of the fixed per-queue numbers.
+export function planOverPlanQueueVariance(filters = {}, topN = 8, planA = 'Actual', planB = 'Dec Plan') {
   const rows = filterCapacityQueues(filters)
   const hasQueue = filters.combinedQueueName?.length > 0
   const list = hasQueue ? rows : rows.slice()
+  const multA = planMultiplier(planA)
+  const multB = planMultiplier(planB)
   return list
-    .map(q => ({ name: q.name, plan1: q.popPlan1, plan2: q.popPlan2, variance: q.popVariance }))
+    .map(q => {
+      const plan1 = Math.round(q.popPlan1 * multA)
+      const plan2 = Math.round(q.popPlan2 * multB)
+      return { name: q.name, plan1, plan2, variance: plan1 ? +((plan2 - plan1) / plan1 * 100).toFixed(1) : 0 }
+    })
     .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
     .slice(0, topN)
 }
@@ -272,10 +311,15 @@ export const UTIL_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   actual: +(BASE_UTIL_TARGET[fy] * (0.95 + (i * 6 % 10) / 100)).toFixed(1),
 }))
 
-export function utilizationByFY(filters = {}, granularity) {
+// `planSelection` (optional/additive, defaults to the 'Actual' baseline so existing
+// callers — the KPI cards' trend popups — see unchanged output) rescales the Target
+// series via planMultiplier so this visual's own Plan dropdown genuinely moves the
+// target bar and the adherence % derived from it.
+export function utilizationByFY(filters = {}, granularity, planSelection = 'Actual') {
   const years = effectiveFiscalYears(filters)
+  const mult = planMultiplier(planSelection)
   const fyRows = UTIL_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, target: d.target, actual: d.actual }))
+    .map(d => ({ period: d.period, target: +(d.target * mult).toFixed(1), actual: d.actual }))
   const expanded = expandRateToGranularity(fyRows, granularity, ['target', 'actual'])
   // Aux breakdown (top 3 contributing codes) and adherence % are added per resulting
   // period (not carried through the expansion helper, which only knows about the rate
@@ -303,16 +347,21 @@ export function utilizationByFY(filters = {}, granularity) {
 // Top-N queues by |utilization gap|, worst first — same "top queues" ranking
 // convention as the Forecasting page's diverging variance charts. Each queue now
 // carries its top 3 contributing Aux codes, not just a single culprit.
-export function utilizationByQueue(filters = {}, topN = 6) {
+// `planSelection` (optional/additive, defaults to 'Actual' so existing behavior is
+// unchanged) rescales each queue's own utilTarget via planMultiplier — this visual's
+// own Plan dropdown then genuinely moves the displayed target/adherence per queue.
+export function utilizationByQueue(filters = {}, topN = 6, planSelection = 'Actual') {
+  const mult = planMultiplier(planSelection)
   const rows = filterCapacityQueues(filters)
   const hasQueue = filters.combinedQueueName?.length > 0
   const list = hasQueue ? rows : [...rows].sort((a, b) => Math.abs(b.utilGap) - Math.abs(a.utilGap)).slice(0, topN)
   return list.map(q => {
     const ci = AUX_CODES.indexOf(q.auxCulprit)
     const auxes = [q.auxCulprit, AUX_CODES[(ci + 3) % AUX_CODES.length], AUX_CODES[(ci + 6) % AUX_CODES.length]]
+    const target = +(q.utilTarget * mult).toFixed(1)
     return {
-      name: q.name, actual: q.utilActual, target: q.utilTarget,
-      adherence: q.utilTarget ? +((q.utilActual / q.utilTarget) * 100).toFixed(1) : 0,
+      name: q.name, actual: q.utilActual, target,
+      adherence: target ? +((q.utilActual / target) * 100).toFixed(1) : 0,
       auxCulprit: q.auxCulprit,
       auxes,
     }
@@ -323,13 +372,21 @@ export function utilizationByQueue(filters = {}, topN = 6) {
 // Picks the queues with the biggest |actual-vs-plan leaves| gap first (so the real
 // problem queues aren't missed), then displays that shortlist in ascending order
 // by delta, per the requested "arranged in ascending order."
-export function leavesByQueue(filters = {}, topN = 6) {
+// `planSelection` (optional/additive, defaults to 'Actual' so existing behavior is
+// unchanged) rescales each queue's own leavesPlan (the Target series) via
+// planMultiplier — this visual's own Plan dropdown then genuinely moves the target
+// bar and the delta computed from it.
+export function leavesByQueue(filters = {}, topN = 6, planSelection = 'Actual') {
+  const mult = planMultiplier(planSelection)
   const rows = filterCapacityQueues(filters)
   const hasQueue = filters.combinedQueueName?.length > 0
   const list = hasQueue ? rows : [...rows].sort((a, b) => Math.abs(b.leavesDelta) - Math.abs(a.leavesDelta)).slice(0, topN)
   return list
-    .sort((a, b) => a.leavesDelta - b.leavesDelta)
-    .map(q => ({ name: q.name, actual: q.leavesActual, target: q.leavesPlan, delta: q.leavesDelta }))
+    .map(q => {
+      const target = Math.round(q.leavesPlan * mult)
+      return { name: q.name, actual: q.leavesActual, target, delta: q.leavesActual - target }
+    })
+    .sort((a, b) => a.delta - b.delta)
 }
 
 // ── Cases per FTE (Key Metrics card) ──────────────────────────────────────────

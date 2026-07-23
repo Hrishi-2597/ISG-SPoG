@@ -6,7 +6,7 @@ import {
 import {
   tsaCardData, asuByFY, srDbOspByFY, cpasuByFY, ucrByFY, TSA_ACTIVE_QUEUES,
 } from '../../data/tsaData'
-import { C, Tip, Modal, GraphInsightButton } from './TsaChartKit'
+import { C, Tip, Modal, InfoButton } from './TsaChartKit'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
 // Same region palette as the Forecasting page's Total Queues donut (MetricCards.jsx)
@@ -31,18 +31,18 @@ function StatusPip({ ok }) {
 }
 
 // Changed from a plain <button> to a <div role="button"> (2026-07-10) so the new
-// per-card GraphInsightButton — a real nested <button> — doesn't sit inside another
+// per-card InfoButton — a real nested <button> — doesn't sit inside another
 // <button> element; its wrapper stops click propagation so tapping it doesn't also
 // toggle the card's own drill-down.
-function Card({ icon, label, sublabel, value, sub, trend, onClick, active, rca, clca }) {
+function Card({ icon, label, sublabel, value, sub, trend, onClick, active, info }) {
   return (
     <div role="button" tabIndex={0} onClick={onClick}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
       className={`card-panel flex-1 min-w-0 text-left flex flex-col${active ? ' active' : ''}`}
       style={{ cursor: 'pointer', padding: 0, minHeight: 84, position: 'relative' }}>
-      {(rca || clca) && (
+      {info && (
         <div style={{ position: 'absolute', top: 6, right: 8, zIndex: 2 }} onClick={e => e.stopPropagation()}>
-          <GraphInsightButton rca={rca} clca={clca} align="right" />
+          <InfoButton info={info} align="right" />
         </div>
       )}
       <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -299,33 +299,28 @@ export default function TsaMetricCards({ filters, granularity }) {
           value={`${d.totalQueues.active} / ${d.totalQueues.active + d.totalQueues.inactive}`}
           sub={`${d.totalQueues.inactive} inactive queues`}
           onClick={() => toggle('totalQueues')} active={active === 'totalQueues'}
-          rca="A large inactive count often means queues were retired without a formal offboard step."
-          clca="Reconcile the inactive list each quarter and archive queues no longer needed." />
+          info="Count of active vs inactive TSA queues by region." />
         <Card icon="📶" label="Active Service Units" sublabel="Trend over time"
           value={fmt(d.asuActuals.value)}
           sub={asuYtd.text} trend={asuYtd.trend}
           onClick={() => toggle('asu')} active={active === 'asu'}
-          rca="ASU dips usually follow a slower-than-modeled ramp on recently onboarded queues."
-          clca="Re-forecast ASU using actual onboarding velocity before the next AOP lock." />
+          info="Active Service Units (ASU) actuals to date, with year-over-year change." />
         <Card icon="🎫" label="Service Requests" sublabel="DB / OSP handled"
           value={fmt(d.srActuals.value)}
           sub={srYtd.text} trend={srYtd.trend}
           onClick={() => toggle('sr')} active={active === 'sr'}
-          rca="SR growth tends to outpace ASU when case complexity rises."
-          clca="Add a complexity-adjusted buffer to the SR plan." />
+          info="Service Requests handled across DB and OSP channels, with year-over-year change." />
         <Card icon="➗" label="CPASU" sublabel="SR ÷ ASU"
           value={d.cpasu.value.toFixed(2)}
           sub={cpasuYtd.text} trend={cpasuYtd.trend}
           onClick={() => toggle('cpasu')} active={active === 'cpasu'}
-          rca="CPASU rises fastest in regions with the lowest bot deflection."
-          clca="Expand bot-deflection coverage in the regions driving the increase." />
+          info="Cases Per Active Service Unit — Service Requests divided by ASU, with year-over-year change." />
         <Card icon="🎯" label="Current UCR" sublabel="vs Target"
           value={`${d.currentUcr.value}%`}
           sub={`Target ${d.currentUcr.target}% · ${d.currentUcr.adherence}% adherence`}
           trend={d.currentUcr.adherence >= 95}
           onClick={() => toggle('ucr')} active={active === 'ucr'}
-          rca="Non-adherent LOBs share a common low bot-deflection profile."
-          clca="Prioritize automation coverage for the LOBs furthest from target." />
+          info="Current UCR rate against its target, with overall adherence percentage." />
       </div>
 
       {active && <DrillDownModal type={active} filters={filters} granularity={granularity} onClose={() => setActive(null)} />}

@@ -13,6 +13,7 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => srByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      info="SR actuals vs the selected plan by fiscal period, with percent adherence."
       rca="SR actuals are outpacing plan as case complexity rises."
       clca="Add a complexity-adjusted buffer to the SR plan.">
       <ResponsiveContainer width="100%" height={222}>
@@ -40,6 +41,7 @@ function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => srPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      info="SR compared between two selected plans by fiscal period, with percent variance."
       rca="Plan variance for SR is widest in the most recent quarter."
       clca="Reconcile plans against the latest actuals before the next AOP cycle.">
       <ResponsiveContainer width="100%" height={222}>
@@ -71,6 +73,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      info="Each region's SR gap between the two selected plans; click a region to see contributing LOBs."
       rca="SR impact concentrates in a small number of LOBs per region."
       clca="Prioritize staffing reviews for the top LOBs in the highest-impact region.">
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>

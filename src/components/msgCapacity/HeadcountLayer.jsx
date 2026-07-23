@@ -3,7 +3,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { PLAN_NAMES } from '../../data/mockData'
+import { PLAN_NAMES, CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import {
   hcStaffingByFY, attritionByDimension, attritionTrendByDimension, slTrendByFY, slDefaulterQueues,
 } from '../../data/msgCapacityData'
@@ -15,6 +15,7 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => hcStaffingByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      info="Actual headcount vs the planned headcount, by fiscal period, with a Variation % trend line."
       rca="Staffing variation is largest in quarters right after a hiring freeze."
       clca="Smooth headcount ramp-up across quarters instead of a single freeze/unfreeze cycle.">
       <ResponsiveContainer width="100%" height={222}>
@@ -85,6 +86,7 @@ function Visual2({ filters, granularity }) {
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
       controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      info="Headcount and attrition % by region or sub-region; click a bar to drill into that key's own trend."
       rca="Attrition is concentrated in regions with the longest backfill lead time."
       clca="Shorten the backfill pipeline for the regions driving attrition.">
       <ResponsiveContainer width="100%" height={222}>
@@ -107,12 +109,16 @@ function Visual2({ filters, granularity }) {
 // Renamed from "Actual vs Plan Trend with SL%"; the Region/Country toggle is gone
 // (not requested here) and the defaulter list below now uses a stricter, more
 // actionable rule: over-plan headcount that STILL hasn't fixed SL — see
-// slDefaulterQueues in msgCapacityData.js.
-function Visual3({ filters, granularity }) {
-  const data = useMemo(() => slTrendByFY(filters, granularity), [filters, granularity])
-  const defaulters = useMemo(() => slDefaulterQueues(filters), [filters])
+// slDefaulterQueues in msgCapacityData.js. Own independent Plan dropdown (2026-07-23,
+// local state passed down from HeadcountLayer), separate from Visual1's Plan picker —
+// each graph in this layer keeps its own selection.
+function Visual3({ filters, granularity, slPlan, onSlPlanChange }) {
+  const data = useMemo(() => slTrendByFY(filters, granularity, slPlan), [filters, granularity, slPlan])
+  const defaulters = useMemo(() => slDefaulterQueues(filters, 6, slPlan), [filters, slPlan])
   return (
     <Visual title="Headcount Impact on SL"
+      controls={<PlanSelect label="Plan" value={slPlan} onChange={onSlPlanChange} options={CAPACITY_PLAN_NAMES} />}
+      info="Actual vs Plan headcount alongside SL % trend, plus over-plan queues still missing their SL target."
       rca="Extra headcount alone hasn't closed the SL gap for these defaulter queues."
       clca="Prioritize a skill-mix/routing review for those queues over further hiring.">
       <ResponsiveContainer width="100%" height={175}>
@@ -149,6 +155,7 @@ function Visual3({ filters, granularity }) {
 export default function HeadcountLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
   const [plan, setPlan] = useState(PLANS[0])
+  const [slPlan, setSlPlan] = useState(CAPACITY_PLAN_NAMES[0])
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -164,7 +171,7 @@ export default function HeadcountLayer({ filters, granularity }) {
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
           <Visual2 filters={filters} granularity={granularity} />
-          <Visual3 filters={filters} granularity={granularity} />
+          <Visual3 filters={filters} granularity={granularity} slPlan={slPlan} onSlPlanChange={setSlPlan} />
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, actualVsPlanByFY, stackedAdherenceByFY, cqnActualVariance, filterQueues } from '../data/mockData'
-import { GraphInsightButton } from './ChartKit'
+import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 const C = { actual: '#38bdf8', plan: '#fb923c', line: '#34d399', ahead: '#34d399', behind: '#f87171', grid: 'var(--chart-grid)', tick: '#4a6a85' }
@@ -35,11 +35,13 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, subtitle, children, controls, rca, clca }) {
+function Visual({ title, subtitle, children, controls, rca, clca, info }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>{title}</p>
+      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        {title}{info && <InfoButton info={info} />}
+      </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
@@ -76,7 +78,8 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   return (
     <Visual title="Actual vs Plan Variation" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="Adherence dips concentrate in quarters with seasonal call spikes."
-      clca="Build a seasonal overlay into the forecast model for those quarters.">
+      clca="Build a seasonal overlay into the forecast model for those quarters."
+      info="Actual volume against plan volume by fiscal year (or sub-period), with the resulting adherence % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -123,7 +126,8 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
   return (
     <Visual title="Forecast Variance Distribution" controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="The >30% variance band has been growing year over year."
-      clca="Audit queues in the >30% band first — they disproportionately hurt overall accuracy.">
+      clca="Audit queues in the >30% band first — they disproportionately hurt overall accuracy."
+      info="Percentage of the queue population per fiscal year, bucketed by how far actuals landed from plan.">
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
         {STACK_META.map(({ key, label }) => (
           <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'var(--text-dim)' }}>
@@ -155,8 +159,8 @@ function Visual2({ filters, granularity, selectedPlan, onPlanChange }) {
 // Diverging bar: one bar per queue showing the actual-vs-plan variance itself, green
 // extending right (ahead), red extending left (behind) — same treatment as Layer 1's
 // CQN chart, so the two "highest variance" visuals read consistently across layers.
-function Visual3({ filters }) {
-  const sorted = useMemo(() => cqnActualVariance(filters), [filters])
+function Visual3({ filters, selectedPlan, onPlanChange }) {
+  const sorted = useMemo(() => cqnActualVariance(filters, 5, selectedPlan), [filters, selectedPlan])
   // Round to a clean step so axis ticks land on whole numbers (-10/-5/0/5/10, not
   // whatever odd value the raw max happens to be), then pad the plotted domain —
   // not the ticks — so the value label at the end of the longest bar has room.
@@ -165,8 +169,10 @@ function Visual3({ filters }) {
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
   return (
     <Visual title="Top Queues by Variance"
+      controls={<PlanSelect value={selectedPlan} onChange={onPlanChange} />}
       rca="Actual-vs-plan misses cluster in a handful of high-volume queues."
-      clca="Re-baseline those queues' plans using the last two quarters of actuals.">
+      clca="Re-baseline those queues' plans using the last two quarters of actuals."
+      info="The queues with the largest actual-vs-plan variance, ranked by magnitude regardless of direction.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={sorted} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />
@@ -216,7 +222,7 @@ export default function Layer2ActualVsPlan({ filters, granularity }) {
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
           <Visual2 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
-          <Visual3 filters={filters} />
+          <Visual3 filters={filters} selectedPlan={plan} onPlanChange={setPlan} />
         </div>
       )}
     </div>

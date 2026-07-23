@@ -4,7 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
 import { PLAN_NAMES, planOverPlanByFY, planOverPlanByRegion, cqnPlanVariance } from '../data/mockData'
-import { GraphInsightButton } from './ChartKit'
+import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const PLANS = PLAN_NAMES.filter(p => p !== 'Actual')
 // Blue/orange compare two neutral quantities (Plan A vs Plan B); violet is a neutral
@@ -43,11 +43,13 @@ const Tip = ({ active, payload, label }) => {
   )
 }
 
-function Visual({ title, subtitle, children, controls, rca, clca }) {
+function Visual({ title, subtitle, children, controls, rca, clca, info }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>{title}</p>
+      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        {title}{info && <InfoButton info={info} />}
+      </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
@@ -74,7 +76,8 @@ function Visual1({ filters, granularity, planA, planB, onPlanChange }) {
   return (
     <Visual title="PoP Variation" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="Plan-to-plan gaps widen most in quarters with late AOP updates."
-      clca="Lock plan revisions earlier in the quarter to shrink the variance window.">
+      clca="Lock plan revisions earlier in the quarter to shrink the variance window."
+      info="Plan A vs Plan B volume by fiscal year (or sub-period), with the resulting variance % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -101,7 +104,8 @@ function Visual2({ filters, planA, planB, onPlanChange }) {
   return (
     <Visual title="Regional Plan Variance" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="LATAM and APJ tend to show the largest regional swings against Plan A."
-      clca="Add a region-specific buffer to Plan B for the regions swinging most.">
+      clca="Add a region-specific buffer to Plan B for the regions swinging most."
+      info="Plan A vs Plan B volume by region, with the resulting variance % line.">
       <ResponsiveContainer width="100%" height={222}>
         <ComposedChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
@@ -138,7 +142,8 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
     <Visual title="Top Queues by Variance"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} />}
       rca="A small set of queues accounts for most of the plan-to-plan swing."
-      clca="Prioritize a plan review for the queues topping this list before broader changes.">
+      clca="Prioritize a plan review for the queues topping this list before broader changes."
+      info="The queues with the largest Plan A vs Plan B variance, ranked by magnitude regardless of direction.">
       <ResponsiveContainer width="100%" height={230}>
         <ComposedChart data={data} layout="vertical" margin={{ top: 4, right: 34, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={C.grid} horizontal={false} />

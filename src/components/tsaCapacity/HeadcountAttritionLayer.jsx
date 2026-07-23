@@ -6,12 +6,20 @@ import {
 import {
   fteByFY, tsaAttritionByDimension, tsaAttritionTrendByDimension, tsaUtilByFY,
 } from '../../data/tsaCapacityData'
-import { C, Visual, Tip, BinaryToggle, PillButton } from '../ChartKit'
+import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
+import { C, Visual, Tip, PlanSelect, BinaryToggle, PillButton } from '../ChartKit'
 
-function Visual1({ filters, granularity }) {
-  const data = useMemo(() => fteByFY(filters, granularity), [filters, granularity])
+// Plan A/B-style pickers exclude 'Actual' the same way Forecasting's plan dropdowns
+// already do (see mockData.js's CAPACITY_PLAN_NAMES comment) — this page's own bars
+// already show Actual separately, so the picker only needs to offer named plan
+// vintages to compare it against.
+const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
+
+function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
+  const data = useMemo(() => fteByFY(filters, granularity, selectedPlan), [filters, granularity, selectedPlan])
   return (
-    <Visual title="Actual vs Plan Variation"
+    <Visual title="Actual vs Plan Variation" controls={<PlanSelect label="Plan" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      info="Compares actual FTE staffing against a selected plan vintage, period by period."
       rca="Staffing variation widens in quarters right after a hiring freeze."
       clca="Smooth headcount ramp-up across quarters instead of freeze/unfreeze cycles.">
       <ResponsiveContainer width="100%" height={222}>
@@ -79,6 +87,7 @@ function Visual2({ filters, granularity }) {
       subtitle={selectedKey ? `${selectedKey} — attrition trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
       controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      info="Headcount and attrition % by region or sub-region; click a bar to see that key's own trend."
       rca="Attrition is highest in sub-regions with the longest backfill lead time."
       clca="Shorten the backfill pipeline for the sub-regions driving attrition.">
       <ResponsiveContainer width="100%" height={222}>
@@ -106,6 +115,7 @@ function Visual3({ filters, granularity }) {
   const data = useMemo(() => tsaUtilByFY(filters, granularity, lens), [filters, granularity, lens])
   return (
     <Visual title="Utilization Variance" cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={lens === 'SubRegion' ? 'Sub-region' : lens} onChange={v => setLens(v === 'Sub-region' ? 'SubRegion' : 'Region')} />}
+      info="Actual vs target utilization % over time, viewable by region or sub-region."
       rca="Utilization gaps persist even where headcount is at or above plan."
       clca="Investigate routing/skill-mix before adding further headcount.">
       <ResponsiveContainer width="100%" height={222}>
@@ -127,6 +137,7 @@ function Visual3({ filters, granularity }) {
 
 export default function HeadcountAttritionLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
+  const [plan, setPlan] = useState(PLANS[0])
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -140,7 +151,7 @@ export default function HeadcountAttritionLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <Visual1 filters={filters} granularity={granularity} />
+          <Visual1 filters={filters} granularity={granularity} selectedPlan={plan} onPlanChange={setPlan} />
           <Visual2 filters={filters} granularity={granularity} />
           <Visual3 filters={filters} granularity={granularity} />
         </div>

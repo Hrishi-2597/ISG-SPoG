@@ -13,6 +13,7 @@ function Visual1({ filters, granularity, selectedPlan, onPlanChange }) {
   const data = useMemo(() => asuByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Actuals vs Plan Comparison" controls={<PlanSelect label="Plan Name" value={selectedPlan} onChange={onPlanChange} options={PLANS} />}
+      info="ASU actuals vs the selected plan by fiscal period, with percent adherence."
       rca="ASU actuals are trending below plan in the most recent fiscal year."
       clca="Re-forecast ASU using the latest onboarding velocity before the next lock.">
       <ResponsiveContainer width="100%" height={222}>
@@ -40,6 +41,7 @@ function Visual2({ filters, granularity, planA, planB, onPlanChange }) {
   const data = useMemo(() => asuPlanVsPlanByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Plan vs Plan Comparison" controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      info="ASU compared between two selected plans by fiscal period, with percent variance."
       rca="Plan B consistently understates ASU relative to Plan A."
       clca="Reconcile the two plans against actuals before selecting a primary.">
       <ResponsiveContainer width="100%" height={222}>
@@ -74,6 +76,7 @@ function Visual3({ filters, planA, planB, onPlanChange }) {
   return (
     <Visual title="Plan Impact" subtitle="Click a region to see which LOBs contributed"
       controls={<PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />}
+      info="Each region's ASU gap between the two selected plans; click a region to see contributing LOBs."
       rca="A few LOBs drive most of each region's ASU impact."
       clca="Focus region reviews on the top-contributing LOBs shown here.">
       <ResponsiveContainer width="100%" height={selectedRegion ? 140 : 210}>

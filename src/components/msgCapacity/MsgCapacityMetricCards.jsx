@@ -6,7 +6,7 @@ import {
 import {
   capacityCardData, hcStaffingByFY, utilizationByFY, slTrendByFY, attritionByFY, cpfByFY,
 } from '../../data/msgCapacityData'
-import { C, Tip, GraphInsightButton } from '../ChartKit'
+import { C, Tip, InfoButton } from '../ChartKit'
 import { Modal } from '../Modal'
 
 const CHART_BOX = { maxWidth: 620, margin: '0 auto' }
@@ -23,18 +23,20 @@ function StatusPip({ ok }) {
 }
 
 // Changed from a plain <button> to a <div role="button"> (2026-07-10) so the new
-// per-card GraphInsightButton — a real nested <button> — doesn't sit inside another
-// <button> element; its wrapper stops click propagation so tapping it doesn't also
-// toggle the card's own drill-down.
-function Card({ icon, label, value, sub, trend, onClick, active, rca, clca }) {
+// per-card InfoButton — a real nested <button> — doesn't sit inside another <button>
+// element; its wrapper stops click propagation so tapping it doesn't also toggle the
+// card's own drill-down. Cards no longer carry RCA/CLCA at all (2026-07-23) — that
+// analysis-style popup moved off KPI cards in favor of this plain "what this shows"
+// description.
+function Card({ icon, label, value, sub, trend, onClick, active, info }) {
   return (
     <div role="button" tabIndex={0} onClick={onClick}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
       className={`card-panel flex-1 min-w-0 text-left flex flex-col${active ? ' active' : ''}`}
       style={{ cursor: 'pointer', padding: 0, minHeight: 84, position: 'relative' }}>
-      {(rca || clca) && (
+      {info && (
         <div style={{ position: 'absolute', top: 6, right: 8, zIndex: 2 }} onClick={e => e.stopPropagation()}>
-          <GraphInsightButton rca={rca} clca={clca} align="right" />
+          <InfoButton info={info} align="right" />
         </div>
       )}
       <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -212,32 +214,27 @@ export default function MsgCapacityMetricCards({ filters, granularity }) {
           value={`${d.staffing.value}%`}
           sub={staffingYtd.text} trend={staffingYtd.trend}
           onClick={() => toggle('staffing')} active={active === 'staffing'}
-          rca="Staffing variation is largest in quarters right after a hiring freeze."
-          clca="Smooth headcount ramp-up across quarters instead of a single freeze/unfreeze cycle." />
+          info="Actual headcount as a % of planned headcount for the latest in-scope period, vs the prior period." />
         <Card icon="📊" label="Utilization %"
           value={`${d.utilization.actual}%`}
           sub={utilizationYtd.text} trend={utilizationYtd.trend}
           onClick={() => toggle('utilization')} active={active === 'utilization'}
-          rca="Utilization shortfalls trace back to a handful of recurring Aux codes."
-          clca="Add an Aux-code contingency buffer for queues with recurring exposure." />
+          info="Actual utilization % against target for the latest in-scope period, vs the prior period." />
         <Card icon="🎯" label="SL %"
           value={`${d.sl.actual}%`}
           sub={slYtd.text} trend={slYtd.trend}
           onClick={() => toggle('sl')} active={active === 'sl'}
-          rca="SL misses concentrate in queues that are also over headcount plan."
-          clca="Prioritize a skill-mix/routing review for those queues over further hiring." />
+          info="Actual Service Level % for the latest in-scope period, vs the prior period." />
         <Card icon="📋" label="Cases per FTE"
           value={d.casesPerFte.actual}
           sub={casesPerFteSub}
           onClick={() => toggle('casesPerFte')} active={active === 'casesPerFte'}
-          rca="Cases per FTE trending above plan usually means volume growth outpaced the headcount plan."
-          clca="Re-baseline the Cases-per-FTE plan using the last two quarters of actuals." />
+          info="Actual cases handled per FTE, year-to-date for the latest in-scope period." />
         <Card icon="↩" label="Attrition %"
           value={`${d.attrition.actual}%`}
           sub={attritionYtd.text} trend={attritionYtd.trend}
           onClick={() => toggle('attrition')} active={active === 'attrition'}
-          rca="Attrition is concentrated in regions with the longest backfill lead time."
-          clca="Shorten the backfill pipeline for the regions driving attrition." />
+          info="Actual attrition % for the latest in-scope period, vs the prior period." />
       </div>
 
       {active && <DrillDownModal type={active} filters={filters} granularity={granularity} onClose={() => setActive(null)} />}

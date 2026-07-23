@@ -59,15 +59,52 @@ export function GraphInsightButton({ rca, clca, align = 'left' }) {
   )
 }
 
-export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca }) {
+export function Visual({ title, subtitle, children, controls, cornerControls, rca, clca, info }) {
   return (
     <div className="chart-panel flex-1 min-w-0 flex flex-col gap-2" style={{ position: 'relative' }}>
       {cornerControls && <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>{cornerControls}</div>}
       {(rca || clca) && <div style={{ position: 'absolute', top: 10, left: 12, zIndex: 2 }}><GraphInsightButton rca={rca} clca={clca} /></div>}
-      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>{title}</p>
+      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        {title}{info && <InfoButton info={info} />}
+      </p>
       {subtitle && <p style={{ fontSize: 9.5, color: 'var(--text-faint)', textAlign: 'center' }}>{subtitle}</p>}
       {controls && <div style={{ display: 'flex', justifyContent: 'center' }}>{controls}</div>}
       {children}
+    </div>
+  )
+}
+
+// Plain "what does this show" description button (2026-07-23) — deliberately separate
+// from GraphInsightButton's RCA/CLCA analysis above: one neutral sentence explaining
+// what the card/graph is trying to show, no root-cause or corrective-action framing.
+// On a Visual it sits inline right next to the title (not an absolute corner) so it
+// never collides with cornerControls (top-right) or GraphInsightButton (top-left).
+// On KPI cards it takes the top-right corner slot GraphInsightButton used to occupy,
+// now that cards no longer carry RCA/CLCA at all.
+export function InfoButton({ info, align = 'left' }) {
+  const [open, setOpen] = useState(false)
+  if (!info) return null
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="What this shows"
+        aria-label="What this shows"
+        style={{
+          width: 15, height: 15, borderRadius: '50%', border: '1px solid rgba(167,139,250,0.45)',
+          background: open ? '#a78bfa' : 'var(--bg-inset)', color: open ? '#0b1220' : '#a78bfa',
+          fontSize: 8.5, fontWeight: 700, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', padding: 0, fontStyle: 'italic', flexShrink: 0,
+        }}
+      >i</button>
+      {open && (
+        <div className="chart-tooltip animate-fade-in" style={{
+          position: 'absolute', top: 'calc(100% + 6px)', zIndex: 20, width: 200, textAlign: 'left',
+          ...(align === 'right' ? { right: 0 } : { left: 0 }),
+        }}>
+          <p style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.35 }}>{info}</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,6 +4,28 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## Second, Separate "i" Button for Plain Descriptions — Not a Repurposed RCA/CLCA Button (2026-07-23)
+
+**Decision:** Added a brand-new `InfoButton` component (`ChartKit.jsx`), entirely separate from the existing `GraphInsightButton` (RCA/CLCA). It takes one plain `info` sentence — what the card/chart is showing — with no root-cause or corrective-action framing at all.
+
+**Why:** Directly asked the user whether this should be a second button or a repurposing of the existing RCA/CLCA slot on cards (since RCA/CLCA was being removed from cards in the same request) — confirmed they want a genuinely separate mechanism, not a relabeled one. Keeping the two conceptually distinct (RCA/CLCA = analysis, InfoButton = plain description) means visuals can carry both at once without either one's content bleeding into the other's framing.
+
+**Placement — inline next to the title, not another absolute corner:** Cards already had exactly one free corner (top-right, freed up once RCA/CLCA left cards), so `InfoButton` slots in there directly. Visuals are more contested — `cornerControls` already claims top-right (Region/Sub-region toggles, Plan selectors) and `GraphInsightButton` already claims top-left. Rather than invent a third absolute-positioned corner (fragile once a chart has both a toggle AND a Plan dropdown in `cornerControls`), `InfoButton` renders inline in the title `<p>` itself (flex row, small gap) — it scales with however many controls a given visual already has and can never collide with them.
+
+## Plan Dropdowns Must Move Real Numbers, Not Just Decorate (2026-07-23)
+
+**Decision:** Every new Plan/Plan-A/Plan-B dropdown added in this pass had to change the underlying selector's actual output when switched — verified per chart before considering the task done, not just wired up visually.
+
+**Why:** Several of the charts getting a new dropdown (MSG Capacity's "Plan over Plan Variation"/"Queues with Highest Variation", TSA Capacity's equivalents) previously showed **fixed, hardcoded** "Plan A"/"Plan B" values — there was no real per-plan data path to hang a dropdown off of. A dropdown that doesn't move the chart is worse than no dropdown (it implies a capability that doesn't exist). Each selector behind these charts (`cqnActualVariance`, `slTrendByFY`/`slDefaulterQueues`, `planOverPlanByDimension`/`planOverPlanTrendByDimension`/`planOverPlanQueueVariance`, `utilizationByFY`/`utilizationByQueue`/`leavesByQueue`, `fteByFY`, `tsaPlanOverPlanByDimension`/`tsaPlanOverPlanTrendByDimension`/`planOverPlanLobVariance`) gained a new **additive, defaulted** parameter (a plan name, or a `planA`/`planB` pair) plus a small deterministic per-plan multiplier/nudge table, so picking a different plan measurably rescales the chart's values — while every pre-existing caller that omits the new parameter gets byte-identical output to before (same non-breaking-parameter convention already established elsewhere in this codebase, e.g. Forecast Accuracy's optional `granularity` param from 2026-07-20).
+
+**Shared vs. independent dropdown state, per the user's own distinction:** Where a request named several individual graphs getting "a dropdown" (MSG Capacity's Headcount Impact on SL; each of the 3 Utilization and Outage Analysis graphs), each got its own independent local state — deliberately not synced, since they're unrelated metrics that happen to sit near each other. Where a request paired two charts that are inherently the same Plan-A/Plan-B comparison shown two ways (a trend chart + a ranked-variance chart, both already reading "Plan A vs Plan B" in their subtitle), the dropdown state was lifted to the shared layer component and rendered once — two dropdowns for the same comparison would invite them to disagree with each other.
+
+## RCA/CLCA Kept on Every Visual, Removed Only From Cards (2026-07-23)
+
+**Decision:** RCA/CLCA (`GraphInsightButton`, `rca`/`clca` props) was removed entirely from the 4 pages' local `Card` components (20 KPI cards total) but left completely untouched on every graph/chart/geo map.
+
+**Why:** Direct request — "remove RCA and CLCA from all the cards across all pages, keep it only for visuals." Cards are a compact, glanceable summary; a chart is where root-cause/corrective-action framing has room to be useful without crowding a small tile. Mechanically this was straightforward since each page's KPI cards were already a self-contained local `Card` component distinct from the shared `Visual` wrapper used by every chart — no shared code path had to be forked, just edited independently per page.
+
 ## All 3 Cards Pages: Compare Against the Selected Granularity's Prior Period, Not Always FY (2026-07-20)
 
 **Decision:** All three pages whose cards carry a "vs prior period" comparison — TSA Forecasting (`tsaCardData`), MSG Capacity (`capacityCardData`), TSA Capacity (`tsaCapacityCardData`) — now compare against the immediately-prior period at whatever granularity the page's Quarter/Month/Week toggle is set to (Month-over-Month, Quarter-over-Quarter, etc.), falling back to Year-over-Year only when the toggle is at its Year default.

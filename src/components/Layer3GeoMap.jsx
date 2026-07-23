@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoRegionData, geoSubRegionRows, regionForCountry, subRegionForCountry, GEO_REGION_DATA } from '../data/mockData'
-import { GraphInsightButton } from './ChartKit'
+import { GraphInsightButton, InfoButton } from './ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -79,7 +79,10 @@ export default function Layer3GeoMap({ filters }) {
           </div>
 
           {/* Centered title */}
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Global Adherence Heatmap</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            Global Adherence Heatmap
+            <InfoButton info="Forecast adherence % by region or sub-region, shaded on the map and listed in the table below." />
+          </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Forecast adherence % · {viewMode} view
             {selectedKey && (

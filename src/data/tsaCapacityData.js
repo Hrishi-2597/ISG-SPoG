@@ -38,6 +38,25 @@ function filterCapacityLobs(filters) {
 // ── Total FTE ──────────────────────────────────────────────────────────────
 const BASE_FTE_PLAN = { FY25: 460, FY26: 500, FY27: 528 }
 
+// Named-plan scale factors (2026-07-23) — backs both the "Actual vs Plan Variation"
+// PlanSelect (HeadcountAttritionLayer) and the Plan A/Plan B PlanDropdowns (Plan over
+// Plan Variation layer). Keyed off CAPACITY_PLAN_NAMES (mockData.js) minus 'Actual' —
+// each named plan vintage nudges the base FTE plan up/down so picking a different
+// plan genuinely changes the numbers, not just the label. `planFyValue`/`lobPlanValue`
+// are the shared lookup helpers; a missing/undefined planName falls back to a 1x
+// scale so every caller that doesn't pass one keeps its original output (additive).
+const PLAN_SCALE_BY_NAME = { 'Dec Plan': 1, 'Jan Plan': 1.04, 'April Plan': 0.97 }
+
+function planFyValue(fy, planName) {
+  const scale = planName ? (PLAN_SCALE_BY_NAME[planName] ?? 1) : 1
+  return Math.round(BASE_FTE_PLAN[fy] * scale)
+}
+
+function lobPlanValue(l, planName) {
+  const scale = planName ? (PLAN_SCALE_BY_NAME[planName] ?? 1) : 1
+  return Math.round(l.popPlan1 * scale)
+}
+
 export const FTE_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   period: fy,
   plan: BASE_FTE_PLAN[fy],
@@ -45,9 +64,13 @@ export const FTE_BY_FY = FISCAL_YEARS.map((fy, i) => ({
   get adherence() { return +((this.actual / this.plan) * 100).toFixed(1) },
 }))
 
-export function fteByFY(filters = {}, granularity) {
+// `planName` (optional, added 2026-07-23) lets HeadcountAttritionLayer's Visual1
+// PlanSelect swap which named plan vintage the "plan" bar/adherence line reflects —
+// omit it (existing callers, e.g. the cards' FteTrendChart) and behavior is unchanged.
+export function fteByFY(filters = {}, granularity, planName) {
   const years = tsaEffectiveFiscalYears(filters)
-  const fyRows = FTE_BY_FY.filter(d => years.includes(d.period)).map(d => ({ period: d.period, plan: d.plan, actual: d.actual }))
+  const fyRows = FTE_BY_FY.filter(d => years.includes(d.period))
+    .map(d => ({ period: d.period, plan: planName ? planFyValue(d.period, planName) : d.plan, actual: d.actual }))
   return expandToGranularity(fyRows, granularity, ['plan', 'actual'])
     .map(d => ({ ...d, adherence: d.plan ? +((d.actual / d.plan) * 100).toFixed(1) : 0 }))
 }
@@ -283,13 +306,19 @@ export const TSA_CAPACITY_PLAN_VS_PLAN_BY_FY = FISCAL_YEARS.map((fy, i) => ({
 }))
 
 // Region/Sub-region default view for the TSA Plan over Plan Variation layer — same
-// share-weighted mechanic as msgCapacityData.js's planOverPlanByDimension.
-export function tsaPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
+// share-weighted mechanic as msgCapacityData.js's planOverPlanByDimension. `planA`/
+// `planB` (optional, added 2026-07-23) let the layer's shared PlanDropdowns pick real
+// named plan vintages instead of the fixed plan1/plan2 baseline; omitting both keeps
+// the original TSA_CAPACITY_PLAN_VS_PLAN_BY_FY-based output unchanged.
+export function tsaPlanOverPlanByDimension(filters = {}, dimension = 'Region', planA, planB) {
   const key = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
   const shares = tsaShareByKey(rows, key)
   const years = tsaEffectiveFiscalYears(filters)
-  const fyRows = TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  const usingNamedPlans = planA != null && planB != null
+  const fyRows = usingNamedPlans
+    ? years.map(fy => ({ period: fy, plan1: planFyValue(fy, planA), plan2: planFyValue(fy, planB) }))
+    : TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
   const latest = fyRows[fyRows.length - 1] || TSA_CAPACITY_PLAN_VS_PLAN_BY_FY[TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.length - 1]
   return Object.entries(shares)
     .map(([k, share]) => {
@@ -301,26 +330,40 @@ export function tsaPlanOverPlanByDimension(filters = {}, dimension = 'Region') {
 }
 
 // FY/granularity trend for one clicked region/sub-region key, same drill mechanic
-// as msgCapacityData.js's planOverPlanTrendByDimension.
-export function tsaPlanOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity) {
+// as msgCapacityData.js's planOverPlanTrendByDimension. `planA`/`planB` optional, same
+// additive convention as tsaPlanOverPlanByDimension above.
+export function tsaPlanOverPlanTrendByDimension(filters = {}, key, dimension = 'Region', granularity, planA, planB) {
   const dimKey = dimension === 'SubRegion' ? 'subRegion' : 'region'
   const rows = filterCapacityLobs(filters)
   const shares = tsaShareByKey(rows, dimKey)
   const share = shares[key] ?? (1 / (Object.keys(shares).length || 1))
   const years = tsaEffectiveFiscalYears(filters)
-  const fyRows = TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
-    .map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share), plan2: Math.round(d.plan2 * share) }))
+  const usingNamedPlans = planA != null && planB != null
+  const fyRows = (usingNamedPlans
+    ? years.map(fy => ({ period: fy, plan1: planFyValue(fy, planA), plan2: planFyValue(fy, planB) }))
+    : TSA_CAPACITY_PLAN_VS_PLAN_BY_FY.filter(d => years.includes(d.period))
+  ).map(d => ({ period: d.period, plan1: Math.round(d.plan1 * share), plan2: Math.round(d.plan2 * share) }))
   return expandToGranularity(fyRows, granularity, ['plan1', 'plan2'])
     .map(d => ({ ...d, variance: d.plan1 ? +((d.plan2 - d.plan1) / d.plan1 * 100).toFixed(1) : 0 }))
 }
 
 // LOBs with the highest Plan-over-Plan headcount variation, worst (largest
 // |variance|) first — the ranked list under the Plan over Plan Variation layer,
-// analogous to msgCapacityData.js's planOverPlanQueueVariance but for LOBs.
-export function planOverPlanLobVariance(filters = {}, topN = 8) {
+// analogous to msgCapacityData.js's planOverPlanQueueVariance but for LOBs. `planA`/
+// `planB` optional (2026-07-23): when both are given, each LOB's popPlan1 baseline is
+// re-scaled per the selected named plans (lobPlanValue) instead of the fixed
+// popPlan1/popPlan2/popVariance getters, so the ranked list genuinely reacts to the
+// same Plan A/Plan B selection as tsaPlanOverPlanByDimension above.
+export function planOverPlanLobVariance(filters = {}, topN = 8, planA, planB) {
   const rows = filterCapacityLobs(filters)
+  const usingNamedPlans = planA != null && planB != null
   return rows
-    .map(l => ({ name: l.lob, plan1: l.popPlan1, plan2: l.popPlan2, variance: l.popVariance }))
+    .map(l => {
+      const plan1 = usingNamedPlans ? lobPlanValue(l, planA) : l.popPlan1
+      const plan2 = usingNamedPlans ? lobPlanValue(l, planB) : l.popPlan2
+      const variance = plan1 ? +((plan2 - plan1) / plan1 * 100).toFixed(1) : 0
+      return { name: l.lob, plan1, plan2, variance }
+    })
     .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
     .slice(0, topN)
 }

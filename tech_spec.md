@@ -40,13 +40,15 @@ SPoG/
 │   │   ├── Modal.jsx           # Shared popup modal — used by every page's Key Metrics card drill-downs
 │   │   ├── GranularityToggle.jsx # Shared Quarter/Month/Week "View By" pill — page-wide chart-axis setting, used by every filter bar
 │   │   ├── ChartKit.jsx        # Shared chart primitives (Visual, Tip, PlanDropdowns, PlanSelect, CategoryTick,
-│   │   │                         truncate, BinaryToggle, GraphInsightButton) — promoted from tsa/TsaChartKit.jsx
-│   │   │                         (2026-07-03) so both Capacity pages and both Forecasting pages share one
-│   │   │                         implementation. GraphInsightButton (2026-07-10) is the small per-graph RCA/CLCA
-│   │   │                         popup — Visual takes optional rca/clca string props and renders the button
+│   │   │                         truncate, BinaryToggle, GraphInsightButton, InfoButton) — promoted from
+│   │   │                         tsa/TsaChartKit.jsx (2026-07-03) so both Capacity pages and both Forecasting pages
+│   │   │                         share one implementation. GraphInsightButton (2026-07-10) is the small per-graph
+│   │   │                         RCA/CLCA popup — Visual takes optional rca/clca string props and renders the button
 │   │   │                         for free; MSG Forecasting's Layer1PlanOverPlan.jsx/Layer2ActualVsPlan.jsx (which
 │   │   │                         predate this file and keep their own local Visual) import just the button and
-│   │   │                         wire the same two props into their own local Visual instead
+│   │   │                         wire the same two props into their own local Visual instead. InfoButton
+│   │   │                         (2026-07-23) is a separate "what this shows" popup (info prop, plain sentence, no
+│   │   │                         RCA/CLCA framing) — see the dedicated section below for placement rules
 │   │   ├── FilterPanel.jsx     # 12 filters in 4 icon-labeled clusters (Scope/Time/People/Geography) + applied-filter chips + GranularityToggle
 │   │   ├── MetricCards.jsx     # 5 KPI cards, each opening its drill-down in Modal
 │   │   ├── Layer1PlanOverPlan.jsx  # Plan vs Plan: 3 chart visuals + plan selectors
@@ -181,21 +183,27 @@ MsgCapacityPage
 │   ├── Visual2 "Attrition"          — Region/Sub-region-level default (attritionByDimension), click a bar to
 │   │                                   drill into attritionTrendByDimension(filters, key, dimension, granularity);
 │   │                                   custom tooltip also shows the raw attritionCount, not just the %
-│   └── Visual3 "Headcount Impact on SL" (renamed) — ComposedChart: slTrendByFY(filters, granularity);
-│                                                     Region/Country toggle removed; defaulter list below now
-│                                                     slDefaulterQueues(filters) — actual>plan AND SL<90
+│   └── Visual3 "Headcount Impact on SL" (renamed) — ComposedChart: slTrendByFY(filters, granularity, planSelection);
+│                                                     Region/Country toggle removed; own independent Plan dropdown
+│                                                     (2026-07-23); defaulter list below now
+│                                                     slDefaulterQueues(filters, planSelection) — actual>plan AND SL<90
 ├── PlanOverPlanVariationLayer(filters, granularity) — MSG-specific (no longer the shared component), badge "02"
 │   ├── MainChart "Plan over Plan Variation" (renamed) — Region/Sub-region default view (planOverPlanByDimension),
-│   │                                                     click a bar to drill into planOverPlanTrendByDimension
-│   └── QueueVarianceChart "Queues with Highest Variation" — diverging horizontal bars: planOverPlanQueueVariance(filters),
-│                                                             worst |variance| first, value-labeled (same polish as
-│                                                             Forecasting's Top Queues by Variance charts)
+│   │                                                     click a bar to drill into planOverPlanTrendByDimension;
+│   │                                                     shared Plan A/Plan B PlanDropdowns (2026-07-23, replacing the
+│   │                                                     old fixed "Plan A"/"Plan B" series) live here, driving both
+│   │                                                     this chart and QueueVarianceChart below
+│   └── QueueVarianceChart "Queues with Highest Variation" — diverging horizontal bars: planOverPlanQueueVariance(filters,
+│                                                             planA, planB), worst |variance| first, value-labeled (same
+│                                                             polish as Forecasting's Top Queues by Variance charts)
 ├── UtilizationLayer(filters, granularity) — renamed "Utilization and Outage Analysis", badge "03"
 │   ├── Visual1 "Actual vs Target Utilization"     — time-axis BarChart+Line: utilizationByFY(filters, granularity)
 │   │                                                 now includes an Adherence % line; tooltip shows top-3 auxBreakdown
 │   ├── Visual2 "Utilization Defaulter Queues" (renamed) — queue-axis horizontal bars: utilizationByQueue(filters),
 │   │                                                       each queue's tooltip now lists 2-3 auxes
-│   └── Visual3 "Leave Impact — Actual vs Target" (renamed) — queue-axis horizontal bars: leavesByQueue(filters), ascending
+│   └── Visual3 "Outage — Actual vs Target" (renamed 2026-07-23, was "Leave Impact — Actual vs Target") — queue-axis
+│                                             horizontal bars: leavesByQueue(filters, plan), ascending; own independent
+│                                             Plan dropdown (2026-07-23), series/tooltip labels read "Actual/Target Outage"
 └── MsgCapacityGeoMap(filters)              — badge "04"; dual BinaryToggle (Headcount/SL% metric × Region/Sub-region view,
                                                replacing the earlier curated-14-country view)
 ```
@@ -215,7 +223,9 @@ TsaCapacityPage
 │   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
 │                         AvgCaseTimeTrendChart (line) / GlobalSloByRegionChart (bar)
 ├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Utilization", badge "01"
-│   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity); line renamed "Variation %"
+│   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity, planName); line
+│   │                                                   renamed "Variation %"; Plan dropdown added 2026-07-23 for parity
+│   │                                                   with MSG Capacity's equivalent chart
 │   ├── Visual2 "Attrition"          — Region/Sub-region-level default (tsaAttritionByDimension), click a bar to drill
 │   │                                   into tsaAttritionTrendByDimension(filters, key, dimension, granularity);
 │   │                                   custom tooltip also shows the raw attritionCount
@@ -223,9 +233,11 @@ TsaCapacityPage
 │                                                   relabeled Region/Sub-region (was Region/Country, always cosmetic)
 ├── PlanOverPlanVariationLayer(filters, granularity) — TSA-specific (no longer the shared component), badge "02"
 │   ├── MainChart "Plan over Plan Variation" — Region/Sub-region default view (tsaPlanOverPlanByDimension), click a bar
-│   │                                          to drill into tsaPlanOverPlanTrendByDimension
-│   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters),
-│                                                         worst |variance| first, value-labeled
+│   │                                          to drill into tsaPlanOverPlanTrendByDimension; shared Plan A/Plan B
+│   │                                          PlanDropdowns (2026-07-23, replacing the old fixed "Plan A"/"Plan B"
+│   │                                          series) live here, driving both this chart and LobVarianceChart below
+│   └── LobVarianceChart "LOBs with Highest Variation" — diverging horizontal bars: planOverPlanLobVariance(filters,
+│                                                         planA, planB), worst |variance| first, value-labeled
 ├── WorkloadDistributionLayer(filters, granularity) — badge "03"
 │   ├── Visual1 "Workload Distribution" (renamed) — recharts Sankey: workloadSankey(filters, mode), LOB/CQN BinaryToggle
 │   │                                                (LOB mode: CQN tiers→real LOBs; CQN mode: LOB tiers→real TSA queues);
@@ -233,10 +245,10 @@ TsaCapacityPage
 │   │                                                with value + % of the hovered node's own total (nodeHoverSummary(),
 │   │                                                fixed top-right panel) — separate from the existing link-hover Tooltip,
 │   │                                                which still shows one single flow at a time
-│   ├── Visual2 "Average Case Time Variance" (renamed, repointed) — ComposedChart: actHrsByFY(filters, granularity)
-│   │                                                                bars + Adherence % line + actHrsDefaulterLobs list
-│   └── Visual3 "ACT Trend — Actual vs Plan" — LineChart: actHrsByFY(filters, granularity), now also with an
-│                                               Adherence % line + actHrsDefaulterLobs list
+│   └── Visual2 "Average Case Time Variance" (renamed, repointed) — ComposedChart: actHrsByFY(filters, granularity)
+│                                                                    bars + Adherence % line + actHrsDefaulterLobs list
+│   (Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23 — layer is now exactly 2 visuals, filling the
+│    row via each Visual's own flex-1, no layout change needed)
 └── TsaCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
                                                  Region/Sub-region BinaryToggle (was single-metric region-only),
                                                  same fallback-to-parent-region mechanic as MsgCapacityGeoMap
@@ -266,6 +278,23 @@ each page's own local `Card` component (`MetricCards.jsx`, `TsaMetricCards.jsx`,
 `<div role="button" tabIndex={0}>` so the new nested `GraphInsightButton` (a real `<button>`) isn't invalid
 HTML inside another `<button>`; the insight button's wrapper stops click propagation so it doesn't also toggle
 the card's drill-down modal.
+
+**Superseded 2026-07-23 (cards only):** `rca`/`clca` were removed entirely from all 4 pages' local `Card`
+components — KPI cards no longer show RCA/CLCA at all. `GraphInsightButton`/`rca`/`clca` on every `Visual`/
+graph/geo map are untouched by this change; RCA/CLCA still exists, just only on visuals now, not cards.
+
+## New "What This Shows" Info Button — Separate From RCA/CLCA (2026-07-23)
+
+A second, independent popup component, `InfoButton` (`ChartKit.jsx`), added alongside (not instead of, on
+visuals) `GraphInsightButton`. Takes one `info` string — a plain, factual sentence describing what the card/
+chart shows, with no RCA/CLCA-style analysis framing. On a `Visual`, `info` renders inline in the title `<p>`
+itself (flex row + small gap), not another absolute corner — this was deliberate so it never collides with
+`cornerControls` (top-right: Region/Sub-region toggles, Plan dropdowns) or `GraphInsightButton` (top-left).
+Mirrored into the two pre-ChartKit local `Visual` copies (`Layer1PlanOverPlan.jsx`/`Layer2ActualVsPlan.jsx`) and
+into every geo map's own custom header layout. On the 4 pages' local `Card` components, `InfoButton` takes the
+same top-right absolute slot `GraphInsightButton` used to occupy, now that cards no longer carry RCA/CLCA —
+rendered via `<InfoButton info={info} align="right" />`. All ~20 cards and ~35 visuals/graphs/geo maps across
+all 4 pages now have a working `info=` description.
 
 ## Theming (2026-07-02)
 

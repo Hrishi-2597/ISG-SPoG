@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoCapacityByRegion, geoCapacityBySubRegion, regionForCountry, subRegionForCountry } from '../../data/msgCapacityData'
-import { BinaryToggle, GraphInsightButton } from '../ChartKit'
+import { BinaryToggle, GraphInsightButton, InfoButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -65,7 +65,10 @@ export default function MsgCapacityGeoMap({ filters }) {
                 clca="Prioritize hiring in the sub-regions where both metrics are weak together." />
               <BinaryToggle leftLabel="Headcount" rightLabel="SL%" value={metric} onChange={setMetric} />
             </div>
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1 }}>Global Region Performance Overview</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              Global Region Performance Overview
+              <InfoButton info="Headcount fulfillment % or SL %, mapped by region or sub-region, with a country-level table below." />
+            </p>
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
           </div>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10 }}>

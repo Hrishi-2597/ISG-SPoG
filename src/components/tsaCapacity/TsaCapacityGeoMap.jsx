@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { geoSloByRegion, geoSloBySubRegion } from '../../data/tsaCapacityData'
 import { regionForCountry, subRegionForCountry } from '../../data/mockData'
-import { BinaryToggle, GraphInsightButton } from '../ChartKit'
+import { BinaryToggle, GraphInsightButton, InfoButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
@@ -58,7 +58,10 @@ export default function TsaCapacityGeoMap({ filters }) {
               clca="Tie SLO recovery plans to Average Case Time improvement first in those regions." />
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
           </div>
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center' }}>Worldwide SLO Heatmap</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            Worldwide SLO Heatmap
+            <InfoButton info="Worldwide SLO % heatmap by country, aggregated to region or sub-region." />
+          </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
             Service Level % · {viewMode} view
             {selectedKey && (

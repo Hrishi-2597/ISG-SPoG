@@ -3,24 +3,31 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, LabelList,
 } from 'recharts'
+import { CAPACITY_PLAN_NAMES } from '../../data/mockData'
 import {
   planOverPlanByDimension, planOverPlanTrendByDimension, planOverPlanQueueVariance,
 } from '../../data/msgCapacityData'
-import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick } from '../ChartKit'
+import { C, Visual, Tip, BinaryToggle, PillButton, CategoryTick, PlanDropdowns } from '../ChartKit'
+
+// Real, user-selectable Plan A/Plan B (2026-07-23) — 'Actual' is filtered out of the
+// pickers the same way Forecasting's own Plan A/B dropdowns exclude it (see
+// CAPACITY_PLAN_NAMES's own comment in mockData.js), since comparing a plan against
+// itself-as-actual isn't a meaningful plan-over-plan choice here.
+const PLANS = CAPACITY_PLAN_NAMES.filter(p => p !== 'Actual')
 
 // MSG-specific replacement for the shared capacity/PlanOverPlanLayer.jsx — this page's
 // version got its own Region/Sub-region drill and a queue-variance ranking on top of
 // the base chart, none of which apply to TSA Capacity's simpler plan-vs-plan layer,
 // so it was built as its own component rather than growing the shared one with
 // MSG-only branches (see design_choice.md).
-function MainChart({ filters, granularity }) {
+function MainChart({ filters, granularity, planA, planB, onPlanChange }) {
   const [dimension, setDimension] = useState('Region')
   const [selectedKey, setSelectedKey] = useState(null)
   const dimLabel = dimension === 'SubRegion' ? 'Sub-region' : 'Region'
-  const dimData = useMemo(() => planOverPlanByDimension(filters, dimension), [filters, dimension])
+  const dimData = useMemo(() => planOverPlanByDimension(filters, dimension, planA, planB), [filters, dimension, planA, planB])
   const trendData = useMemo(
-    () => (selectedKey ? planOverPlanTrendByDimension(filters, selectedKey, dimension, granularity) : []),
-    [filters, selectedKey, dimension, granularity]
+    () => (selectedKey ? planOverPlanTrendByDimension(filters, selectedKey, dimension, granularity, planA, planB) : []),
+    [filters, selectedKey, dimension, granularity, planA, planB]
   )
   const handleDimensionChange = val => {
     setDimension(val === 'Sub-region' ? 'SubRegion' : 'Region')
@@ -35,7 +42,13 @@ function MainChart({ filters, granularity }) {
     <Visual title="Plan over Plan Variation"
       subtitle={selectedKey ? `${selectedKey} — headcount trend` : `Click a ${dimLabel.toLowerCase()} to see its trend`}
       cornerControls={<BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={dimLabel} onChange={handleDimensionChange} />}
-      controls={selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+      controls={
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <PlanDropdowns planA={planA} planB={planB} onChange={onPlanChange} options={PLANS} />
+          {selectedKey && <PillButton onClick={() => setSelectedKey(null)}>← All {dimLabel}s</PillButton>}
+        </div>
+      }
+      info="Plan A vs Plan B headcount by region or sub-region; click a bar to drill into that key's own trend."
       rca="Headcount plan variance is widest in the regions with the newest queues."
       clca="Re-baseline those regions' plans using actual ramp data before the next lock.">
       <ResponsiveContainer width="100%" height={240}>
@@ -47,9 +60,9 @@ function MainChart({ filters, granularity }) {
           <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
           <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
           <ReferenceLine yAxisId="r" y={0} stroke="rgba(255,255,255,0.1)" />
-          <Bar yAxisId="l" dataKey="plan1" name="Plan A" fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
+          <Bar yAxisId="l" dataKey="plan1" name={planA} fill={C.metric1} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
             onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
-          <Bar yAxisId="l" dataKey="plan2" name="Plan B" fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
+          <Bar yAxisId="l" dataKey="plan2" name={planB} fill={C.metric2} opacity={0.8} radius={[3,3,0,0]} maxBarSize={50}
             onClick={handleBarClick} style={{ cursor: selectedKey ? 'default' : 'pointer' }} />
           <Line yAxisId="r" type="monotone" dataKey="variance" name="Variance %" stroke={C.trend}
             strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -63,8 +76,8 @@ function MainChart({ filters, granularity }) {
 // make it worth") — a diverging bar per queue (not two bars to compare by eye),
 // value-labeled at the bar end, same polished convention as Forecasting's own
 // "Top Queues by Variance" charts (Layer1PlanOverPlan.jsx).
-function QueueVarianceChart({ filters }) {
-  const data = useMemo(() => planOverPlanQueueVariance(filters, 8), [filters])
+function QueueVarianceChart({ filters, planA, planB }) {
+  const data = useMemo(() => planOverPlanQueueVariance(filters, 8, planA, planB), [filters, planA, planB])
   const niceMax = useMemo(() => Math.max(10, Math.ceil(Math.max(1, ...data.map(d => Math.abs(d.variance))) / 5) * 5), [data])
   const domainMax = niceMax * 1.3
   const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
@@ -75,14 +88,15 @@ function QueueVarianceChart({ filters }) {
     return (
       <div className="chart-tooltip">
         <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', marginBottom: 5 }}>{label}</p>
-        <p style={{ fontSize: 11, color: C.metric1 }}>Plan A: <span style={{ fontWeight: 600 }}>{row.plan1}</span></p>
-        <p style={{ fontSize: 11, color: C.metric2 }}>Plan B: <span style={{ fontWeight: 600 }}>{row.plan2}</span></p>
+        <p style={{ fontSize: 11, color: C.metric1 }}>{planA}: <span style={{ fontWeight: 600 }}>{row.plan1}</span></p>
+        <p style={{ fontSize: 11, color: C.metric2 }}>{planB}: <span style={{ fontWeight: 600 }}>{row.plan2}</span></p>
       </div>
     )
   }
 
   return (
-    <Visual title="Queues with Highest Variation" subtitle="Plan A vs Plan B, worst variance first"
+    <Visual title="Queues with Highest Variation" subtitle={`${planA} vs ${planB}, worst variance first`}
+      info="Queues with the largest Plan A vs Plan B headcount swing, worst first."
       rca="A small number of queues account for most of the plan-to-plan swing."
       clca="Review these queues' plans first — they carry the most headcount risk.">
       <ResponsiveContainer width="100%" height={280}>
@@ -108,6 +122,12 @@ function QueueVarianceChart({ filters }) {
 
 export default function PlanOverPlanVariationLayer({ filters, granularity }) {
   const [open, setOpen] = useState(true)
+  // Shared Plan A/Plan B selection (2026-07-23) — both charts in this layer represent
+  // the same two chosen plans, so they read one selection here rather than each
+  // keeping an independent copy (unlike UtilizationLayer's 3 visuals, which are
+  // deliberately independent).
+  const [plans, setPlans] = useState({ planA: PLANS[0], planB: PLANS[1] || PLANS[0] })
+  const handlePlanChange = (key, val) => setPlans(p => ({ ...p, [key]: val }))
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -121,8 +141,8 @@ export default function PlanOverPlanVariationLayer({ filters, granularity }) {
       </div>
       {open && (
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
-          <MainChart filters={filters} granularity={granularity} />
-          <QueueVarianceChart filters={filters} />
+          <MainChart filters={filters} granularity={granularity} planA={plans.planA} planB={plans.planB} onPlanChange={handlePlanChange} />
+          <QueueVarianceChart filters={filters} planA={plans.planA} planB={plans.planB} />
         </div>
       )}
     </div>

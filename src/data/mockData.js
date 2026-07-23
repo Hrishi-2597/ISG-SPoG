@@ -622,12 +622,27 @@ export function stackedAdherenceByFY(filters = {}, granularity) {
   })
 }
 
+// Small deterministic nudge per named Plan (2026-07-23) — same "one baseline, small
+// deterministic wobble" convention as FY_ACCURACY_NUDGE above. The underlying queue
+// records only carry one actual/offered pair (not one per named Plan), so this lets
+// the "Top Queues by Variance" Plan dropdown in Layer 2 move real numbers instead of
+// sitting there decoratively.
+const PLAN_ACTUAL_VARIANCE_NUDGE = {
+  'AOP_FY26Q4_AA': 1,
+  'FY27 Q1 APR Plan': 1.12,
+  'FY27 Q2 JUN Plan': 0.9,
+  'FY27Q1_AA': 1.2,
+}
+
 // "CQN Highest Variance": biggest |actual vs plan| gap first (same ranking logic as
 // cqnPlanVariance) — a mix of ahead-of-plan and behind-plan outliers, not just the worst.
-export function cqnActualVariance(filters = {}, topN = 5) {
+// `planName` is optional and additive (2026-07-23), mirroring forecastAccuracyByFY's
+// optional `granularity` param — existing callers that omit it keep the unnudged variance.
+export function cqnActualVariance(filters = {}, topN = 5, planName) {
+  const nudge = planName ? (PLAN_ACTUAL_VARIANCE_NUDGE[planName] ?? 1) : 1
   const rows = filterQueues({ ...filters, dbOsp: 'All' }).map(q => ({
     cqn: q.name, actual: q.handled, plan: q.offered,
-    variance: +((q.handled - q.offered) / q.offered * 100).toFixed(1),
+    variance: +((q.handled - q.offered) / q.offered * 100 * nudge).toFixed(1),
   }))
   const hasQueue = filters.cqn?.length > 0
   return hasQueue ? rows : [...rows].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance)).slice(0, topN)

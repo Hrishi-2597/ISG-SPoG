@@ -32,6 +32,7 @@ function Visual1({ filters, granularity: pageGranularity }) {
     <Visual title="CPASU Trend"
       subtitle={selectedRegion ? `${selectedRegion} — ${granularity} view` : 'Click a region to see its trend'}
       controls={selectedRegion && <PillButton onClick={() => setSelectedRegion(null)}>← All Regions</PillButton>}
+      info="ASU, SR, and CPASU by region; click a region to drill into its trend over time."
       rca="CPASU is rising fastest in regions with the lowest bot deflection."
       clca="Expand bot-deflection coverage in the regions driving the CPASU increase.">
       <ResponsiveContainer width="100%" height={222}>
@@ -60,6 +61,7 @@ function Visual2({ filters, granularity }) {
   const data = useMemo(() => srBotsByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="UCR Impact on SR" cornerControls={<PlanSelect value={plan} onChange={setPlan} options={PLANS} />}
+      info="Human-handled vs bot (UCR) handled SR volume against the SR plan, by period."
       rca="Bot-handled SR's are growing faster than the plan assumed."
       clca="Fold observed bot deflection into next quarter's SR plan.">
       <ResponsiveContainer width="100%" height={222}>
@@ -93,6 +95,7 @@ function Visual3({ filters, granularity }) {
 
   return (
     <Visual title="UCR Runrate with Target" subtitle="Click a bar to see that period's top 5 non-adherent LOBs"
+      info="UCR runrate against target by period; click a bar to see that period's top non-adherent LOBs."
       rca="Non-adherent LOBs share a common low bot-deflection profile."
       clca="Prioritize automation coverage for the LOBs on the non-adherent list.">
       <ResponsiveContainer width="100%" height={210}>

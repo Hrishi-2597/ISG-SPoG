@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import {
-  ComposedChart, LineChart, Sankey, Bar, Line, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Sankey, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Rectangle,
 } from 'recharts'
 import { workloadSankey, actHrsByFY, actHrsDefaulterLobs } from '../../data/tsaCapacityData'
@@ -98,6 +98,7 @@ function Visual1({ filters }) {
     <Visual title="Workload Distribution"
       subtitle={mode === 'LOB' ? 'Illustrative CQN priority tiers routed to real LOBs' : 'Illustrative LOB priority tiers routed to real queues'}
       cornerControls={<BinaryToggle leftLabel="LOB" rightLabel="CQN" value={mode} onChange={setMode} />}
+      info="Sankey flow of priority tiers into real LOBs or queues, showing where workload concentrates."
       rca="Flow concentrates into a small number of LOBs/queues rather than spreading evenly."
       clca="Balance routing rules to reduce concentration in the top-loaded nodes.">
       <div style={{ position: 'relative' }}>
@@ -161,12 +162,15 @@ function DefaulterLobList({ filters }) {
 }
 
 // Renamed from "Workload Act vs Plan" — the original name's "Act" referred to
-// Average Case Time all along, not workload volume, so this now plots the same
-// actHrsByFY data as Visual3 but as a bar+adherence chart, plus the defaulter list.
+// Average Case Time all along, not workload volume, so this plots actHrsByFY data as
+// a bar+adherence chart, plus the defaulter list. (The sibling "ACT Trend — Actual vs
+// Plan" line-chart visual that used to sit alongside this one was removed 2026-07-23
+// so this layer holds exactly 2 graphs instead of 3.)
 function Visual2({ filters, granularity }) {
   const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
   return (
     <Visual title="Average Case Time Variance"
+      info="Actual vs plan Average Case Time by period, with adherence % and the LOBs running longest."
       rca="A handful of LOBs are driving most of the above-plan case time."
       clca="Prioritize a case-time review for the LOBs topping this list.">
       <ResponsiveContainer width="100%" height={190}>
@@ -181,30 +185,6 @@ function Visual2({ filters, granularity }) {
           <Bar yAxisId="l" dataKey="plan" name="Plan (hrs)" fill={C.metric2} opacity={0.85} radius={[3,3,0,0]} maxBarSize={40} />
           <Line yAxisId="r" type="monotone" dataKey="adherence" name="Adherence %" stroke={C.trend} strokeWidth={2} dot={{ r: 3, fill: C.trend, strokeWidth: 0 }} activeDot={{ r: 5 }} />
         </ComposedChart>
-      </ResponsiveContainer>
-      <DefaulterLobList filters={filters} />
-    </Visual>
-  )
-}
-
-// Kept as a trend line (vs Visual2's bars) with the defaulter list; the Adherence %
-// line was removed 2026-07-06 per direct request — Visual2 still carries it.
-function Visual3({ filters, granularity }) {
-  const data = useMemo(() => actHrsByFY(filters, granularity), [filters, granularity])
-  return (
-    <Visual title="ACT Trend — Actual vs Plan"
-      rca="Average Case Time has trended above plan for two consecutive years."
-      clca="Re-baseline the ACT plan using the latest two quarters before the next lock.">
-      <ResponsiveContainer width="100%" height={190}>
-        <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="period" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}h`} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Line type="monotone" dataKey="actual" name="ACT Actual (hrs)" stroke={C.behind} strokeWidth={2.5} dot={{ r: 3, fill: C.behind, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-          <Line type="monotone" dataKey="plan" name="ACT Plan (hrs)" stroke={C.metric2} strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: C.metric2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-        </LineChart>
       </ResponsiveContainer>
       <DefaulterLobList filters={filters} />
     </Visual>
@@ -228,7 +208,6 @@ export default function WorkloadDistributionLayer({ filters, granularity }) {
         <div style={{ padding: 12, display: 'flex', gap: 10 }}>
           <Visual1 filters={filters} />
           <Visual2 filters={filters} granularity={granularity} />
-          <Visual3 filters={filters} granularity={granularity} />
         </div>
       )}
     </div>
