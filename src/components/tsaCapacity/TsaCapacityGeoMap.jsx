@@ -1,31 +1,37 @@
 import React, { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
-import { geoSloByRegion, geoSloBySubRegion } from '../../data/tsaCapacityData'
+import { geoHeadcountByRegion, geoHeadcountBySubRegion } from '../../data/tsaCapacityData'
 import { regionForCountry, subRegionForCountry } from '../../data/mockData'
 import { BinaryToggle, GraphInsightButton, InfoButton } from '../ChartKit'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const DEFAULT_FILL = '#0e1f35'
 
-function sloColor(v) {
-  if (v >= 90) return '#059669'
-  if (v >= 80) return '#2563eb'
-  if (v >= 70) return '#d97706'
+// Headcount is a raw count, not a 0-100 rate, so its color bands are relative to the
+// highest value in the CURRENT view (Region or Sub-region) rather than fixed absolute
+// thresholds — this keeps the same 4-band read (well-staffed → thin) meaningful at
+// both the ~4-region and ~24-sub-region scales, which differ by an order of magnitude.
+function hcColor(pct) {
+  if (pct >= 75) return '#059669'
+  if (pct >= 50) return '#2563eb'
+  if (pct >= 25) return '#d97706'
   return '#dc2626'
 }
 
 const LEGEND = [
-  { label: '≥ 90% Excellent', color: '#059669' },
-  { label: '80–90% Good',     color: '#2563eb' },
-  { label: '70–80% Fair',     color: '#d97706' },
-  { label: '< 70% Critical',  color: '#dc2626' },
+  { label: '≥ 75% of peak Highest', color: '#059669' },
+  { label: '50–75% of peak High',   color: '#2563eb' },
+  { label: '25–50% of peak Moderate', color: '#d97706' },
+  { label: '< 25% of peak Lowest',  color: '#dc2626' },
 ]
 
-// Worldwide SLO, now with a Region/Sub-region toggle (2026-07-03) mirroring
+// Worldwide Headcount, now with a Region/Sub-region toggle (2026-07-03) mirroring
 // MsgCapacityGeoMap's exact fallback mechanic: unmapped countries in Sub-region view
 // shade at their parent region's color, 35% opacity. The mockup labels this "Layer 5"
 // but skips a "Layer 4" entirely; renumbered to 04 here to keep this page's badges
-// sequential (see design_choice.md).
+// sequential (see design_choice.md). Switched from SLO% to Headcount 2026-07-23, per
+// direct request — see design_choice.md for why (and why the color bands became
+// relative-to-peak instead of fixed thresholds).
 export default function TsaCapacityGeoMap({ filters }) {
   const [open, setOpen] = useState(true)
   const [viewMode, setViewMode] = useState('Region')
@@ -34,10 +40,14 @@ export default function TsaCapacityGeoMap({ filters }) {
   // re-clicking it, the Clear pill, or switching Region/Sub-region view (different key
   // domains).
   const [selectedKey, setSelectedKey] = useState(null)
-  const regionRows = useMemo(() => geoSloByRegion(filters), [filters])
-  const subRegionRows = useMemo(() => geoSloBySubRegion(filters), [filters])
-  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r.slo])), [regionRows])
-  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r.slo])), [subRegionRows])
+  const regionRows = useMemo(() => geoHeadcountByRegion(filters), [filters])
+  const subRegionRows = useMemo(() => geoHeadcountBySubRegion(filters), [filters])
+  const regionValue = useMemo(() => Object.fromEntries(regionRows.map(r => [r.region, r.headcount])), [regionRows])
+  const subRegionValue = useMemo(() => Object.fromEntries(subRegionRows.map(r => [r.subRegion, r.headcount])), [subRegionRows])
+  const maxValue = useMemo(
+    () => Math.max(1, ...(viewMode === 'Region' ? regionRows.map(r => r.headcount) : subRegionRows.map(r => r.headcount))),
+    [viewMode, regionRows, subRegionRows]
+  )
 
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
@@ -45,7 +55,7 @@ export default function TsaCapacityGeoMap({ filters }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: '#070f1a', background: '#a78bfa', borderRadius: 4, padding: '2px 7px', letterSpacing: '0.04em' }}>04</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Geo Map</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— worldwide SLO by region &amp; sub-region</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>— worldwide headcount by region &amp; sub-region</span>
         </div>
         <span style={{ fontSize: 11, color: '#a78bfa', transform: open ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▲</span>
       </div>
@@ -54,16 +64,16 @@ export default function TsaCapacityGeoMap({ filters }) {
         <div style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <GraphInsightButton
-              rca="SLO lags in the same regions/sub-regions that also show above-plan ACT."
-              clca="Tie SLO recovery plans to Average Case Time improvement first in those regions." />
+              rca="Headcount concentration mirrors where the largest LOBs are staffed, not necessarily where attrition risk is highest."
+              clca="Cross-check thinly-staffed regions/sub-regions against the Attrition visual before rebalancing headcount." />
             <BinaryToggle leftLabel="Region" rightLabel="Sub-region" value={viewMode} onChange={v => { setViewMode(v); setSelectedKey(null) }} />
           </div>
           <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-            Worldwide SLO Heatmap
-            <InfoButton info="Worldwide SLO % heatmap by country, aggregated to region or sub-region." />
+            Worldwide Headcount Heatmap
+            <InfoButton info="Worldwide headcount by region or sub-region, colored relative to the highest-staffed area in the current view." />
           </p>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>
-            Service Level % · {viewMode} view
+            Headcount · {viewMode} view
             {selectedKey && (
               <> · Showing <strong style={{ color: 'var(--accent)' }}>{selectedKey}</strong>{' '}
                 <span onClick={() => setSelectedKey(null)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>
@@ -86,9 +96,9 @@ export default function TsaCapacityGeoMap({ filters }) {
             {hovered && (
               <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }} className="chart-tooltip">
                 <p style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 11 }}>{hovered.name}</p>
-                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: sloColor(hovered.slo) }}>
-                  {hovered.slo}%
-                  <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>SLO</span>
+                <p style={{ marginTop: 3, fontSize: 13, fontWeight: 700, color: hcColor((hovered.headcount / maxValue) * 100) }}>
+                  {hovered.headcount.toLocaleString()}
+                  <span style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 5 }}>Headcount</span>
                 </p>
               </div>
             )}
@@ -98,36 +108,36 @@ export default function TsaCapacityGeoMap({ filters }) {
                 {({ geographies }) =>
                   geographies.map(geo => {
                     const name = geo.properties.name
-                    let slo, displayName, isFallback = false
+                    let headcount, displayName, isFallback = false
                     if (viewMode === 'Region') {
                       const region = regionForCountry(name)
-                      slo = region != null ? regionValue[region] : undefined
+                      headcount = region != null ? regionValue[region] : undefined
                       displayName = region
                     } else {
                       const subRegion = subRegionForCountry(name)
                       if (subRegion != null) {
-                        slo = subRegionValue[subRegion]
+                        headcount = subRegionValue[subRegion]
                         displayName = subRegion
                       } else {
                         const parentRegion = regionForCountry(name)
                         if (parentRegion != null) {
-                          slo = regionValue[parentRegion]
+                          headcount = regionValue[parentRegion]
                           displayName = parentRegion
                           isFallback = true
                         }
                       }
                     }
-                    const fill = slo != null ? sloColor(slo) : DEFAULT_FILL
+                    const fill = headcount != null ? hcColor((headcount / maxValue) * 100) : DEFAULT_FILL
                     const isSelected = selectedKey != null && displayName === selectedKey
                     const isDimmed = selectedKey != null && !isSelected
                     const baseOpacity = isFallback ? 0.35 : 1
                     return (
                       <Geography key={geo.rsmKey} geography={geo}
-                        onMouseEnter={() => slo != null && setHovered({ name: displayName, slo })}
+                        onMouseEnter={() => headcount != null && setHovered({ name: displayName, headcount })}
                         onMouseLeave={() => setHovered(null)}
-                        onClick={() => slo != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
+                        onClick={() => headcount != null && setSelectedKey(prev => prev === displayName ? null : displayName)}
                         style={{
-                          default: { fill, fillOpacity: isDimmed ? 0.1 : baseOpacity, stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none', transition: 'fill-opacity 0.2s, stroke 0.2s', cursor: slo != null ? 'pointer' : 'default' },
+                          default: { fill, fillOpacity: isDimmed ? 0.1 : baseOpacity, stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none', transition: 'fill-opacity 0.2s, stroke 0.2s', cursor: headcount != null ? 'pointer' : 'default' },
                           hover:   { fill, fillOpacity: isDimmed ? 0.25 : (isFallback ? 0.55 : 0.8), stroke: isSelected ? 'var(--accent)' : '#070f1a', strokeWidth: isSelected ? 1.5 : 0.4, outline: 'none' },
                           pressed: { fill, outline: 'none' },
                         }}
@@ -139,9 +149,9 @@ export default function TsaCapacityGeoMap({ filters }) {
             </ComposableMap>
 
             <div style={{ position: 'absolute', bottom: 8, left: 10, display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: '#3d607a' }}>
-              <span>100%</span>
+              <span>High</span>
               <div style={{ width: 72, height: 5, borderRadius: 3, background: 'linear-gradient(to left, #dc2626, #d97706, #2563eb, #059669)' }} />
-              <span>0%</span>
+              <span>Low</span>
             </div>
           </div>
 
@@ -149,17 +159,18 @@ export default function TsaCapacityGeoMap({ filters }) {
             <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {[viewMode, 'SLO', 'Status'].map((h, i) => (
+                  {[viewMode, 'Headcount', 'Status'].map((h, i) => (
                     <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '5px 10px 5px 0',
                       fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, slo: r.slo })) : subRegionRows.map(r => ({ key: r.subRegion, slo: r.slo }))).map(r => {
-                  const col = sloColor(r.slo)
-                  const status = r.slo >= 90 ? 'Excellent' : r.slo >= 80 ? 'Good' : r.slo >= 70 ? 'Fair' : 'Critical'
-                  const badgeCls = r.slo >= 80 ? 'badge-good' : r.slo >= 70 ? 'badge-warn' : 'badge-bad'
+                {(viewMode === 'Region' ? regionRows.map(r => ({ key: r.region, headcount: r.headcount })) : subRegionRows.map(r => ({ key: r.subRegion, headcount: r.headcount }))).map(r => {
+                  const pct = (r.headcount / maxValue) * 100
+                  const col = hcColor(pct)
+                  const status = pct >= 75 ? 'Highest' : pct >= 50 ? 'High' : pct >= 25 ? 'Moderate' : 'Lowest'
+                  const badgeCls = pct >= 50 ? 'badge-good' : pct >= 25 ? 'badge-warn' : 'badge-bad'
                   const isSelected = selectedKey === r.key
                   return (
                     <tr key={r.key} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', background: isSelected ? 'rgba(56,189,248,0.1)' : 'transparent' }}
@@ -167,7 +178,7 @@ export default function TsaCapacityGeoMap({ filters }) {
                       onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.04)' }}
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}>
                       <td style={{ padding: '6px 10px 6px 0', color: 'var(--text-primary)', fontWeight: isSelected ? 700 : 500 }}>{r.key}</td>
-                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.slo}%</td>
+                      <td className="num" style={{ padding: '6px 10px 6px 0', textAlign: 'right', fontWeight: 700, color: col }}>{r.headcount.toLocaleString()}</td>
                       <td style={{ padding: '6px 0', textAlign: 'right' }}><span className={`badge ${badgeCls}`}>{status}</span></td>
                     </tr>
                   )

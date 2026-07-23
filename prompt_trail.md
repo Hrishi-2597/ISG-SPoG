@@ -575,4 +575,16 @@ Chronological log of every user prompt and the corresponding actions taken.
 - Switched all 5 to `PLAN_NAMES` (`HeadcountLayer.jsx` Visual3, `UtilizationLayer.jsx` Visual1/2/3, `PlanOverPlanVariationLayer.jsx`'s shared `PLANS` constant) — confirmed no data-layer change was needed since `planMultiplier()` hashes whatever plan-name string it's given rather than assuming a specific list.
 - Verified with `npm run build` (clean, 1174 modules); grepped `msgCapacity/` for stray `CAPACITY_PLAN_NAMES` code references — none remain.
 - Updated `handoff.md`; committed and pushed to `main`.
+
+---
+
+## Prompt 43 — 2026-07-23
+**Input:** "From the TSA Capacity Plan tab remove the SLO%. And from the geo map remove the SLO% and show only the Headcount."
+
+**Action:**
+- Removed the "SLO %" KPI card entirely from `TsaCapacityMetricCards.jsx` (Key Metrics row now 4 cards, was 5) — along with its `GlobalSloByRegionChart` drill-down, its `MODAL_TITLES.globalSlo` entry, and the `globalSlo` field in `tsaCapacityCardData()`.
+- Deleted the now-dead SLO data functions/constants from `tsaCapacityData.js`: `sloByFY`, `SLO_BY_FY`, `TSA_GEO_SLO_BY_REGION`, `TSA_GEO_SLO_BY_SUBREGION`, `geoSloByRegion`, `geoSloBySubRegion`.
+- Switched `TsaCapacityGeoMap.jsx` from SLO% to real Headcount: new `geoHeadcountByRegion`/`geoHeadcountBySubRegion(filters)` selectors reshape the existing `tsaAttritionByDimension()` region/sub-region headcount split (already backing the Attrition visual) rather than inventing separate data — this also fixed a latent bug where the old SLO selectors silently ignored the `filters` argument entirely. Since headcount is a raw count (not 0-100%), color bands became relative to the current view's own peak value (≥75%/50%/25% of max → Highest/High/Moderate/Lowest) instead of fixed absolute thresholds, so the same 4-color read stays meaningful across the very different Region (~4 keys, 600s) vs Sub-region (~24 keys, 200s) scales.
+- Verified with `npm run build` (clean, 1174 modules) and a Node smoke test of the new selectors + `tsaCapacityCardData` (confirmed realistic headcount values and that `globalSlo` no longer appears); grepped `src/` for stray SLO references — none remain outside comments.
+- Updated `handoff.md`, `tech_spec.md`, `design_choice.md`; committed and pushed to `main`.
 - Updated `handoff.md`, `design_choice.md`; committed and pushed to `main`

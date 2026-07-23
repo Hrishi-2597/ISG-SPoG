@@ -4,6 +4,14 @@ A record of every significant design decision made, with the reasoning behind it
 
 ---
 
+## TSA Capacity Geo Map: Reuse the Attrition Visual's Headcount Split, Don't Invent New Data (2026-07-23)
+
+**Decision:** When switching the Geo Map from SLO% to Headcount, the new `geoHeadcountByRegion`/`geoHeadcountBySubRegion` selectors reshape the EXISTING `tsaAttritionByDimension()` output (already computing a real region/sub-region headcount split for the Attrition visual in `HeadcountAttritionLayer.jsx`) rather than inventing a second, parallel headcount-by-region dataset.
+
+**Why:** Two independent "headcount by region" numbers elsewhere in the same page would eventually drift out of sync with each other (different rounding, different share-weighting) and readers comparing the Attrition visual against the Geo Map would see two different headcount figures for the same region with no explanation why. Reusing one function as the single source of truth avoids that, and as a side effect fixes a latent staleness bug: the old `geoSloByRegion()`/`geoSloBySubRegion()` didn't even accept a real `filters` argument (calling them with filters was silently a no-op) and always returned the same 4/24 fixed rows — the new selectors are genuinely filter-aware because `tsaAttritionByDimension` already was.
+
+**Why relative-to-peak color bands, not fixed thresholds:** SLO%/utilization/adherence are naturally 0-100% rates, so a fixed "≥90% excellent / <70% critical" threshold means the same thing at any scale. Headcount is a raw count with no natural ceiling, and Region view's ~4 buckets (counts in the 600s) and Sub-region view's ~24 buckets (counts in the 200s) differ by roughly 3x — a fixed threshold tuned for one view would misrepresent the other. Banding by percentage of the current view's own peak value keeps the same 4-color read meaningful regardless of which view (or what the underlying mock numbers happen to be) is active.
+
 ## Second, Separate "i" Button for Plain Descriptions — Not a Repurposed RCA/CLCA Button (2026-07-23)
 
 **Decision:** Added a brand-new `InfoButton` component (`ChartKit.jsx`), entirely separate from the existing `GraphInsightButton` (RCA/CLCA). It takes one plain `info` sentence — what the card/chart is showing — with no root-cause or corrective-action framing at all.

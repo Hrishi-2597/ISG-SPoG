@@ -1,5 +1,5 @@
 // Mock data + selectors for the TSA Capacity Plan page (Total FTE / Attrition /
-// Cases-per-FTE / Avg Case Time / Global SLO). Its filter set (LOB / FY-Qtr-Month-
+// Cases-per-FTE / Avg Case Time). Its filter set (LOB / FY-Qtr-Month-
 // Week / Business Partner / Global Grouping) is IDENTICAL to TSA Forecasting's, so
 // this page reuses TSA Forecasting's own LOB fact table, filter function, and
 // filter-panel component directly rather than duplicating them — only the metrics
@@ -136,6 +136,19 @@ export function tsaAttritionTrendByDimension(filters = {}, key, dimension = 'Reg
   }))
 }
 
+// ── Geo Map: Headcount by region/sub-region (2026-07-23, replacing the Geo Map's
+// old SLO% coloring — see design_choice.md) — reshapes tsaAttritionByDimension's
+// existing region/sub-region headcount split into the {region/subRegion, headcount}
+// pair the geo map expects, so it's genuinely filter-aware (the SLO selectors it
+// replaces ignored filters entirely).
+export function geoHeadcountByRegion(filters = {}) {
+  return tsaAttritionByDimension(filters, 'Region').map(r => ({ region: r.key, headcount: r.headcount }))
+}
+
+export function geoHeadcountBySubRegion(filters = {}) {
+  return tsaAttritionByDimension(filters, 'SubRegion').map(r => ({ subRegion: r.key, headcount: r.headcount }))
+}
+
 // ── Actual vs Plan utilization (Layer 1, Visual 3) ─────────────────────────
 const BASE_TSA_UTIL_TARGET = { FY25: 80, FY26: 82, FY27: 84 }
 
@@ -199,49 +212,6 @@ export function actHrsDefaulterLobs(filters = {}, count = 6) {
     .slice(0, count)
 }
 
-// ── Global SLO ──────────────────────────────────────────────────────────────
-const BASE_SLO_TARGET = { FY25: 93, FY26: 94, FY27: 95 }
-export const SLO_BY_FY = FISCAL_YEARS.map((fy, i) => ({
-  period: fy, target: BASE_SLO_TARGET[fy],
-  actual: +(BASE_SLO_TARGET[fy] * (0.96 + (i * 2 % 5) / 100)).toFixed(1),
-}))
-
-// Tuned so exactly 2 regions sit below the FY27 SLO target (95) — matching the
-// mockup's literal "2 regions at risk" card message.
-export const TSA_GEO_SLO_BY_REGION = [
-  { region: 'NAMER', slo: 97 },
-  { region: 'EMEA', slo: 88 },
-  { region: 'APJ', slo: 96 },
-  { region: 'LATAM', slo: 79 },
-]
-
-export function geoSloByRegion() {
-  return TSA_GEO_SLO_BY_REGION
-}
-
-// Per-sub-region SLO, worldwide — rotates through the region baselines above with a
-// per-sub-region nudge, same "real names + illustrative structure" convention as
-// msgCapacityData.js's GEO_CAPACITY_BY_SUBREGION.
-export const TSA_GEO_SLO_BY_SUBREGION = SUB_REGIONS.map((subRegion, i) => {
-  const base = TSA_GEO_SLO_BY_REGION[i % TSA_GEO_SLO_BY_REGION.length]
-  return { subRegion, slo: Math.max(60, Math.min(100, base.slo + ((i * 7) % 9) - 4)) }
-})
-
-export function geoSloBySubRegion() {
-  return TSA_GEO_SLO_BY_SUBREGION
-}
-
-// Granular Global SLO trend (2026-07-20, added for the card headline's MoM/QoQ
-// comparison — see tsaCapacityCardData below). `actual`/`target` are both rate/
-// percentage fields, same reasoning as utilizationByFY's target — expanding both
-// keeps the target riding along at the right value per period instead of needing a
-// separate bare-FY lookup once the period label is granular (e.g. "FY27 Q1").
-export function sloByFY(filters = {}, granularity) {
-  const years = tsaEffectiveFiscalYears(filters)
-  const fyRows = SLO_BY_FY.filter(d => years.includes(d.period))
-  return expandRateToGranularity(fyRows, granularity, ['actual', 'target'])
-}
-
 // Year-over-year % change between the latest in-scope FY and the one before it;
 // null when there's no prior year in scope, same convention as msgCapacityData.js's yoyPct.
 function yoyPct(curr, prev) {
@@ -254,17 +224,17 @@ function yoyPct(curr, prev) {
 // both drill with the page-wide granularity slicer — 2026-07-20 change, superseding
 // the prior "comparison always stays FY-over-FY" decision, per direct request
 // (compare Month-over-Month/Quarter-over-Quarter instead of always last year). Each
-// metric already has (or, for SLO, now has — see sloByFY above) a granularity-aware
-// selector built for its own drill-down chart, so this just reuses the last two
-// entries of those series instead of a separate FY-only lookup. Cases per FTE is
-// unchanged (still a plain Plan-based sub-line with no yoyPct field at all).
+// metric already has a granularity-aware selector built for its own drill-down
+// chart, so this just reuses the last two entries of those series instead of a
+// separate FY-only lookup. Cases per FTE is unchanged (still a plain Plan-based
+// sub-line with no yoyPct field at all). SLO % card removed 2026-07-23 (see
+// design_choice.md) — globalSlo is no longer part of this return shape.
 export function tsaCapacityCardData(filters = {}, granularity) {
   const years = tsaEffectiveFiscalYears(filters)
   const fteGranular = fteByFY(filters, granularity)
   const attritionGranular = tsaAttritionByFY(filters, granularity)
   const cpf = CPF_BY_FY.filter(d => years.includes(d.period))
   const actGranular = actHrsByFY(filters, granularity)
-  const sloGranular = sloByFY(filters, granularity)
 
   const latestFte = fteGranular[fteGranular.length - 1]
   const prevFte = fteGranular[fteGranular.length - 2]
@@ -273,9 +243,6 @@ export function tsaCapacityCardData(filters = {}, granularity) {
   const latestCpf = cpf[cpf.length - 1]
   const latestAct = actGranular[actGranular.length - 1]
   const prevAct = actGranular[actGranular.length - 2]
-  const latestSlo = sloGranular[sloGranular.length - 1]
-  const prevSlo = sloGranular[sloGranular.length - 2]
-  const regionsAtRisk = latestSlo ? TSA_GEO_SLO_BY_REGION.filter(r => r.slo < latestSlo.target).length : 0
 
   return {
     totalFte: {
@@ -290,10 +257,6 @@ export function tsaCapacityCardData(filters = {}, granularity) {
     avgCaseTime: {
       actual: latestAct?.actual ?? 0, plan: latestAct?.plan ?? 0,
       period: latestAct?.period, prevPeriod: prevAct?.period, yoyPct: yoyPct(latestAct?.actual, prevAct?.actual),
-    },
-    globalSlo: {
-      actual: latestSlo?.actual ?? 0, target: latestSlo?.target ?? 0, regionsAtRisk,
-      period: latestSlo?.period, prevPeriod: prevSlo?.period, yoyPct: yoyPct(latestSlo?.actual, prevSlo?.actual),
     },
   }
 }

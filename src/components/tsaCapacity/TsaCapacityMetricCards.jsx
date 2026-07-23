@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react'
 import {
-  ComposedChart, LineChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
+  ComposedChart, LineChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import {
-  tsaCapacityCardData, fteByFY, tsaAttritionByFY, cpfByFY, actHrsByFY, geoSloByRegion,
+  tsaCapacityCardData, fteByFY, tsaAttritionByFY, cpfByFY, actHrsByFY,
 } from '../../data/tsaCapacityData'
 import { C, Tip, InfoButton } from '../ChartKit'
 import { Modal } from '../Modal'
@@ -136,30 +136,11 @@ function AvgCaseTimeTrendChart({ filters, granularity }) {
   )
 }
 
-function GlobalSloByRegionChart() {
-  const data = useMemo(() => geoSloByRegion(), [])
-  return (
-    <div style={CHART_BOX}>
-      <ResponsiveContainer width="100%" height={210}>
-        <BarChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke={C.grid} />
-          <XAxis dataKey="region" tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: C.tick, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-          <Tooltip content={<Tip />} cursor={{ fill: 'rgba(56,189,248,0.04)' }} />
-          <Legend wrapperStyle={{ fontSize: 10, color: C.tick, paddingTop: 4 }} />
-          <Bar dataKey="slo" name="SLO %" fill={C.metric1} opacity={0.85} radius={[3,3,0,0]} maxBarSize={44} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
 const MODAL_TITLES = {
   fte: 'Staffing Summary — Actual vs Plan',
   attrition: 'Headcount & Attrition Trend',
   casesPerFte: 'Cases per FTE — Actual vs Plan',
   avgCaseTime: 'Avg Case Time — Actual vs Plan',
-  globalSlo: 'SLO % by Region',
 }
 
 // Builds the "YTD <period>: <value> · ▲/▼ X% vs <prevPeriod>" sub-message, same
@@ -182,7 +163,6 @@ function DrillDownModal({ type, filters, granularity, onClose }) {
       {type === 'attrition' && <AttritionTrendChart filters={filters} granularity={granularity} />}
       {type === 'casesPerFte' && <CasesPerFteTrendChart filters={filters} granularity={granularity} />}
       {type === 'avgCaseTime' && <AvgCaseTimeTrendChart filters={filters} granularity={granularity} />}
-      {type === 'globalSlo' && <GlobalSloByRegionChart />}
     </Modal>
   )
 }
@@ -199,7 +179,6 @@ export default function TsaCapacityMetricCards({ filters, granularity }) {
   const staffingYtd = ytdSub(d.totalFte, d.totalFte.actual.toLocaleString())
   const attritionYtd = ytdSub(d.attrition, `${d.attrition.actual}%`, { lowerIsBetter: true })
   const avgCaseTimeYtd = ytdSub(d.avgCaseTime, `${d.avgCaseTime.actual}h`, { lowerIsBetter: true })
-  const sloYtd = ytdSub(d.globalSlo, `${d.globalSlo.actual}%`)
 
   return (
     <div style={{ padding: '0 16px 12px' }}>
@@ -225,11 +204,6 @@ export default function TsaCapacityMetricCards({ filters, granularity }) {
           sub={avgCaseTimeYtd.text} trend={avgCaseTimeYtd.trend}
           onClick={() => toggle('avgCaseTime')} active={active === 'avgCaseTime'}
           info="Average hours spent per case, compared against the planned Average Case Time." />
-        <Card icon="🎯" label="SLO %"
-          value={`${d.globalSlo.actual}%`}
-          sub={sloYtd.text} trend={sloYtd.trend}
-          onClick={() => toggle('globalSlo')} active={active === 'globalSlo'}
-          info="Global Service Level % against target, plus how many regions currently sit below it." />
       </div>
 
       {active && <DrillDownModal type={active} filters={filters} granularity={granularity} onClose={() => setActive(null)} />}

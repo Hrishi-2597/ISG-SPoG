@@ -216,12 +216,13 @@ TsaCapacityPage
 │                                                                          unmodified (identical field set: LOB/FY-Qtr-
 │                                                                          Month-Week/Business Partner/Global Grouping;
 │                                                                          Global Grouping options corrected 2026-07-03)
-├── TsaCapacityMetricCards(filters, granularity) — tsaCapacityCardData(filters, granularity); 5 cards with YTD/YoY
+├── TsaCapacityMetricCards(filters, granularity) — tsaCapacityCardData(filters, granularity); 4 cards with YTD/YoY
 │   │                          sub-messages (ytdSub, same pattern as TsaMetricCards.jsx/MsgCapacityMetricCards.jsx) for
-│   │                          Staffing Summary (renamed from Total FTE)/Attrition/Avg Case Time/SLO % (renamed from
-│   │                          Global SLO); Cases per FTE unchanged. Each card a Modal drill-down
+│   │                          Staffing Summary (renamed from Total FTE)/Attrition/Avg Case Time; Cases per FTE
+│   │                          unchanged. SLO % card removed 2026-07-23 (see design_choice.md) — was 5 cards, now 4.
+│   │                          Each card a Modal drill-down
 │   └── DrillDownModal — FteTrendChart / AttritionTrendChart / CasesPerFteTrendChart (line) /
-│                         AvgCaseTimeTrendChart (line) / GlobalSloByRegionChart (bar)
+│                         AvgCaseTimeTrendChart (line)
 ├── HeadcountAttritionLayer(filters, granularity) — renamed "Headcount and Utilization", badge "01"
 │   ├── Visual1 "Actual vs Plan Variation" (renamed) — ComposedChart: fteByFY(filters, granularity, planName); line
 │   │                                                   renamed "Variation %"; Plan dropdown added 2026-07-23 for parity
@@ -250,8 +251,12 @@ TsaCapacityPage
 │   (Visual3 "ACT Trend — Actual vs Plan" removed entirely 2026-07-23 — layer is now exactly 2 visuals, filling the
 │    row via each Visual's own flex-1, no layout change needed)
 └── TsaCapacityGeoMap(filters)                — badge "04" (mockup calls it "Layer 5", renumbered — see design_choice.md);
-                                                 Region/Sub-region BinaryToggle (was single-metric region-only),
-                                                 same fallback-to-parent-region mechanic as MsgCapacityGeoMap
+                                                 Region/Sub-region BinaryToggle, same fallback-to-parent-region
+                                                 mechanic as MsgCapacityGeoMap. Switched from SLO% to Headcount
+                                                 2026-07-23 (see design_choice.md) — geoHeadcountByRegion/
+                                                 geoHeadcountBySubRegion(filters) reshape tsaAttritionByDimension's
+                                                 existing headcount split; color bands are relative to the current
+                                                 view's own peak value (≥75%/50%/25% of max), not fixed thresholds
 ```
 
 The shared `capacity/PlanOverPlanLayer.jsx` component (and its containing `capacity/` folder) was deleted 2026-07-03 once both Capacity pages had their own specialized Plan-over-Plan layer and nothing imported it anymore.
